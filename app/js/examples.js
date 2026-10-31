@@ -152,8 +152,8 @@ const EXAMPLES = [
 {
 "id": "c7",
 "type": "led",
-"x": 250,
-"y": 260,
+"x": 240,
+"y": 310,
 "rot": 0,
 "props": {
 "color": "rot"
@@ -162,49 +162,49 @@ const EXAMPLES = [
 {
 "id": "c8",
 "type": "resistor",
-"x": 260,
-"y": 280,
-"rot": 90,
+"x": 250,
+"y": 330,
+"rot": 0,
 "props": {
 "ohm": 220
 }
 },
 {
-"id": "c11",
+"id": "c10",
 "type": "led",
-"x": 310,
-"y": 260,
+"x": 320,
+"y": 310,
 "rot": 0,
 "props": {
 "color": "gelb"
 }
 },
 {
-"id": "c12",
+"id": "c11",
 "type": "resistor",
-"x": 320,
-"y": 280,
-"rot": 90,
+"x": 330,
+"y": 330,
+"rot": 0,
 "props": {
 "ohm": 220
 }
 },
 {
-"id": "c15",
+"id": "c13",
 "type": "led",
-"x": 370,
-"y": 260,
+"x": 410,
+"y": 310,
 "rot": 0,
 "props": {
 "color": "gruen"
 }
 },
 {
-"id": "c16",
+"id": "c14",
 "type": "resistor",
-"x": 380,
-"y": 280,
-"rot": 90,
+"x": 420,
+"y": 330,
+"rot": 0,
 "props": {
 "ohm": 220
 }
@@ -311,66 +311,84 @@ const EXAMPLES = [
 "id": "w9",
 "a": {
 "c": "c1",
-"p": "5j"
+"p": "8j"
 },
 "b": {
 "c": "c1",
-"p": "bm-5"
+"p": "bm-8"
 },
 "pts": [],
 "color": "schwarz"
 },
 {
-"id": "w10",
+"id": "w12",
+"a": {
+"c": "c1",
+"p": "16j"
+},
+"b": {
+"c": "c1",
+"p": "bm-16"
+},
+"pts": [],
+"color": "schwarz"
+},
+{
+"id": "w15",
+"a": {
+"c": "c1",
+"p": "25j"
+},
+"b": {
+"c": "c1",
+"p": "bm-25"
+},
+"pts": [],
+"color": "schwarz"
+},
+{
+"id": "w16",
 "a": {
 "c": "c2",
 "p": "D12"
 },
 "b": {
 "c": "c1",
-"p": "4a"
+"p": "3j"
 },
-"pts": [],
+"pts": [
+[
+360,
+445
+],
+[
+240,
+445
+]
+],
 "color": "gruen"
 },
 {
-"id": "w13",
-"a": {
-"c": "c1",
-"p": "11j"
-},
-"b": {
-"c": "c1",
-"p": "bm-11"
-},
-"pts": [],
-"color": "schwarz"
-},
-{
-"id": "w14",
+"id": "w17",
 "a": {
 "c": "c2",
 "p": "D11"
 },
 "b": {
 "c": "c1",
-"p": "10a"
+"p": "11j"
 },
-"pts": [],
+"pts": [
+[
+370,
+430
+],
+[
+320,
+430
+]
+],
 "color": "gruen"
-},
-{
-"id": "w17",
-"a": {
-"c": "c1",
-"p": "17j"
-},
-"b": {
-"c": "c1",
-"p": "bm-17"
-},
-"pts": [],
-"color": "schwarz"
 },
 {
 "id": "w18",
@@ -380,9 +398,18 @@ const EXAMPLES = [
 },
 "b": {
 "c": "c1",
-"p": "16a"
+"p": "20j"
 },
-"pts": [],
+"pts": [
+[
+380,
+425
+],
+[
+410,
+425
+]
+],
 "color": "gruen"
 }
 ]
@@ -421,7 +448,7 @@ const EXAMPLES = [
 "props": {}
 },
 {
-"id": "c10",
+"id": "c9",
 "type": "resistor",
 "x": 310,
 "y": 330,
@@ -532,30 +559,17 @@ const EXAMPLES = [
 "id": "w8",
 "a": {
 "c": "c1",
-"p": "tp-8"
+"p": "8a"
 },
 "b": {
 "c": "c1",
-"p": "8a"
+"p": "tp-8"
 },
 "pts": [],
 "color": "rot"
 },
 {
-"id": "w9",
-"a": {
-"c": "c2",
-"p": "D2"
-},
-"b": {
-"c": "c1",
-"p": "10a"
-},
-"pts": [],
-"color": "gruen"
-},
-{
-"id": "w11",
+"id": "w10",
 "a": {
 "c": "c1",
 "p": "14j"
@@ -566,6 +580,28 @@ const EXAMPLES = [
 },
 "pts": [],
 "color": "schwarz"
+},
+{
+"id": "w11",
+"a": {
+"c": "c2",
+"p": "D2"
+},
+"b": {
+"c": "c1",
+"p": "10j"
+},
+"pts": [
+[
+470,
+430
+],
+[
+310,
+430
+]
+],
+"color": "gruen"
 }
 ]
 },
@@ -597,8 +633,8 @@ const EXAMPLES = [
 {
 "id": "c7",
 "type": "poti",
-"x": 250,
-"y": 260,
+"x": 240,
+"y": 330,
 "rot": 0,
 "props": {
 "position": 80,
@@ -609,7 +645,7 @@ const EXAMPLES = [
 "id": "c11",
 "type": "led",
 "x": 350,
-"y": 260,
+"y": 310,
 "rot": 0,
 "props": {
 "color": "rot"
@@ -619,8 +655,8 @@ const EXAMPLES = [
 "id": "c12",
 "type": "resistor",
 "x": 360,
-"y": 280,
-"rot": 90,
+"y": 330,
+"rot": 0,
 "props": {
 "ohm": 220
 }
@@ -727,11 +763,11 @@ const EXAMPLES = [
 "id": "w8",
 "a": {
 "c": "c1",
-"p": "tp-4"
+"p": "3j"
 },
 "b": {
 "c": "c1",
-"p": "4a"
+"p": "bp-3"
 },
 "pts": [],
 "color": "rot"
@@ -740,46 +776,54 @@ const EXAMPLES = [
 "id": "w9",
 "a": {
 "c": "c1",
-"p": "tm-7"
+"p": "5j"
 },
 "b": {
 "c": "c1",
-"p": "6a"
+"p": "bm-5"
 },
-"pts": [
-[
-270,
-225
-],
-[
-280,
-225
-]
-],
+"pts": [],
 "color": "schwarz"
 },
 {
 "id": "w10",
 "a": {
+"c": "c1",
+"p": "4j"
+},
+"b": {
 "c": "c2",
 "p": "A0"
 },
-"b": {
-"c": "c1",
-"p": "5b"
-},
-"pts": [],
-"color": "gelb"
+"pts": [
+[
+250,
+415
+],
+[
+160,
+415
+],
+[
+160,
+715
+],
+[
+420,
+715
+]
+],
+"color": "gruen"
 },
 {
 "id": "w13",
 "a": {
 "c": "c1",
-"p": "15j"
+"p": "19j"
 },
 "b": {
 "c": "c1",
-"p": "bm-15"
+"p": "bm-19"
 },
 "pts": [],
 "color": "schwarz"
@@ -792,9 +836,18 @@ const EXAMPLES = [
 },
 "b": {
 "c": "c1",
-"p": "14a"
+"p": "14j"
 },
-"pts": [],
+"pts": [
+[
+390,
+430
+],
+[
+350,
+430
+]
+],
 "color": "gruen"
 }
 ]
@@ -836,7 +889,7 @@ const EXAMPLES = [
 "id": "c12",
 "type": "tmp36",
 "x": 410,
-"y": 260,
+"y": 330,
 "rot": 0,
 "props": {
 "temp": 20
@@ -986,8 +1039,21 @@ const EXAMPLES = [
 "c": "c2",
 "p": "SDA"
 },
-"pts": [],
-"color": "blau"
+"pts": [
+[
+140,
+110
+],
+[
+140,
+445
+],
+[
+320,
+445
+]
+],
+"color": "gruen"
 },
 {
 "id": "w11",
@@ -999,18 +1065,31 @@ const EXAMPLES = [
 "c": "c2",
 "p": "SCL"
 },
-"pts": [],
+"pts": [
+[
+150,
+120
+],
+[
+150,
+435
+],
+[
+310,
+435
+]
+],
 "color": "gelb"
 },
 {
 "id": "w13",
 "a": {
 "c": "c1",
-"p": "tp-20"
+"p": "20j"
 },
 "b": {
 "c": "c1",
-"p": "20a"
+"p": "bp-20"
 },
 "pts": [],
 "color": "rot"
@@ -1019,11 +1098,11 @@ const EXAMPLES = [
 "id": "w14",
 "a": {
 "c": "c1",
-"p": "tm-22"
+"p": "22j"
 },
 "b": {
 "c": "c1",
-"p": "22a"
+"p": "bm-22"
 },
 "pts": [],
 "color": "schwarz"
@@ -1031,15 +1110,32 @@ const EXAMPLES = [
 {
 "id": "w15",
 "a": {
+"c": "c1",
+"p": "21j"
+},
+"b": {
 "c": "c2",
 "p": "A0"
 },
-"b": {
-"c": "c1",
-"p": "21b"
-},
-"pts": [],
-"color": "gelb"
+"pts": [
+[
+420,
+415
+],
+[
+160,
+415
+],
+[
+160,
+715
+],
+[
+420,
+715
+]
+],
+"color": "gruen"
 }
 ]
 },
@@ -1071,8 +1167,8 @@ const EXAMPLES = [
 {
 "id": "c7",
 "type": "poti",
-"x": 250,
-"y": 260,
+"x": 240,
+"y": 330,
 "rot": 0,
 "props": {
 "position": 80,
@@ -1189,11 +1285,11 @@ const EXAMPLES = [
 "id": "w8",
 "a": {
 "c": "c1",
-"p": "tp-4"
+"p": "3j"
 },
 "b": {
 "c": "c1",
-"p": "4a"
+"p": "bp-3"
 },
 "pts": [],
 "color": "rot"
@@ -1202,36 +1298,44 @@ const EXAMPLES = [
 "id": "w9",
 "a": {
 "c": "c1",
-"p": "tm-7"
+"p": "5j"
 },
 "b": {
 "c": "c1",
-"p": "6a"
+"p": "bm-5"
 },
-"pts": [
-[
-270,
-225
-],
-[
-280,
-225
-]
-],
+"pts": [],
 "color": "schwarz"
 },
 {
 "id": "w10",
 "a": {
+"c": "c1",
+"p": "4j"
+},
+"b": {
 "c": "c2",
 "p": "A0"
 },
-"b": {
-"c": "c1",
-"p": "5b"
-},
-"pts": [],
-"color": "gelb"
+"pts": [
+[
+250,
+415
+],
+[
+160,
+415
+],
+[
+160,
+715
+],
+[
+420,
+715
+]
+],
+"color": "gruen"
 },
 {
 "id": "w12",
@@ -1241,9 +1345,18 @@ const EXAMPLES = [
 },
 "b": {
 "c": "c1",
-"p": "tm-26"
+"p": "bm-26"
 },
-"pts": [],
+"pts": [
+[
+580,
+415
+],
+[
+470,
+415
+]
+],
 "color": "schwarz"
 },
 {
@@ -1254,9 +1367,18 @@ const EXAMPLES = [
 },
 "b": {
 "c": "c1",
-"p": "tp-27"
+"p": "bp-27"
 },
-"pts": [],
+"pts": [
+[
+590,
+422
+],
+[
+480,
+422
+]
+],
 "color": "rot"
 },
 {
@@ -1269,8 +1391,17 @@ const EXAMPLES = [
 "c": "c2",
 "p": "D3"
 },
-"pts": [],
-"color": "gelb"
+"pts": [
+[
+600,
+445
+],
+[
+460,
+445
+]
+],
+"color": "gruen"
 }
 ]
 },
@@ -1280,7 +1411,7 @@ const EXAMPLES = [
 "id": "motor",
 "title": "Motor mit Motortreiber",
 "board": "uno",
-"desc": "Ein Getriebemotor am Motortreiber L9110S. Das Potentiometer stellt die Geschwindigkeit ein.",
+"desc": "Ein Getriebemotor am Motortreiber L9110S (A-IA an D6, A-IB an D5). Das Potentiometer stellt die Geschwindigkeit ein.",
 "circuit": {
 "components": [
 {
@@ -1303,7 +1434,7 @@ const EXAMPLES = [
 "id": "c7",
 "type": "poti",
 "x": 240,
-"y": 260,
+"y": 330,
 "rot": 0,
 "props": {
 "position": 80,
@@ -1322,7 +1453,7 @@ const EXAMPLES = [
 "id": "c16",
 "type": "gearmotor",
 "x": 110,
-"y": 220,
+"y": 160,
 "rot": 0,
 "props": {}
 }
@@ -1428,11 +1559,11 @@ const EXAMPLES = [
 "id": "w8",
 "a": {
 "c": "c1",
-"p": "tp-3"
+"p": "3j"
 },
 "b": {
 "c": "c1",
-"p": "3a"
+"p": "bp-3"
 },
 "pts": [],
 "color": "rot"
@@ -1441,11 +1572,11 @@ const EXAMPLES = [
 "id": "w9",
 "a": {
 "c": "c1",
-"p": "tm-5"
+"p": "5j"
 },
 "b": {
 "c": "c1",
-"p": "5a"
+"p": "bm-5"
 },
 "pts": [],
 "color": "schwarz"
@@ -1453,25 +1584,42 @@ const EXAMPLES = [
 {
 "id": "w10",
 "a": {
+"c": "c1",
+"p": "4j"
+},
+"b": {
 "c": "c2",
 "p": "A0"
 },
-"b": {
-"c": "c1",
-"p": "4b"
-},
-"pts": [],
-"color": "gelb"
+"pts": [
+[
+250,
+415
+],
+[
+160,
+415
+],
+[
+160,
+715
+],
+[
+420,
+715
+]
+],
+"color": "gruen"
 },
 {
 "id": "w12",
 "a": {
 "c": "c1",
-"p": "bm-16"
+"p": "16j"
 },
 "b": {
 "c": "c1",
-"p": "16j"
+"p": "bm-16"
 },
 "pts": [],
 "color": "schwarz"
@@ -1480,11 +1628,11 @@ const EXAMPLES = [
 "id": "w13",
 "a": {
 "c": "c1",
-"p": "bp-17"
+"p": "17j"
 },
 "b": {
 "c": "c1",
-"p": "17j"
+"p": "bp-17"
 },
 "pts": [],
 "color": "rot"
@@ -1493,7 +1641,7 @@ const EXAMPLES = [
 "id": "w14",
 "a": {
 "c": "c2",
-"p": "D5"
+"p": "D6"
 },
 "b": {
 "c": "c1",
@@ -1501,17 +1649,21 @@ const EXAMPLES = [
 },
 "pts": [
 [
+430,
+440
+],
+[
 390,
-370
+440
 ]
 ],
-"color": "gelb"
+"color": "gruen"
 },
 {
 "id": "w15",
 "a": {
 "c": "c2",
-"p": "D6"
+"p": "D5"
 },
 "b": {
 "c": "c1",
@@ -1519,41 +1671,71 @@ const EXAMPLES = [
 },
 "pts": [
 [
+440,
+430
+],
+[
 400,
-366
+430
 ]
 ],
-"color": "blau"
+"color": "gruen"
 },
 {
 "id": "w17",
-"a": {
-"c": "c16",
-"p": "P"
-},
-"b": {
-"c": "c11",
-"p": "MA1"
-},
-"pts": [],
-"color": "rot"
-},
-{
-"id": "w18",
 "a": {
 "c": "c16",
 "p": "N"
 },
 "b": {
 "c": "c11",
+"p": "MA1"
+},
+"pts": [
+[
+120,
+185
+],
+[
+315,
+185
+],
+[
+315,
+277
+]
+],
+"color": "schwarz"
+},
+{
+"id": "w18",
+"a": {
+"c": "c16",
+"p": "P"
+},
+"b": {
+"c": "c11",
 "p": "MA2"
 },
-"pts": [],
-"color": "schwarz"
+"pts": [
+[
+110,
+195
+],
+[
+305,
+195
+],
+[
+305,
+291
+]
+],
+"color": "rot"
 }
 ]
 },
-"blocks": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"ard_setup\" x=\"30\" y=\"30\"><statement name=\"DO\"></statement></block><block type=\"ard_loop\" x=\"30\" y=\"120\"><statement name=\"DO\"><block type=\"ard_motor\"><field name=\"IA\">5</field><field name=\"IB\">6</field><field name=\"DIR\">1</field><value name=\"SPEED\"><block type=\"ard_map\"><value name=\"V\"><block type=\"ard_analog_read\"><field name=\"PIN\">A0</field></block></value><value name=\"A\"><shadow type=\"math_number\"><field name=\"NUM\">0</field></shadow></value><value name=\"B\"><shadow type=\"math_number\"><field name=\"NUM\">1023</field></shadow></value><value name=\"C\"><shadow type=\"math_number\"><field name=\"NUM\">0</field></shadow></value><value name=\"D\"><shadow type=\"math_number\"><field name=\"NUM\">100</field></shadow></value></block></value></block></statement></block></xml>"
+"blocks": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"ard_setup\" x=\"30\" y=\"30\"><statement name=\"DO\"></statement></block><block type=\"ard_loop\" x=\"30\" y=\"120\"><statement name=\"DO\"><block type=\"ard_motor\"><field name=\"IA\">6</field><field name=\"IB\">5</field><field name=\"DIR\">1</field><value name=\"SPEED\"><block type=\"ard_map\"><value name=\"V\"><block type=\"ard_analog_read\"><field name=\"PIN\">A0</field></block></value><value name=\"A\"><shadow type=\"math_number\"><field name=\"NUM\">0</field></shadow></value><value name=\"B\"><shadow type=\"math_number\"><field name=\"NUM\">1023</field></shadow></value><value name=\"C\"><shadow type=\"math_number\"><field name=\"NUM\">0</field></shadow></value><value name=\"D\"><shadow type=\"math_number\"><field name=\"NUM\">100</field></shadow></value></block></value></block></statement></block></xml>"
 },
 {
 "id": "webseite",
@@ -1586,8 +1768,8 @@ const EXAMPLES = [
 {
 "id": "c7",
 "type": "led",
-"x": 270,
-"y": 260,
+"x": 260,
+"y": 310,
 "rot": 0,
 "props": {
 "color": "gruen"
@@ -1596,9 +1778,9 @@ const EXAMPLES = [
 {
 "id": "c8",
 "type": "resistor",
-"x": 280,
-"y": 280,
-"rot": 90,
+"x": 270,
+"y": 330,
+"rot": 0,
 "props": {
 "ohm": 220
 }
@@ -1713,11 +1895,11 @@ const EXAMPLES = [
 "id": "w9",
 "a": {
 "c": "c1",
-"p": "7j"
+"p": "10j"
 },
 "b": {
 "c": "c1",
-"p": "bm-7"
+"p": "bm-10"
 },
 "pts": [],
 "color": "schwarz"
@@ -1730,9 +1912,18 @@ const EXAMPLES = [
 },
 "b": {
 "c": "c1",
-"p": "6a"
+"p": "5j"
 },
-"pts": [],
+"pts": [
+[
+400,
+412
+],
+[
+260,
+412
+]
+],
 "color": "gruen"
 }
 ]
@@ -1776,7 +1967,7 @@ const EXAMPLES = [
 "props": {}
 },
 {
-"id": "c10",
+"id": "c9",
 "type": "resistor",
 "x": 310,
 "y": 330,
@@ -1895,30 +2086,17 @@ const EXAMPLES = [
 "id": "w8",
 "a": {
 "c": "c1",
-"p": "tp-8"
+"p": "8a"
 },
 "b": {
 "c": "c1",
-"p": "8a"
+"p": "tp-8"
 },
 "pts": [],
 "color": "rot"
 },
 {
-"id": "w9",
-"a": {
-"c": "c2",
-"p": "D13"
-},
-"b": {
-"c": "c1",
-"p": "10a"
-},
-"pts": [],
-"color": "gruen"
-},
-{
-"id": "w11",
+"id": "w10",
 "a": {
 "c": "c1",
 "p": "14j"
@@ -1929,9 +2107,31 @@ const EXAMPLES = [
 },
 "pts": [],
 "color": "schwarz"
+},
+{
+"id": "w11",
+"a": {
+"c": "c2",
+"p": "D19"
+},
+"b": {
+"c": "c1",
+"p": "10j"
+},
+"pts": [
+[
+350,
+412
+],
+[
+310,
+412
+]
+],
+"color": "gruen"
 }
 ]
 },
-"blocks": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"ard_setup\" x=\"30\" y=\"30\"><statement name=\"DO\"><block type=\"com_radio_init\"><field name=\"G\">1</field></block></statement></block><block type=\"ard_loop\" x=\"30\" y=\"170\"><statement name=\"DO\"><block type=\"controls_if\"><value name=\"IF0\"><block type=\"logic_compare\"><field name=\"OP\">EQ</field><value name=\"A\"><block type=\"ard_digital_read\"><field name=\"PIN\">13</field></block></value><value name=\"B\"><shadow type=\"math_number\"><field name=\"NUM\">1</field></shadow></value></block></value><statement name=\"DO0\"><block type=\"com_radio_send\"><value name=\"V\"><shadow type=\"text\"><field name=\"TEXT\">Ding-Dong!</field></shadow></value><next><block type=\"ard_wait\"><field name=\"UNIT\">S</field><value name=\"N\"><shadow type=\"math_number\"><field name=\"NUM\">0.5</field></shadow></value></block></next></block></statement><next><block type=\"controls_if\"><value name=\"IF0\"><block type=\"com_radio_avail\"></block></value><statement name=\"DO0\"><block type=\"ard_serial\"><field name=\"NL\">Y</field><value name=\"V\"><block type=\"com_radio_text\"></block></value><next><block type=\"ard_builtin_led\"><field name=\"V\">HIGH</field><next><block type=\"ard_wait\"><field name=\"UNIT\">S</field><value name=\"N\"><shadow type=\"math_number\"><field name=\"NUM\">1</field></shadow></value><next><block type=\"ard_builtin_led\"><field name=\"V\">LOW</field></block></next></block></next></block></next></block></statement></block></next></block></statement></block></xml>"
+"blocks": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"ard_setup\" x=\"30\" y=\"30\"><statement name=\"DO\"><block type=\"com_radio_init\"><field name=\"G\">1</field></block></statement></block><block type=\"ard_loop\" x=\"30\" y=\"170\"><statement name=\"DO\"><block type=\"controls_if\"><value name=\"IF0\"><block type=\"logic_compare\"><field name=\"OP\">EQ</field><value name=\"A\"><block type=\"ard_digital_read\"><field name=\"PIN\">19</field></block></value><value name=\"B\"><shadow type=\"math_number\"><field name=\"NUM\">1</field></shadow></value></block></value><statement name=\"DO0\"><block type=\"com_radio_send\"><value name=\"V\"><shadow type=\"text\"><field name=\"TEXT\">Ding-Dong!</field></shadow></value><next><block type=\"ard_wait\"><field name=\"UNIT\">S</field><value name=\"N\"><shadow type=\"math_number\"><field name=\"NUM\">0.5</field></shadow></value></block></next></block></statement><next><block type=\"controls_if\"><value name=\"IF0\"><block type=\"com_radio_avail\"></block></value><statement name=\"DO0\"><block type=\"ard_serial\"><field name=\"NL\">Y</field><value name=\"V\"><block type=\"com_radio_text\"></block></value><next><block type=\"ard_builtin_led\"><field name=\"V\">HIGH</field><next><block type=\"ard_wait\"><field name=\"UNIT\">S</field><value name=\"N\"><shadow type=\"math_number\"><field name=\"NUM\">1</field></shadow></value><next><block type=\"ard_builtin_led\"><field name=\"V\">LOW</field></block></next></block></next></block></next></block></statement></block></next></block></statement></block></xml>"
 }
 ];

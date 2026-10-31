@@ -510,7 +510,12 @@ const App = {
       const na = nl.net(a.c, a.p), nb = nl.net(b.c, b.p);
       if (na === g || nb === g) return 'schwarz';
       if (na === v || nb === v || na === v3 || nb === v3) return 'rot';
+      // I²C: SCL gelb, SDA grün
+      if (na === nl.net(uno.id, M.scl) || nb === nl.net(uno.id, M.scl)) return 'gelb';
+      if (na === nl.net(uno.id, M.sda) || nb === nl.net(uno.id, M.sda)) return 'gruen';
     }
+    if (a.p === 'SCL' || b.p === 'SCL') return 'gelb';
+    if (a.p === 'SDA' || b.p === 'SDA') return 'gruen';
     if (isRail(a, 'm') || isRail(b, 'm')) return 'schwarz';
     if (isRail(a, 'p') || isRail(b, 'p')) return 'rot';
     return 'gruen';
