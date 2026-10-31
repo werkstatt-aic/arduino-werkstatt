@@ -1,0 +1,18 @@
+from playwright.sync_api import sync_playwright
+with sync_playwright() as p:
+    b = p.chromium.launch(); pg = b.new_page(viewport={'width':1400,'height':900})
+    errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
+    pg.goto('http://127.0.0.1:8642/'); pg.wait_for_timeout(900)
+    pg.evaluate("n=>{const f=document.querySelector('#dlgForm');const p=n.split(/\s+[-–]\s+/);f.tisch.value=p[0].padStart(2,'0');f.nach.value=p[1];f.proj.value=p.slice(2).join(' – ')}", '07 – ESP Blinken – Aichler'); pg.click('button[value=new]'); pg.wait_for_timeout(500)
+    pg.select_option('#boardSel', 'esp32'); pg.wait_for_timeout(400)
+    pg.click('#uploadBtn'); pg.wait_for_timeout(500)
+    print('1', pg.inner_text('#dlgForm h2'))
+    pg.click('#upGo'); pg.wait_for_timeout(5000); print('2', pg.inner_text('#upMsg'))
+    pg.click('#upGo'); pg.wait_for_timeout(1500)
+    print('3', pg.inner_text('#dlgForm h2'), '| Anschlüsse:', pg.locator('#upPort option').all_inner_texts(), '| gewählt:', pg.input_value('#upPort'))
+    pg.click('#upGo'); pg.wait_for_timeout(2500); print('4', pg.inner_text('#upMsg'))
+    pg.screenshot(path='e4.png')
+    pg.click('#dlgForm button[value=cancel]'); pg.wait_for_timeout(200)
+    pg.select_option('#boardSel', 'uno'); pg.wait_for_timeout(300); pg.click('#uploadBtn'); pg.wait_for_timeout(500)
+    print('5 Uno:', pg.inner_text('#dlgForm h2'))
+    print(errs or 'no errors'); b.close()

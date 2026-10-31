@@ -1,0 +1,446 @@
+/* Schaltungs-Editor: Bauteile platzieren, verschieben, drehen, verdrahten */
+'use strict';
+
+const WIRE_COLORS = { gruen: '#2fa84f', rot: '#e53935', schwarz: '#222222', blau: '#1e6fd9', gelb: '#f2c200', orange: '#f57c00', lila: '#8e44ad', weiss: '#f2f2f2', grau: '#8a8a8a' };
+const WIRE_COLOR_NAMES = { gruen: 'Grün', rot: 'Rot', schwarz: 'Schwarz', blau: 'Blau', gelb: 'Gelb', orange: 'Orange', lila: 'Lila', weiss: 'Weiß', grau: 'Grau' };
+
+function makeComp(type, x, y, rot, props, id) {
+  const def = COMPONENTS[type];
+  const c = { id, type, x, y, rot: rot || 0, props: Object.assign({}, def.props, props || {}) };
+  Object.defineProperty(c, 'def', { value: def, enumerable: false });
+  return c;
+}
+
+class CircuitEditor {
+  constructor(svg, app) {
+    this.svg = svg;
+    this.app = app;
+    this.project = { components: [], wires: [] };
+    this.view = { x: 40, y: 40, k: 1.6 };
+    this.sel = null; // {kind:'comp'|'wire', id}
+    this.wiring = null;
+    this.drag = null;
+    this.states = {};
+    this.stateCache = {};
+    this.nextId = 1;
+    svg.innerHTML = `<defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><circle cx="0" cy="0" r="0.6" fill="var(--grid)"/></pattern></defs>
+      <rect class="bg" x="-5000" y="-5000" width="10000" height="10000" fill="url(#grid)"/>
+      <g class="world"><g class="l-bb"></g><g class="l-comp"></g><g class="l-wire"></g><g class="l-sel"></g><g class="l-tmp"></g></g>`;
+    this.world = svg.querySelector('.world');
+    this.bg = svg.querySelector('.bg');
+    this.L = { bb: svg.querySelector('.l-bb'), comp: svg.querySelector('.l-comp'), wire: svg.querySelector('.l-wire'), sel: svg.querySelector('.l-sel'), tmp: svg.querySelector('.l-tmp') };
+    this.bindEvents();
+    this.applyView();
+  }
+
+  /* ---------- Projekt ---------- */
+  load(data) {
+    this.project.components = (data.components || []).filter(c => COMPONENTS[c.type]).map(c => makeComp(c.type, c.x, c.y, c.rot, c.props, c.id));
+    this.project.wires = (data.wires || []).map(w => ({ id: w.id, a: w.a, b: w.b, pts: w.pts || [], color: w.color || 'gruen' }));
+    const ids = [...this.project.components, ...this.project.wires].map(o => parseInt(String(o.id).slice(1), 10) || 0);
+    this.nextId = Math.max(0, ...ids) + 1;
+    this.sel = null; this.wiring = null; this.states = {}; this.stateCache = {};
+    this.renderAll();
+  }
+  toJSON() {
+    return {
+      components: this.project.components.map(({ id, type, x, y, rot, props }) => ({ id, type, x, y, rot, props })),
+      wires: this.project.wires.map(w => ({ id: w.id, a: w.a, b: w.b, pts: w.pts, color: w.color })),
+    };
+  }
+  newId(p) { return p + (this.nextId++); }
+  comp(id) { return this.project.components.find(c => c.id === id); }
+
+  addComponent(type, x, y, props) {
+    const def = COMPONENTS[type];
+    const [x0, y0, x1, y1] = def.bbox;
+    const cx = Math.round((x - (x0 + x1) / 2) / 10) * 10;
+    const cy = Math.round((y - (y0 + y1) / 2) / 10) * 10;
+    this.app.pushUndo();
+    const c = makeComp(type, cx, cy, 0, props, this.newId('c'));
+    const others = this.project.components.filter(o => o.def.mcu);
+    this.project.components.push(c);
+    this.renderAll();
+    this.select({ kind: 'comp', id: c.id });
+    this.app.changed();
+    if (def.mcu) this.app.onMcuAdded(def.mcu.kind, others.length > 0);
+    return c;
+  }
+
+  addTemplate(x, y, withLcd) {
+    this.app.pushUndo();
+    const bx = Math.round((x - 165) / 10) * 10, by = Math.round((y - (withLcd ? 180 : 230)) / 10) * 10;
+    const bb = makeComp('breadboard', bx, by, 0, {}, this.newId('c'));
+    const esp = BOARD === 'esp32';
+    const uno = esp ? makeComp('esp32exp', bx + 80, by + 320, 0, {}, this.newId('c')) : makeComp('uno', bx + 10, by + 260, 0, {}, this.newId('c'));
+    this.project.components.push(bb, uno);
+    const w = (a, b, color, pts) => this.project.wires.push({ id: this.newId('w'), a, b, color, pts: pts || [] });
+    if (esp) {
+      // Stromleiste des Expansion Boards: 3,3 V und GND auf die Steckplatine
+      w({ c: uno.id, p: 'P3V3a' }, { c: bb.id, p: 'bp-1' }, 'rot', [[uno.x + 270, uno.y + 10], [uno.x + 270, by + 225], [bx - 20, by + 225], [bx - 20, by + 190]]);
+      w({ c: uno.id, p: 'PGa' }, { c: bb.id, p: 'bm-2' }, 'schwarz', [[uno.x + 280, uno.y + 70], [uno.x + 280, by + 235], [bx - 30, by + 235], [bx - 30, by + 180]]);
+    } else {
+      w({ c: uno.id, p: '5V' }, { c: bb.id, p: 'bp-1' }, 'rot', [[uno.x + 160, uno.y + 230], [bx - 20, uno.y + 230], [bx - 20, by + 190]]);
+      w({ c: uno.id, p: 'GND_1' }, { c: bb.id, p: 'bm-2' }, 'schwarz', [[uno.x + 170, uno.y + 240], [bx - 30, uno.y + 240], [bx - 30, by + 180]]);
+    }
+    w({ c: bb.id, p: 'bp-29' }, { c: bb.id, p: 'tp-29' }, 'rot', [[bx + 350, by + 190], [bx + 350, by + 20]]);
+    w({ c: bb.id, p: 'bm-28' }, { c: bb.id, p: 'tm-28' }, 'schwarz', [[bx + 340, by + 180], [bx + 340, by + 10]]);
+    if (withLcd) {
+      const lcd = makeComp('lcd', bx + 100, by - 110, 0, {}, this.newId('c'));
+      this.project.components.push(lcd);
+      w({ c: lcd.id, p: 'GND' }, { c: bb.id, p: 'tm-2' }, 'schwarz', [[bx + 30, by - 110]]);
+      if (esp) w({ c: lcd.id, p: 'VCC' }, { c: uno.id, p: 'P5Va' }, 'rot', [[bx - 45, by - 100], [bx - 45, by + 245], [uno.x + 290, by + 245], [uno.x + 290, uno.y + 40]]); // LCD braucht 5 V
+      else w({ c: lcd.id, p: 'VCC' }, { c: bb.id, p: 'tp-3' }, 'rot', [[bx + 40, by - 100]]);
+    }
+    this.renderAll();
+    this.app.changed();
+  }
+
+  deleteSelection() {
+    if (!this.sel) return;
+    this.app.pushUndo();
+    if (this.sel.kind === 'comp') {
+      const id = this.sel.id;
+      this.project.components = this.project.components.filter(c => c.id !== id);
+      this.project.wires = this.project.wires.filter(w => w.a.c !== id && w.b.c !== id);
+    } else {
+      this.project.wires = this.project.wires.filter(w => w.id !== this.sel.id);
+    }
+    this.select(null);
+    this.renderAll();
+    this.app.changed();
+  }
+
+  rotateSelection() {
+    if (!this.sel || this.sel.kind !== 'comp') return;
+    const c = this.comp(this.sel.id);
+    if (!c || c.def.fixed) { this.app.toast('Arduino und Steckplatine lassen sich nicht drehen.'); return; }
+    this.app.pushUndo();
+    c.rot = ((c.rot || 0) + 90) % 360;
+    this.renderAll();
+    this.app.changed();
+  }
+
+  setProp(id, key, value, live) {
+    const c = this.comp(id);
+    if (!c) return;
+    if (!live) this.app.pushUndo();
+    c.props[key] = value;
+    this.renderComp(c);
+    if (!live) this.app.changed(); else this.app.changedSilently();
+  }
+
+  setWireColor(id, color) {
+    const w = this.project.wires.find(x => x.id === id);
+    if (!w) return;
+    this.app.pushUndo();
+    w.color = color;
+    this.renderWires();
+    this.app.changed();
+  }
+
+  select(sel) {
+    this.sel = sel;
+    this.renderSelection();
+    this.renderWires();
+    this.app.onSelect(sel);
+  }
+
+  /* ---------- Darstellung ---------- */
+  applyView() {
+    this.world.setAttribute('transform', `translate(${this.view.x} ${this.view.y}) scale(${this.view.k})`);
+  }
+
+  renderAll() {
+    this.L.bb.innerHTML = '';
+    this.L.comp.innerHTML = '';
+    for (const c of this.project.components) {
+      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      g.setAttribute('class', 'comp comp-' + c.type);
+      g.dataset.id = c.id;
+      (c.def.isBreadboard ? this.L.bb : this.L.comp).appendChild(g);
+      this.renderComp(c, g);
+    }
+    // Arduino nach unten, damit Kleinteile darüber liegen
+    for (const g of [...this.L.comp.querySelectorAll('.comp-uno')]) this.L.comp.prepend(g);
+    this.renderWires();
+    this.renderSelection();
+    this.markInsertions();
+  }
+
+  renderComp(c, g) {
+    g = g || this.svg.querySelector(`.comp[data-id="${c.id}"]`);
+    if (!g) return;
+    g.setAttribute('transform', `translate(${c.x} ${c.y}) rotate(${c.rot || 0})`);
+    g.innerHTML = c.def.render(c, this.states[c.id] || null);
+  }
+
+  renderStates(states) {
+    this.states = states;
+    for (const c of this.project.components) {
+      const key = JSON.stringify(states[c.id] || null) + JSON.stringify(c.props);
+      if (this.stateCache[c.id] !== key) { this.stateCache[c.id] = key; this.renderComp(c); }
+    }
+  }
+  clearStates() { this.states = {}; this.stateCache = {}; for (const c of this.project.components) this.renderComp(c); this.markInsertions(); }
+
+  pinPos(ref) {
+    const c = this.comp(ref.c);
+    if (!c) return null;
+    const p = c.def.pins.find(pp => pp.id === ref.p);
+    return p ? worldPin(c, p) : null;
+  }
+
+  wirePath(points) { return points.map((p, i) => (i ? 'L' : 'M') + p[0] + ' ' + p[1]).join(' '); }
+
+  renderWires() {
+    let s = '';
+    for (const w of this.project.wires) {
+      const a = this.pinPos(w.a), b = this.pinPos(w.b);
+      if (!a || !b) continue;
+      const pts = [a, ...w.pts, b];
+      const d = this.wirePath(pts);
+      const sel = this.sel && this.sel.kind === 'wire' && this.sel.id === w.id;
+      const col = WIRE_COLORS[w.color] || WIRE_COLORS.gruen;
+      s += `<g class="wire${sel ? ' selected' : ''}" data-id="${w.id}">`;
+      if (sel) s += `<path d="${d}" class="wire-sel"/>`;
+      s += `<path d="${d}" class="wire-hit"/><path d="${d}" class="wire-line" stroke="${col}"/>`;
+      if (w.color === 'weiss') s += `<path d="${d}" class="wire-edge"/>`;
+      s += `<circle cx="${a[0]}" cy="${a[1]}" r="2.6" fill="${col}" class="wire-end"/><circle cx="${b[0]}" cy="${b[1]}" r="2.6" fill="${col}" class="wire-end"/>`;
+      if (sel) w.pts.forEach((p, i) => { s += `<circle cx="${p[0]}" cy="${p[1]}" r="3.5" class="wire-knot" data-knot="${i}"/>`; });
+      s += '</g>';
+    }
+    this.L.wire.innerHTML = s;
+  }
+
+  renderSelection() {
+    this.L.sel.innerHTML = '';
+    if (!this.sel || this.sel.kind !== 'comp') return;
+    const c = this.comp(this.sel.id);
+    if (!c) return;
+    const [x0, y0, x1, y1] = c.def.bbox;
+    this.L.sel.innerHTML = `<g transform="translate(${c.x} ${c.y}) rotate(${c.rot || 0})"><rect x="${x0 - 5}" y="${y0 - 5}" width="${x1 - x0 + 10}" height="${y1 - y0 + 10}" class="selbox" rx="4"/></g>`;
+  }
+
+  /* Löcher, in denen ein Bein steckt, grün markieren (wie in Tinkercad) */
+  markInsertions() {
+    this.svg.querySelectorAll('.hole.used, .pin.in').forEach(h => h.classList.remove('used', 'in'));
+    const ins = computeInsertions(this.project);
+    for (const [k, h] of ins) {
+      const [cid, pid] = k.split(':');
+      const legEl = this.svg.querySelector(`.comp[data-id="${cid}"] .pin[data-pin="${pid}"]`);
+      if (legEl) legEl.classList.add('in');
+      const el = this.svg.querySelector(`.comp[data-id="${h.comp.id}"] .hole[data-pin="${h.pin.id}"]`);
+      if (el) el.classList.add('used');
+    }
+  }
+
+  /* ---------- Eingaben ---------- */
+  pt(evt) {
+    const m = this.world.getScreenCTM().inverse();
+    const p = new DOMPoint(evt.clientX, evt.clientY).matrixTransform(m);
+    return [p.x, p.y];
+  }
+
+  pinRef(el) {
+    const g = el.closest('.comp');
+    return g ? { c: g.dataset.id, p: el.dataset.pin } : null;
+  }
+
+  bindEvents() {
+    const svg = this.svg;
+    svg.addEventListener('contextmenu', e => { e.preventDefault(); if (this.wiring) this.cancelWire(); });
+    svg.addEventListener('pointerdown', e => this.onDown(e));
+    svg.addEventListener('pointermove', e => this.onMove(e));
+    svg.addEventListener('pointerup', e => this.onUp(e));
+    svg.addEventListener('pointerleave', () => { if (this.hoverGroup) this.hl(null); });
+    svg.addEventListener('wheel', e => {
+      e.preventDefault();
+      const r = svg.getBoundingClientRect();
+      const mx = e.clientX - r.left, my = e.clientY - r.top;
+      const f = Math.exp(-e.deltaY * 0.0015);
+      const k = Math.max(0.3, Math.min(5, this.view.k * f));
+      this.view.x = mx - (mx - this.view.x) * (k / this.view.k);
+      this.view.y = my - (my - this.view.y) * (k / this.view.k);
+      this.view.k = k;
+      this.applyView();
+    }, { passive: false });
+    svg.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+    svg.addEventListener('drop', e => {
+      e.preventDefault();
+      const type = e.dataTransfer.getData('text/plain');
+      if (this.app.sim.running) { this.app.toast('Stoppe zuerst die Simulation.'); return; }
+      const [x, y] = this.pt(e);
+      if (type === 'template' || type === 'template-lcd') this.addTemplate(x, y, type === 'template-lcd');
+      else if (COMPONENTS[type]) this.addComponent(type, x, y);
+    });
+    svg.addEventListener('pointerover', e => {
+      const h = e.target.closest && e.target.closest('.hole');
+      if (h && !this.drag) this.hl(h); else if (this.hoverGroup && !h) this.hl(null);
+    });
+  }
+
+  hl(holeEl) {
+    this.svg.querySelectorAll('.hole.grp').forEach(x => x.classList.remove('grp'));
+    this.hoverGroup = null;
+    if (!holeEl) return;
+    const g = holeEl.closest('.comp');
+    const grp = bbGroup(holeEl.dataset.pin);
+    this.hoverGroup = grp;
+    g.querySelectorAll('.hole').forEach(x => { if (bbGroup(x.dataset.pin) === grp) x.classList.add('grp'); });
+  }
+
+  onDown(e) {
+    if (e.button === 1 || (e.button === 0 && e.altKey)) { this.startPan(e); return; }
+    if (e.button !== 0) return;
+    const t = e.target;
+    const sim = this.app.sim.running;
+    this.app.focusArea = 'circuit';
+    const pinEl = t.closest('.pin');
+    const knot = t.closest('.wire-knot');
+    const wireEl = t.closest('.wire');
+    const compEl = t.closest('.comp');
+
+    if (sim) {
+      if (compEl) {
+        const c = this.comp(compEl.dataset.id);
+        const keyEl = t.closest('.key');
+        if (c && keyEl && /^keypad/.test(c.type)) { this.pressedKey = c.id; this.app.sim.pressKey(c.id, keyEl.dataset.key); svg_capture(this.svg, e); return; }
+        if (c && c.def.pressable) { this.pressedBtn = c.id; this.app.sim.pressButton(c.id, true); svg_capture(this.svg, e); return; }
+        if (c) this.select({ kind: 'comp', id: c.id });
+      }
+      this.startPan(e);
+      return;
+    }
+
+    if (this.wiring) {
+      if (pinEl) { this.finishWire(this.pinRef(pinEl)); return; }
+      const [x, y] = this.pt(e);
+      this.wiring.pts.push([Math.round(x / 5) * 5, Math.round(y / 5) * 5]);
+      this.drawTemp(e);
+      return;
+    }
+    if (knot) {
+      const w = this.project.wires.find(x => x.id === wireEl.dataset.id);
+      this.app.pushUndo();
+      this.drag = { kind: 'knot', w, i: +knot.dataset.knot, moved: false };
+      svg_capture(this.svg, e);
+      return;
+    }
+    if (pinEl && !(pinEl.classList.contains('leg') && e.shiftKey)) {
+      const ref = this.pinRef(pinEl);
+      this.select(null);
+      this.wiring = { start: ref, pts: [] };
+      this.drawTemp(e);
+      return;
+    }
+    if (wireEl) { this.select({ kind: 'wire', id: wireEl.dataset.id }); return; }
+    if (compEl) {
+      const c = this.comp(compEl.dataset.id);
+      this.select({ kind: 'comp', id: c.id });
+      const [x, y] = this.pt(e);
+      let carry = [];
+      if (c.def.isBreadboard) {
+        const ins = computeInsertions(this.project);
+        const set = new Set();
+        for (const [k, h] of ins) if (h.comp.id === c.id) set.add(k.split(':')[0]);
+        carry = this.project.components.filter(o => set.has(o.id)).map(o => ({ o, x: o.x, y: o.y }));
+      }
+      this.drag = { kind: 'comp', c, sx: x, sy: y, ox: c.x, oy: c.y, carry, moved: false, snap: JSON.stringify(this.app.snapshotData()) };
+      svg_capture(this.svg, e);
+      return;
+    }
+    this.select(null);
+    this.startPan(e);
+  }
+
+  startPan(e) {
+    this.drag = { kind: 'pan', sx: e.clientX, sy: e.clientY, vx: this.view.x, vy: this.view.y };
+    svg_capture(this.svg, e);
+    this.svg.classList.add('panning');
+  }
+
+  onMove(e) {
+    if (this.wiring) { this.drawTemp(e); }
+    const d = this.drag;
+    if (!d) return;
+    if (d.kind === 'pan') {
+      this.view.x = d.vx + (e.clientX - d.sx);
+      this.view.y = d.vy + (e.clientY - d.sy);
+      this.applyView();
+    } else if (d.kind === 'comp') {
+      const [x, y] = this.pt(e);
+      const nx = Math.round((d.ox + x - d.sx) / 10) * 10, ny = Math.round((d.oy + y - d.sy) / 10) * 10;
+      if (nx !== d.c.x || ny !== d.c.y) {
+        const dx = nx - d.ox, dy = ny - d.oy;
+        d.c.x = nx; d.c.y = ny; d.moved = true;
+        for (const k of d.carry) { k.o.x = k.x + dx; k.o.y = k.y + dy; this.renderComp(k.o); }
+        this.renderComp(d.c);
+        this.renderWires();
+        this.renderSelection();
+      }
+    } else if (d.kind === 'knot') {
+      const [x, y] = this.pt(e);
+      d.w.pts[d.i] = [Math.round(x / 5) * 5, Math.round(y / 5) * 5];
+      d.moved = true;
+      this.renderWires();
+    }
+  }
+
+  onUp() {
+    if (this.pressedBtn) { this.app.sim.pressButton(this.pressedBtn, false); this.pressedBtn = null; }
+    if (this.pressedKey) { this.app.sim.pressKey(this.pressedKey, null); this.pressedKey = null; }
+    const d = this.drag;
+    this.drag = null;
+    this.svg.classList.remove('panning');
+    if (!d) return;
+    if (d.kind === 'comp' && d.moved) {
+      this.app.pushUndoRaw(d.snap);
+      this.markInsertions();
+      this.app.changed();
+    }
+    if (d.kind === 'knot' && d.moved) this.app.changed();
+  }
+
+  drawTemp(e) {
+    if (!this.wiring) { this.L.tmp.innerHTML = ''; return; }
+    const a = this.pinPos(this.wiring.start);
+    const [x, y] = this.pt(e);
+    const pts = [a, ...this.wiring.pts, [x, y]];
+    this.L.tmp.innerHTML = `<path d="${this.wirePath(pts)}" class="wire-temp"/>`;
+  }
+
+  finishWire(ref) {
+    const s = this.wiring.start;
+    if (ref.c === s.c && ref.p === s.p) { this.cancelWire(); return; }
+    this.app.pushUndo();
+    const w = { id: this.newId('w'), a: s, b: ref, pts: this.wiring.pts, color: this.app.defaultWireColor(s, ref) };
+    this.project.wires.push(w);
+    this.wiring = null;
+    this.L.tmp.innerHTML = '';
+    this.select({ kind: 'wire', id: w.id });
+    this.app.changed();
+  }
+
+  cancelWire() { this.wiring = null; this.L.tmp.innerHTML = ''; }
+
+  fitView() {
+    if (!this.project.components.length) { this.view = { x: 40, y: 40, k: 1.6 }; this.applyView(); return; }
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const c of this.project.components) {
+      const [a, b, cc, d] = c.def.bbox;
+      for (const [px, py] of [[a, b], [cc, d], [a, d], [cc, b]]) {
+        const [rx, ry] = rotPoint(px, py, c.rot || 0);
+        x0 = Math.min(x0, c.x + rx); y0 = Math.min(y0, c.y + ry); x1 = Math.max(x1, c.x + rx); y1 = Math.max(y1, c.y + ry);
+      }
+    }
+    for (const w of this.project.wires) for (const p of w.pts) { x0 = Math.min(x0, p[0]); y0 = Math.min(y0, p[1]); x1 = Math.max(x1, p[0]); y1 = Math.max(y1, p[1]); }
+    const r = this.svg.getBoundingClientRect();
+    const pad = 40;
+    const k = Math.max(0.3, Math.min(3, Math.min((r.width - 2 * pad) / (x1 - x0), (r.height - 2 * pad) / (y1 - y0))));
+    this.view = { k, x: (r.width - (x1 - x0) * k) / 2 - x0 * k, y: (r.height - (y1 - y0) * k) / 2 - y0 * k };
+    this.applyView();
+  }
+}
+
+function svg_capture(svg, e) { try { svg.setPointerCapture(e.pointerId); } catch (err) { /* egal */ } }

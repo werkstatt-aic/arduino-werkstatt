@@ -1,0 +1,17 @@
+from playwright.sync_api import sync_playwright
+exec(open('u2.py').read().split("SETUP = ")[0].split("import json")[1])
+with sync_playwright() as p:
+    b = p.chromium.launch(); pg = b.new_page(viewport={'width':1400,'height':900})
+    errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
+    pg.goto('http://127.0.0.1:8642/'); pg.wait_for_timeout(900); pg.evaluate(H)
+    def parts(): return pg.evaluate("()=>[...document.querySelectorAll('.part')].filter(p=>p.style.display!=='none' && p.dataset.mcu).map(p=>p.dataset.type)")
+    print('Leiste Uno:', parts())
+    pg.select_option('#boardSel','esp32'); pg.wait_for_timeout(300); print('Leiste ESP32:', parts())
+    pg.evaluate("()=>{ App.setExtensions(['oled','multimeter']); T.blocks('<block type=\"ard_setup\" x=\"20\" y=\"20\"><statement name=\"DO\"><block type=\"ard_lcd_init\"><next><block type=\"oled_init\"><next><block type=\"init_voltmeter_i2c\"><next><block type=\"init_ina219_i2c\"></block></next></block></next></block></next></block></statement></block>'); }")
+    pg.click('#modeCode'); pg.wait_for_timeout(500); pg.screenshot(path='e6.png')
+    print('ESP32 Texte:', pg.evaluate("()=>App.workspace.getAllBlocks().filter(b=>b.getInput('I2C')).map(b=>b.getInput('I2C').fieldRow[0].getText())"))
+    pg.select_option('#boardSel','uno'); pg.wait_for_timeout(400)
+    print('Uno Texte:', pg.evaluate("()=>App.workspace.getAllBlocks().filter(b=>b.getInput('I2C')).map(b=>b.getInput('I2C').fieldRow[0].getText())"))
+    print('Uno Pins:', pg.evaluate("()=>PIN.out().map(o=>o[0]).join(' ') + ' | ' + PIN.ana().map(o=>o[0]).join(' ')"))
+    pg.evaluate("()=>App.setBoard('esp32')"); print('ESP32 Pins aus:', pg.evaluate("()=>PIN.out().map(o=>o[0]).join(' ')")); print('ESP32 Pins ein:', pg.evaluate("()=>PIN.inp().map(o=>o[0]).join(' ')")); print('ESP32 analog:', pg.evaluate("()=>PIN.ana().map(o=>o[0]).join(' ')"))
+    print(errs or 'no errors'); b.close()

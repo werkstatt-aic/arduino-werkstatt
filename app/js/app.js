@@ -1,0 +1,777 @@
+/* Zusammenspiel der Oberfläche: Modi, Speichern, Eigenschaften, Meldungen */
+'use strict';
+
+const $ = s => document.querySelector(s);
+const FORMAT = 'arduino-werkstatt';
+
+const App = {
+  focusArea: 'circuit',
+  undoStack: [],
+  redoStack: [],
+  launcher: false,
+  extensions: [],
+  codeView: 'blocks',
+  fileName: null,
+
+  async init() {
+    defineBlocks();
+    setupSimGenerator();
+    this.sim = new Simulator(this);
+    this.circuit = new CircuitEditor($('#circuit'), this);
+    this.project = this.circuit.project;
+    this.workspace = Blockly.inject('blockly', {
+      toolbox: buildToolbox([]), renderer: 'werkstatt', media: 'lib/blockly/media/',
+      zoom: { controls: true, wheel: true, startScale: 0.7, maxScale: 2, minScale: 0.3 },
+      trashcan: true, move: { scrollbars: true, drag: true, wheel: false },
+      grid: { spacing: 24, length: 2, colour: '#e3e5e2', snap: false },
+    });
+    this.workspace.addChangeListener(Blockly.Events.disableOrphans);
+    this.workspace.addChangeListener(e => {
+      if (e.type === Blockly.Events.BLOCK_CREATE && !this.loading) (e.ids || []).forEach(id => { const b = this.workspace.getBlockById(id); if (b && /^kp_init/.test(b.type) && b.getFieldValue('R0') === '0') initKeypadDefaults(b); });
+    });
+    this.workspace.addChangeListener(e => this.onBlocksChanged(e));
+    $('#blockly').addEventListener('pointerdown', () => { this.focusArea = 'code'; }, true);
+
+    this.buildPartList();
+    this.bindUi();
+    this.launcher = await this.ping();
+    await this.loadInitial();
+    if (this.launcher) setInterval(() => this.ping(), 5000);
+  },
+
+  /* ---------- Starthilfe vom Stick ---------- */
+  async ping() {
+    if (location.protocol === 'file:') return false;
+    try { const r = await fetch('api/ping', { cache: 'no-store' }); return r.ok; } catch (e) { return false; }
+  },
+  async api(path, opts) {
+    const r = await fetch('api/' + path, opts);
+    if (!r.ok) throw new Error(await r.text());
+    return r;
+  },
+
+  /* Startbildschirm: neues Projekt, zuletzt bearbeitet, anderes öffnen, ggf. Notfall-Rettung */
+  async loadInitial() {
+    this.loadProject(this.blankProject());
+    let list = [], last = '';
+    if (this.launcher) {
+      try { list = await (await this.api('list')).json(); } catch (e) { list = []; }
+      this.projectFiles = new Set(list.map(p => p.file));
+      try { last = (await (await this.api('last')).text()).trim(); } catch (e) { last = ''; }
+    }
+    let rescue = null;
+    try { rescue = JSON.parse(localStorage.getItem('werkstatt.current') || 'null'); } catch (e) { rescue = null; }
+    if (rescue && (!rescue.circuit || (!rescue.circuit.components.length && !/<block type="(?!ard_setup|ard_loop)/.test(rescue.blocks || '')))) rescue = null;
+    if (rescue && this.launcher && list.some(p => p.file === this.fileFor(rescue.name || ''))) rescue = null;
+    this.startScreen(list, last, rescue);
+  },
+
+  /* Projektname muss „Nr – Thema – Nachname“ enthalten */
+  checkName(v) {
+    const parts = String(v).trim().replace(/^(\d+)\s*[-–—]\s*/, '$1 – ').split(/\s+[-–—]\s+/);
+    if (parts.length < 3 || !/^\d{1,2}$/.test(parts[0])) return null;
+    const rest = parts.slice(2).join(' – ');
+    if (!/\p{L}/u.test(parts[1]) || !/\p{L}/u.test(rest)) return null;
+    return `${parts[0].padStart(2, '0')} – ${parts[1]} – ${rest}`;
+  },
+  /* Eingabe für neue Projekte: Tisch-Nr., Nachname, Projektname → „11 – Müller – Ampelschaltung“ */
+  nameFields(pre) {
+    pre = pre || {};
+    let last = {};
+    try { last = JSON.parse(localStorage.getItem('werkstatt.schueler') || '{}'); } catch (e) { last = {}; }
+    const tisch = pre.tisch || last.tisch || '', nach = pre.nach != null ? pre.nach : (last.nach || '');
+    const opts = '<option value="">–</option>' + Array.from({ length: 19 }, (_, i) => String(i + 1).padStart(2, '0')).map(n => `<option ${n === tisch ? 'selected' : ''}>${n}</option>`).join('');
+    return `<div class="name3">
+        <label>Tisch-Nr.<select name="tisch">${opts}</select></label>
+        <label>Nachname<input type="text" name="nach" value="${esc(nach)}" spellcheck="false" autocomplete="off"></label>
+        <label class="wide">Projekt<input type="text" name="proj" value="${esc(pre.proj || '')}" spellcheck="false" autocomplete="off" placeholder="z. B. Ampelschaltung"></label>
+        <input type="hidden" name="n">
+      </div>`;
+  },
+  guardNameFields(form) {
+    const box = form.querySelector('.name3');
+    const err = document.createElement('div');
+    err.className = 'field-err'; err.hidden = true;
+    box.insertAdjacentElement('afterend', err);
+    const els = ['tisch', 'nach', 'proj'].map(n => form.elements[n]);
+    els.forEach(el => el.addEventListener('input', () => { err.hidden = true; el.classList.remove('bad'); }));
+    // Enter in einem Feld = Anlegen/Speichern (nicht „Abbrechen“)
+    form.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.closest('.name3')) { e.preventDefault(); const b = form.querySelector('button.primary[value]'); if (b) b.click(); } });
+    const first = els.find(el => !el.value) || els[2];
+    setTimeout(() => first.focus(), 0);
+    form.addEventListener('submit', e => {
+      const sub = e.submitter && e.submitter.value;
+      if (sub === 'cancel' || !e.submitter || !/^(new|ok)$/.test(sub)) return;
+      const clean = s => s.trim().replace(/\s+/g, ' ').replace(/\s+[-–—]\s+/g, ' ');
+      const [t, n, p] = [els[0].value, clean(els[1].value), clean(els[2].value)];
+      const bad = (el, msg) => { e.preventDefault(); err.textContent = msg; err.hidden = false; el.classList.add('bad'); el.focus(); };
+      if (!t) return bad(els[0], 'Wähle deine Tisch-Nummer.');
+      if (!/\p{L}/u.test(n)) return bad(els[1], 'Gib deinen Nachnamen ein.');
+      if (!/\p{L}/u.test(p)) return bad(els[2], 'Gib deinem Projekt einen Namen, z. B. Ampelschaltung.');
+      const name = `${t} – ${n} – ${p}`;
+      if (this.nameTaken(name, true)) return bad(els[2], `Das Projekt „${name}“ gibt es schon. Wähle einen anderen Projektnamen oder öffne das vorhandene Projekt.`);
+      form.elements.n.value = name;
+      try { localStorage.setItem('werkstatt.schueler', JSON.stringify({ tisch: t, nach: n })); } catch (er) { /* ohne Speicher */ }
+    });
+  },
+  nameParts(name) {
+    const m = this.checkName(name || '');
+    if (!m) return {};
+    const p = m.split(' – ');
+    return { tisch: p[0], nach: p[1], proj: p.slice(2).join(' – ') };
+  },
+  /* Gibt es schon ein (anderes) Projekt mit diesem Namen? Dann würde es überschrieben. */
+  nameTaken(name, strict) {
+    if (!this.launcher || !this.projectFiles) return false;
+    const f = this.fileFor(name);
+    return this.projectFiles.has(f) && (strict || f !== this.fileName);
+  },
+  async refreshFiles() {
+    if (!this.launcher) return;
+    try { this.projectFiles = new Set((await (await this.api('list')).json()).map(p => p.file)); } catch (e) { /* bleibt */ }
+  },
+  startScreen(list, last, rescue) {
+    const fmt = d => new Date(d).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' });
+    const name = f => esc(f.replace(/\.awp$/, ''));
+    const lastItem = list.find(p => p.file === last) || list[0];
+    const recent = list.filter(p => p !== lastItem).slice(0, 5);
+    let h = `<h2>Willkommen in der Arduino-Werkstatt</h2>
+      <div class="start-new">
+        <div class="start-sec">Neues Projekt</div>
+        ${this.nameFields()}
+        <div class="start-go"><button class="btn primary" value="new">Neues Projekt anlegen</button></div>
+      </div>`;
+    if (lastItem) h += `<div class="start-sec">Zuletzt bearbeitet</div><button class="start-item main" type="button" data-file="${esc(lastItem.file)}"><span>${name(lastItem.file)}</span><span class="d">${fmt(lastItem.modified)}</span></button>`;
+    if (recent.length) h += `<div class="start-sec">Weitere Projekte</div>` + recent.map(p => `<button class="start-item" type="button" data-file="${esc(p.file)}"><span>${name(p.file)}</span><span class="d">${fmt(p.modified)}</span></button>`).join('');
+    h += `<div class="start-links"><button class="btn ghost small" type="button" data-act="open">${this.launcher ? 'Anderes Projekt öffnen …' : 'Projektdatei öffnen …'}</button><button class="btn ghost small" type="button" data-act="examples">Beispiel öffnen …</button>`;
+    if (rescue) h += `<button class="btn ghost small" type="button" data-act="rescue" title="Sicherheitskopie aus diesem Browser">Entwurf wiederherstellen: ${esc(rescue.name || 'ohne Namen')}</button>`;
+    h += `</div>`;
+    const d = $('#dlg');
+    d.classList.add('start');
+    this.dialog(h, (rv, f) => {
+      d.classList.remove('start');
+      d.oncancel = null;
+      if (rv === 'new' && f.n.value) { this.loadProject(this.blankProject(f.n.value)); this.fileName = null; this.save(); }
+    });
+    const f = $('#dlgForm');
+    this.fileName = null;
+    this.guardNameFields(f);
+    d.oncancel = e => e.preventDefault(); // Startauswahl nicht mit Esc überspringen
+    f.addEventListener('click', async e => {
+      const it = e.target.closest('[data-file]');
+      const act = e.target.closest('[data-act]');
+      if (it) {
+        d.close('cancel');
+        try { const data = await (await this.api('load?file=' + encodeURIComponent(it.dataset.file))).json(); this.loadProject(data); this.fileName = it.dataset.file; }
+        catch (err) { this.toast('Öffnen fehlgeschlagen: ' + err.message); }
+      } else if (act && act.dataset.act === 'open') { d.close('cancel'); this.fileAction('open'); }
+      else if (act && act.dataset.act === 'examples') { d.close('cancel'); this.examplesDialog(); }
+      else if (act && act.dataset.act === 'rescue') { d.close('cancel'); this.loadProject(rescue); this.save(); this.toast('Entwurf wiederhergestellt und gespeichert.'); }
+    });
+  },
+
+  blankProject(name) {
+    return { format: FORMAT, version: 1, name: name || 'Neues Projekt', board: 'uno', circuit: { components: [], wires: [] }, blocks: DEFAULT_BLOCKS_XML };
+  },
+
+  loadProject(data) {
+    if (this.sim.running) this.stopSim();
+    this.loading = true;
+    $('#projName').value = data.name || 'Neues Projekt';
+    this.setBoard(data.board === 'esp32' ? 'esp32' : 'uno', true);
+    // Bluetooth-Übertragung: Standardname aus dem Nachnamen im Projektnamen, z. B. „ESP-Mueller“
+    const np = this.nameParts(data.name), tr = s => String(s || '').replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').replace(/Ä/g, 'Ae').replace(/Ö/g, 'Oe').replace(/Ü/g, 'Ue');
+    BT_OPT = Object.assign({ on: false, name: btName(np.tisch ? `ESP-${np.tisch}-${tr(np.nach)}` : 'ESP-Werkstatt') }, data.bt || {});
+    this.setExtensions(data.extensions || [], true);
+    this.circuit.select(null);
+    this.circuit.load(data.circuit || {});
+    Blockly.Events.disable();
+    try {
+      this.workspace.clear();
+      Blockly.Xml.domToWorkspace(Blockly.Xml.textToDom(data.blocks || DEFAULT_BLOCKS_XML), this.workspace);
+      this.workspace.getAllBlocks(false).forEach(b => { if (!b.getParent() && (b.previousConnection || b.outputConnection)) b.setEnabled(false); });
+    } catch (e) { console.error(e); this.toast('Die Blöcke konnten nicht geladen werden.'); }
+    Blockly.Events.enable();
+    this.workspace.clearUndo();
+    this.needCenter = true;
+    this.undoStack = []; this.redoStack = [];
+    this.loading = false;
+    this.updateEmpty();
+    this.updateCodeText();
+    this.resizeBlockly();
+    requestAnimationFrame(() => this.circuit.fitView());
+    this.setSaveState(this.launcher ? 'Gespeichert' : 'Gespeichert im Browser');
+  },
+
+  projectData() {
+    return {
+      format: FORMAT, version: 1, name: $('#projName').value.trim() || 'Neues Projekt', board: BOARD,
+      extensions: this.extensions.slice(), bt: Object.assign({}, BT_OPT), circuit: this.circuit.toJSON(), blocks: Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(this.workspace)), saved: new Date().toISOString(),
+    };
+  },
+  snapshotData() { return this.circuit.toJSON(); },
+
+  fileFor(name) {
+    return (name.replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim().slice(0, 80) || 'Projekt') + '.awp';
+  },
+
+  /* ---------- Speichern ---------- */
+  changed() { this.updateEmpty(); this.scheduleSave(); this.updateCodeText(); },
+  changedSilently() { this.scheduleSave(); if (this.sim.running) this.sim.update(); },
+  scheduleSave() {
+    if (this.loading) return;
+    this.setSaveState('Wird gespeichert …');
+    clearTimeout(this.saveTimer);
+    this.saveTimer = setTimeout(() => this.save(), 800);
+  },
+  async save() {
+    const data = this.projectData();
+    const json = JSON.stringify(data);
+    try { localStorage.setItem('werkstatt.current', json); } catch (e) { /* voll */ }
+    if (this.launcher) {
+      const file = this.fileFor(data.name);
+      try {
+        await this.api('save?file=' + encodeURIComponent(file), { method: 'POST', body: json });
+        this.fileName = file;
+        if (this.projectFiles) this.projectFiles.add(file);
+        this.setSaveState('Gespeichert');
+      } catch (e) {
+        this.setSaveState('Speichern fehlgeschlagen!');
+        this.toast('Speichern auf dem Stick fehlgeschlagen: ' + e.message);
+      }
+    } else this.setSaveState('Gespeichert im Browser');
+  },
+  async renameFile(newName) {
+    // Beim Umbenennen die Datei mit umbenennen, damit keine Doppel entstehen
+    const from = this.fileName, to = this.fileFor(newName);
+    if (!this.launcher || !from || from === to) return true;
+    try { await this.api(`rename?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, { method: 'POST' }); }
+    catch (e) { return false; }
+    this.projectFiles.delete(from); this.projectFiles.add(to); this.fileName = to;
+    return true;
+  },
+  setSaveState(t) { $('#saveState').textContent = t; },
+
+  /* ---------- Rückgängig ---------- */
+  pushUndo() { this.pushUndoRaw(JSON.stringify(this.snapshotData())); },
+  pushUndoRaw(snap) { this.undoStack.push(snap); if (this.undoStack.length > 80) this.undoStack.shift(); this.redoStack = []; },
+  undo() {
+    if (!this.undoStack.length) return;
+    this.redoStack.push(JSON.stringify(this.snapshotData()));
+    this.circuit.load(JSON.parse(this.undoStack.pop()));
+    this.onSelect(null);
+    this.changed();
+  },
+  redo() {
+    if (!this.redoStack.length) return;
+    this.undoStack.push(JSON.stringify(this.snapshotData()));
+    this.circuit.load(JSON.parse(this.redoStack.pop()));
+    this.onSelect(null);
+    this.changed();
+  },
+
+  /* ---------- Blöcke ---------- */
+  onBlocksChanged(e) {
+    if (this.loading || e.isUiEvent || e.type === Blockly.Events.UI) return;
+    const justMoved = e.type === Blockly.Events.BLOCK_MOVE && e.oldParentId === e.newParentId && e.oldInputName === e.newInputName;
+    const isComment = e.type === Blockly.Events.COMMENT_CREATE || e.type === Blockly.Events.COMMENT_CHANGE || e.type === Blockly.Events.COMMENT_MOVE;
+    if (this.sim.running && !justMoved && !isComment) {
+      this.stopSim();
+      this.toast('Simulation gestoppt, weil der Code geändert wurde.');
+    }
+    this.scheduleSave();
+    this.updateCodeText();
+  },
+  updateCodeText() {
+    if (this.codeView === 'blocks') return;
+    let code = '';
+    try { code = generateArduinoCode(this.workspace); } catch (e) { code = '// Fehler beim Erzeugen: ' + e.message; }
+    $('#textcode').innerHTML = highlightCpp(code);
+  },
+
+  /* ---------- Simulation ---------- */
+  toggleSim() { if (this.sim.running) this.stopSim(); else this.startSim(); },
+  startSim() {
+    const mcus = this.project.components.filter(c => c.def.mcu);
+    if (!mcus.length) { this.toast('Ziehe zuerst einen Mikrocontroller (Arduino Uno oder ESP32) auf die Werkbank.'); return; }
+    if (mcus.length > 1) { this.toast('Es kann nur ein Mikrocontroller simuliert werden. Entferne den anderen.'); return; }
+    if (mcus[0].def.mcu.kind !== BOARD) { this.toast(`Die Auswahl oben passt nicht zum Mikrocontroller in der Schaltung.`); return; }
+    if (this.circuit.wiring) this.circuit.cancelWire();
+    let code;
+    try { code = generateSimCode(this.workspace); } catch (e) { this.toast('Fehler im Programm: ' + e.message); return; }
+    document.body.classList.add('simulating');
+    const b = $('#simBtn'); b.classList.add('stop'); b.querySelector('.ico').textContent = '■'; b.querySelector('.lbl').textContent = 'Simulation stoppen';
+    this.sim.start(code);
+    if (!this.sim.messages.size) this.showMessages(this.sim.messages);
+    if (this.circuit.sel) this.onSelect(this.circuit.sel);
+  },
+  stopSim() {
+    this.sim.stop();
+    CommPanel.render(this.sim);
+    document.body.classList.remove('simulating');
+    const b = $('#simBtn'); b.classList.remove('stop'); b.querySelector('.ico').textContent = '▶'; b.querySelector('.lbl').textContent = 'Simulation starten';
+    this.circuit.clearStates();
+    if (this.circuit.sel) this.onSelect(this.circuit.sel);
+  },
+  onSimCrashed() { this.stopSim(); },
+
+  showMessages(map) {
+    const list = [...map.values()];
+    const order = { error: 0, warn: 1, info: 2 };
+    list.sort((a, b) => order[a.level] - order[b.level]);
+    const ul = $('#msgs');
+    if (!list.length) ul.innerHTML = `<li class="ok">${this.sim.running ? 'Keine Probleme gefunden.' : 'Starte die Simulation, um deine Schaltung und dein Programm zu prüfen.'}</li>`;
+    else ul.innerHTML = list.map(m => `<li class="${m.level}">${esc(m.text)}</li>`).join('');
+    const badge = $('#msgBadge');
+    const worst = list.length ? list[0].level : null;
+    badge.hidden = !list.length;
+    badge.textContent = list.length;
+    badge.className = 'badge' + (worst === 'warn' ? ' warn' : worst === 'info' ? ' info' : '');
+    if (worst === 'error' || worst === 'warn') { this.showBottom('msgs'); }
+  },
+  serialClear() { $('#serial').textContent = ''; this.serialLen = 0; },
+  serialWrite(t) {
+    const el = $('#serial');
+    el.textContent += t;
+    if (el.textContent.length > 20000) el.textContent = el.textContent.slice(-15000);
+    if (!$('#serialWrap').hidden) el.scrollTop = el.scrollHeight;
+    if (!this.serialShown) { this.serialShown = true; this.showBottom('serial'); }
+  },
+  showBottom(tab) {
+    $('#bottom').classList.remove('collapsed');
+    $('#tabMsgs').classList.toggle('on', tab === 'msgs');
+    $('#tabSerial').classList.toggle('on', tab === 'serial');
+    $('#tabComm').classList.toggle('on', tab === 'comm');
+    $('#msgs').hidden = tab !== 'msgs';
+    $('#serialWrap').hidden = tab !== 'serial';
+    $('#comm').hidden = tab !== 'comm';
+    $('#bottom').classList.toggle('tall', tab === 'comm');
+    this.resizeBlockly();
+  },
+
+  /* ---------- Bauteilleiste ---------- */
+  buildPartList() {
+    const cats = { Vorlagen: ['template', 'template-lcd'] };
+    for (const c of CATEGORY_ORDER) cats[c] = [];
+    for (const t in COMPONENTS) cats[COMPONENTS[t].category].push(t);
+    const WIDE = new Set();
+    const stack = (types, h) => `<div class="template-ico" style="flex-direction:column">${types.map(t => componentIcon(t, `height:${h}px;width:auto`)).join('')}</div>`;
+    let h = '';
+    for (const cat in cats) {
+      h += `<div class="part-cat" data-cat="${cat}">${cat}</div><div class="part-grid">`;
+      for (const t of cats[cat]) {
+        const mc = BOARD === 'esp32' ? 'esp32exp' : 'uno', mn = BOARD === 'esp32' ? 'ESP32' : 'Arduino';
+        if (t === 'template') h += `<div class="part" draggable="true" data-type="template" data-name="${mn.toLowerCase()} steckplatine vorlage">${stack(['breadboard', mc], 24)}<span>${mn} + Steckplatine</span></div>`;
+        else if (t === 'template-lcd') h += `<div class="part" draggable="true" data-type="template-lcd" data-name="${mn.toLowerCase()} steckplatine lcd display vorlage">${stack(['lcd', 'breadboard', mc], 16)}<span>${mn} + Steckplatine + LCD</span></div>`;
+        else h += `<div class="part${WIDE.has(t) ? ' wide' : ''}" draggable="true" data-type="${t}" data-ext="${COMPONENTS[t].ext || ''}" data-mcu="${COMPONENTS[t].mcu ? COMPONENTS[t].mcu.kind : ''}" data-name="${COMPONENTS[t].name.toLowerCase()}">${componentIcon(t)}<span>${esc(NBSP_NAMES(COMPONENTS[t].label || COMPONENTS[t].name))}</span></div>`;
+      }
+      h += '</div>';
+    }
+    $('#partList').innerHTML = h;
+    if (this.partsBuilt) { this.filterParts(); return; }
+    this.partsBuilt = true;
+    $('#partList').addEventListener('dragstart', e => {
+      const p = e.target.closest('.part'); if (!p) return;
+      e.dataTransfer.setData('text/plain', p.dataset.type); e.dataTransfer.effectAllowed = 'copy';
+    });
+    $('#partList').addEventListener('dblclick', e => {
+      const p = e.target.closest('.part'); if (!p) return;
+      if (this.sim.running) { this.toast('Stoppe zuerst die Simulation.'); return; }
+      const r = $('#circuit').getBoundingClientRect();
+      const [x, y] = this.circuit.pt({ clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 });
+      if (/^template/.test(p.dataset.type)) this.circuit.addTemplate(x, y, p.dataset.type === 'template-lcd'); else this.circuit.addComponent(p.dataset.type, x, y);
+    });
+    $('#partSearch').addEventListener('input', () => this.filterParts());
+  },
+
+  filterParts() {
+    const q = $('#partSearch').value.trim().toLowerCase();
+    document.querySelectorAll('.part').forEach(p => {
+      const ext = p.dataset.ext;
+      const mcu = p.dataset.mcu;
+      const ok = (!ext || this.extensions.includes(ext)) && (!mcu || mcu === BOARD) && (!q || p.dataset.name.includes(q));
+      p.style.display = ok ? '' : 'none';
+    });
+    document.querySelectorAll('.part-grid').forEach(g => {
+      const any = [...g.children].some(c => c.style.display !== 'none');
+      g.style.display = any ? '' : 'none'; g.previousElementSibling.style.display = any ? '' : 'none';
+    });
+  },
+
+  updateEmpty() { $('#emptyHint').hidden = this.project.components.length > 0; },
+
+  /* ---------- Eigenschaften ---------- */
+  onSelect(sel) {
+    const box = $('#props');
+    if (!sel) { box.hidden = true; return; }
+    const sim = this.sim.running;
+    let h = '';
+    if (sel.kind === 'wire') {
+      const w = this.project.wires.find(x => x.id === sel.id);
+      if (!w) { box.hidden = true; return; }
+      h += `<h3>Leitung</h3><label>Farbe</label><div class="swatches">`;
+      for (const k in WIRE_COLORS) h += `<button class="swatch${w.color === k ? ' on' : ''}" data-color="${k}" title="${WIRE_COLOR_NAMES[k]}" style="background:${WIRE_COLORS[k]}" ${sim ? 'disabled' : ''}></button>`;
+      h += `</div><div class="note">Schwarz für GND, Rot für 5V, alle anderen Leitungen in anderen Farben. Knickpunkte lassen sich verschieben.</div>`;
+      if (!sim) h += `<div class="btns"><button class="btn danger small" data-act="delete">Löschen (Entf)</button></div>`;
+    } else {
+      const c = this.circuit.comp(sel.id);
+      if (!c) { box.hidden = true; return; }
+      h += `<h3>${esc(c.def.name)}</h3>`;
+      const dis = sim ? 'disabled' : '';
+      const slider = (prop, label, min, max, unit, step) => `<label>${label}: <b data-out data-unit="${unit}">${String(c.props[prop]).replace('.', ',')} ${unit}</b></label><input type="range" min="${min}" max="${max}" step="${step || 1}" data-live="${prop}" value="${c.props[prop]}">`;
+      const pressNote = '<div class="note">In der Simulation mit der Maus gedrückt halten.</div>';
+      switch (c.type) {
+        case 'led':
+          h += `<label>Farbe</label><select data-prop="color" ${dis}>${Object.keys(LED_COLORS).map(k => `<option value="${k}" ${c.props.color === k ? 'selected' : ''}>${LED_COLOR_NAMES[k]}</option>`).join('')}</select>`;
+          break;
+        case 'resistor': {
+          const o = c.props.ohm; const unit = o >= 1e6 ? 1e6 : o >= 1e3 ? 1e3 : 1;
+          h += `<label>Widerstand</label><div class="row"><input type="number" min="0" step="any" data-ohm value="${+(o / unit).toFixed(3)}" ${dis}><select data-unit ${dis}><option value="1" ${unit === 1 ? 'selected' : ''}>Ω</option><option value="1000" ${unit === 1e3 ? 'selected' : ''}>kΩ</option><option value="1000000" ${unit === 1e6 ? 'selected' : ''}>MΩ</option></select></div>`;
+          break;
+        }
+        case 'ldr': h += slider('light', 'Helligkeit', 0, 100, '%'); break;
+        case 'ntc': case 'tmp36': h += slider('temp', 'Temperatur', -10, 60, '°C'); break;
+        case 'moisture': case 'soil': h += slider('wet', 'Feuchtigkeit', 0, 100, '%'); break;
+        case 'ultrasonic': h += slider('dist', 'Abstand', 2, 300, 'cm'); break;
+        case 'poti':
+          h += slider('position', 'Drehung', 0, 100, '%');
+          h += `<label>Gesamtwiderstand</label><select data-prop="ohm" ${dis}>${[1000, 10000, 100000].map(v => `<option value="${v}" ${c.props.ohm === v ? 'selected' : ''}>${formatOhm(v)}</option>`).join('')}</select>`;
+          break;
+        case 'source':
+          h += slider('volt', 'Spannung', 0, 12, 'V', 0.05);
+          h += `<label>Innenwiderstand</label><select data-prop="ri" ${dis}>${[1, 100, 1000, 10000].map(v => `<option value="${v}" ${Number(c.props.ri) === v ? 'selected' : ''}>${formatOhm(v)}</option>`).join('')}</select>`;
+          break;
+        case 'ina219':
+          h += `<label>Adresse</label><select data-prop="address" ${dis}>${[64, 65, 68, 69].map(v => `<option value="${v}" ${Number(c.props.address) === v ? 'selected' : ''}>0x${v.toString(16)}</option>`).join('')}</select>`;
+          break;
+        case 'esp32exp':
+          h += `<label>Jumper „JUMP“ (Spannung an den V-Pins)</label><select data-prop="jump" ${dis}><option value="3.3" ${String(c.props.jump) !== '5' ? 'selected' : ''}>3,3 V</option><option value="5" ${String(c.props.jump) === '5' ? 'selected' : ''}>5 V</option></select>`;
+          h += '<div class="note">Die USB-Buchsen am Board liefern nur Strom. Zum Hochladen das Kabel in die Buchse am ESP32 stecken.</div>';
+          h += '<div class="note">Zeige mit der Maus auf einen Anschluss, um seine Bezeichnung zu sehen.</div>';
+          break;
+        case 'esp32':
+          h += '<div class="note">Zeige mit der Maus auf einen Anschluss, um seine Bezeichnung zu sehen.</div>';
+          break;
+        case 'ads1115':
+          h += '<div class="note">Adresse über ADDR: an GND (oder offen) 0x48, an VDD 0x49, an SDA 0x4A, an SCL 0x4B.</div>';
+          break;
+        case 'button': case 'button2': case 'pushbutton': case 'touch': case 'pir': h += pressNote; break;
+        case 'keypad3': case 'keypad4': h += '<div class="note">In der Simulation die Tasten mit der Maus drücken.</div>'; break;
+      }
+      if (!sim) h += `<div class="btns">${!c.def.fixed ? '<button class="btn small" data-act="rotate">Drehen (R)</button>' : ''}<button class="btn danger small" data-act="delete">Löschen (Entf)</button></div>`;
+    }
+    box.innerHTML = h;
+    box.hidden = false;
+  },
+
+  bindProps() {
+    const box = $('#props');
+    box.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      const sel = this.circuit.sel; if (!sel) return;
+      if (b.dataset.color) { this.circuit.setWireColor(sel.id, b.dataset.color); this.onSelect(sel); }
+      if (b.dataset.act === 'delete') this.circuit.deleteSelection();
+      if (b.dataset.act === 'rotate') this.circuit.rotateSelection();
+    });
+    box.addEventListener('change', e => {
+      const sel = this.circuit.sel; if (!sel) return;
+      const t = e.target;
+      if (t.dataset.prop) {
+        const v = isNaN(Number(t.value)) ? t.value : Number(t.value);
+        this.circuit.setProp(sel.id, t.dataset.prop, v);
+      }
+      if (t.hasAttribute('data-ohm') || t.hasAttribute('data-unit')) {
+        const val = Number(box.querySelector('[data-ohm]').value) * Number(box.querySelector('[data-unit]').value);
+        if (val > 0) { this.circuit.setProp(sel.id, 'ohm', Math.round(val * 1000) / 1000); this.onSelect(sel); }
+      }
+    });
+    box.addEventListener('input', e => {
+      const sel = this.circuit.sel; if (!sel) return;
+      const t = e.target;
+      if (t.dataset.live) {
+        this.circuit.setProp(sel.id, t.dataset.live, Number(t.value), true);
+        const out = box.querySelector('[data-out]'); if (out) out.textContent = String(t.value).replace('.', ',') + ' ' + out.dataset.unit;
+      }
+    });
+  },
+
+  defaultWireColor(a, b) {
+    const nl = buildNetlist(this.project);
+    const uno = this.project.components.find(c => c.def.mcu);
+    const isRail = (r, k) => { const c = this.circuit.comp(r.c); return c && c.def.isBreadboard && new RegExp('^(t|b)' + k + '-').test(r.p); };
+    if (uno) {
+      const M = uno.def.mcu;
+      const g = nl.net(uno.id, M.gnd), v = nl.net(uno.id, M.v5), v3 = nl.net(uno.id, M.v33);
+      const na = nl.net(a.c, a.p), nb = nl.net(b.c, b.p);
+      if (na === g || nb === g) return 'schwarz';
+      if (na === v || nb === v || na === v3 || nb === v3) return 'rot';
+    }
+    if (isRail(a, 'm') || isRail(b, 'm')) return 'schwarz';
+    if (isRail(a, 'p') || isRail(b, 'p')) return 'rot';
+    return 'gruen';
+  },
+
+  /* ---------- Oberfläche ---------- */
+  setMode(m) {
+    $('#main').className = 'main mode-' + m;
+    $('#modeParts').classList.toggle('on', m === 'parts');
+    $('#modeCode').classList.toggle('on', m === 'code');
+    $('#main').classList.toggle('view-both', this.codeView === 'both');
+    this.needCenter = true;
+    this.resizeBlockly();
+    requestAnimationFrame(() => this.circuit.fitView());
+  },
+  setCodeView(v) {
+    this.codeView = v;
+    $('#codeBody').className = 'code-body view-' + v;
+    $('#main').classList.toggle('view-both', v === 'both');
+    ['Blocks', 'Both', 'Text'].forEach(k => $('#tab' + k).classList.toggle('on', k.toLowerCase() === v));
+    $('#copyCode').hidden = v === 'blocks';
+    this.needCenter = true;
+    this.updateCodeText();
+    this.resizeBlockly();
+  },
+
+  /* Mikrocontroller umschalten: Blöcke neu laden, damit die Anschluss-Listen passen */
+  setBoard(b, silent) {
+    const changed = b !== BOARD;
+    BOARD = b;
+    $('#boardSel').value = b;
+    if (!changed) return;
+    if (!silent && this.workspace) {
+      const xml = Blockly.Xml.workspaceToDom(this.workspace);
+      Blockly.Events.disable();
+      try { this.workspace.clear(); Blockly.Xml.domToWorkspace(xml, this.workspace); } finally { Blockly.Events.enable(); }
+      this.workspace.updateToolbox(buildToolbox(this.extensions));
+      this.updateCommTab();
+      this.buildPartList();
+      this.filterParts();
+      this.updateCodeText();
+      this.scheduleSave();
+      const mcu = this.project.components.find(c => c.def.mcu);
+      if (mcu && mcu.def.mcu.kind !== b) this.toast(`Achtung: In der Schaltung steckt noch ein ${mcu.def.mcu.kind === 'esp32' ? 'ESP32' : 'Arduino Uno'}.`);
+      else this.toast(`Mikrocontroller: ${b === 'esp32' ? 'ESP32' : 'Arduino Uno'}. Prüfe die Anschlüsse in deinen Blöcken.`);
+    } else if (this.partsBuilt) { this.buildPartList(); }
+  },
+
+  /* Beispielprojekte: auswählen, dann wie ein neues Projekt benennen */
+  async examplesDialog() {
+    await this.refreshFiles();
+    const group = (b, t) => `<div class="start-sec">${t}</div>` + EXAMPLES.filter(e => e.board === b).map(e => `<button class="start-item ex" type="button" data-ex="${e.id}"><span><b>${esc(e.title)}</b><small>${esc(e.desc)}</small></span></button>`).join('');
+    this.dialog(`<h2>Beispiel öffnen</h2><p>Das Beispiel wird als <b>neues Projekt</b> angelegt – du kannst es danach frei verändern.</p>${group('uno', 'Arduino Uno')}${group('esp32', 'ESP32')}<div class="dlg-btns"><button class="btn" value="cancel">Abbrechen</button></div>`);
+    $('#dlgForm').addEventListener('click', e => {
+      const b = e.target.closest('[data-ex]'); if (!b) return;
+      const ex = EXAMPLES.find(x => x.id === b.dataset.ex);
+      this.dialog(`<h2>${esc(ex.title)}</h2><p>Wie soll dein Projekt heißen?</p>${this.nameFields({ proj: ex.title })}<div class="dlg-btns"><button class="btn" value="cancel">Abbrechen</button><button class="btn primary" value="ok">Anlegen</button></div>`,
+        (rv, f) => {
+          if (rv !== 'ok' || !f.n.value) return;
+          this.loadProject({ format: FORMAT, version: 1, name: f.n.value, board: ex.board, extensions: ex.ext || [], circuit: JSON.parse(JSON.stringify(ex.circuit)), blocks: ex.blocks });
+          this.fileName = null; this.save();
+          this.toast(`Beispiel „${ex.title}“ geöffnet.`);
+        });
+      this.guardNameFields($('#dlgForm'));
+    });
+  },
+
+  /* Ältere Fassung des aktuellen Projekts wiederherstellen (automatische Sicherungen) */
+  async backupsDialog() {
+    if (!this.launcher || !this.fileName) { this.toast('Sicherungen gibt es nur für gespeicherte Projekte im Ordner „Projekte“.'); return; }
+    let list = [];
+    try { list = await (await this.api('backups?file=' + encodeURIComponent(this.fileName))).json(); } catch (e) { list = []; }
+    const label = v => { const m = /^(\d{4})-(\d\d)-(\d\d)_(\d\d)-(\d\d)/.exec(v); return m ? `${m[3]}.${m[2]}.${m[1]}, ${m[4]}:${m[5]} Uhr` : v; };
+    const items = list.length ? list.map(v => `<li data-v="${esc(v)}"><span>Fassung vom ${label(v)}</span><span class="d">wiederherstellen</span></li>`).join('') : '<li>Noch keine älteren Fassungen. Die Werkstatt sichert beim Arbeiten höchstens alle 5 Minuten eine Fassung.</li>';
+    this.dialog(`<h2>Ältere Fassung wiederherstellen</h2><p>Automatische Sicherungen von <b>${esc($('#projName').value)}</b>. Die jetzige Fassung wird vorher ebenfalls gesichert.</p><ul class="plist">${items}</ul><div class="dlg-btns"><button class="btn" value="cancel">Abbrechen</button></div>`);
+    $('#dlgForm .plist').addEventListener('click', async e => {
+      const li = e.target.closest('li[data-v]'); if (!li) return;
+      $('#dlg').close('cancel');
+      try {
+        const data = await (await this.api(`backup?file=${encodeURIComponent(this.fileName)}&v=${encodeURIComponent(li.dataset.v)}`)).json();
+        const file = this.fileName, name = $('#projName').value;
+        data.name = name; // gleicher Projektname und gleiche Datei
+        this.loadProject(data); this.fileName = file; this.save();
+        this.toast(`Fassung vom ${label(li.dataset.v)} wiederhergestellt.`);
+      } catch (err) { this.toast('Wiederherstellen fehlgeschlagen: ' + err.message); }
+    });
+  },
+
+  /* „WLAN & Funk“ nur mit ESP32 und eingeschalteter Kommunikation */
+  updateCommTab() {
+    const on = BOARD === 'esp32' && this.extensions.includes('comm');
+    $('#tabComm').hidden = !on;
+    if (!on && $('#tabComm').classList.contains('on')) this.showBottom('msgs');
+  },
+
+  onMcuAdded(kind, hadOther) {
+    if (hadOther) { this.toast('Es kann nur ein Mikrocontroller simuliert werden. Entferne den anderen.'); return; }
+    if (kind !== BOARD) this.setBoard(kind);
+  },
+
+  setExtensions(list, silent) {
+    this.extensions = list.filter(x => EXTENSIONS[x]);
+    this.workspace.updateToolbox(buildToolbox(this.extensions));
+    this.updateCommTab();
+    this.filterParts();
+    if (!silent) this.scheduleSave();
+  },
+
+  extensionDialog() {
+    const off = e => e.esp && BOARD !== 'esp32';
+    const items = Object.entries(EXTENSIONS).map(([k, e]) => `<label class="${off(e) ? 'off' : ''}"><input type="checkbox" name="${k}" ${this.extensions.includes(k) ? 'checked' : ''} ${off(e) ? 'disabled' : ''}><span><b>${esc(e.name)}${off(e) ? ' (nur mit ESP32)' : ''}</b><small>${esc(e.desc)}</small></span></label>`).join('');
+    this.dialog(`<h2>Erweiterungen</h2><p>Zusätzliche Block-Kategorien für dieses Projekt:</p><div class="extlist">${items}</div><div class="dlg-btns"><button class="btn" value="cancel">Abbrechen</button><button class="btn primary" value="ok">Übernehmen</button></div>`,
+      (rv, f) => { if (rv === 'ok') this.setExtensions(Object.keys(EXTENSIONS).filter(k => f.elements[k].checked || (f.elements[k].disabled && this.extensions.includes(k)))); });
+  },
+
+  resizeBlockly() {
+    requestAnimationFrame(() => {
+      Blockly.svgResize(this.workspace);
+      if (this.needCenter && $('#main').classList.contains('mode-code') && this.codeView !== 'text') { this.needCenter = false; const m = this.workspace.getMetrics(); this.workspace.scroll(-m.contentLeft + 24, -m.contentTop + 24); }
+    });
+  },
+
+  toast(t) {
+    const el = $('#toast');
+    el.textContent = t; el.classList.add('show');
+    clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+  },
+
+  hint(t) { const h = $('#hint'); if (t) { h.textContent = t; h.classList.add('show'); } else h.classList.remove('show'); },
+
+  /* Jeder Dialog bekommt ein frisches Formular, damit keine alten Ereignisse daran hängen */
+  freshForm() {
+    const d = $('#dlg'), old = $('#dlgForm');
+    const f = old.cloneNode(false);
+    old.replaceWith(f);
+    d.oncancel = null; d.onclose = null; d.returnValue = '';
+    return f;
+  },
+  dialog(html, onSubmit) {
+    const d = $('#dlg');
+    if (d.open) d.close();
+    this.freshForm().innerHTML = html;
+    d.showModal();
+    d.onclose = () => { if (d.open) return; if (onSubmit) onSubmit(d.returnValue, $('#dlgForm')); }; // verspätetes Ereignis eines vorherigen Dialogs ignorieren
+  },
+
+  async fileAction(act) {
+    $('#fileMenu').hidden = true;
+    if (act === 'new') {
+      await this.refreshFiles();
+      this.dialog(`<h2>Neues Projekt</h2>${this.nameFields()}<div class="dlg-btns"><button class="btn" value="cancel">Abbrechen</button><button class="btn primary" value="ok">Anlegen</button></div>`,
+        (rv, f) => { if (rv === 'ok' && f.n.value) { this.loadProject(this.blankProject(f.n.value)); this.fileName = null; this.save(); } });
+      this.guardNameFields($('#dlgForm'));
+    } else if (act === 'open') {
+      if (!this.launcher) { $('#fileInput').click(); return; }
+      let list = [];
+      try { list = await (await this.api('list')).json(); } catch (e) { this.toast('Projektliste konnte nicht geladen werden.'); return; }
+      const items = list.length ? list.map(p => `<li data-file="${esc(p.file)}"><span>${esc(p.file.replace(/\.awp$/, ''))}</span><span class="d">${new Date(p.modified).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })}</span></li>`).join('') : '<li>Noch keine Projekte im Ordner „Projekte“.</li>';
+      this.dialog(`<h2>Projekt öffnen</h2><p>Projekte im Ordner „Projekte“:</p><ul class="plist">${items}</ul><div class="dlg-btns"><button class="btn" value="file" type="submit">Andere Datei …</button><button class="btn" value="cancel">Abbrechen</button></div>`,
+        rv => { if (rv === 'file') $('#fileInput').click(); });
+      $('#dlgForm .plist').addEventListener('click', async e => {
+        const li = e.target.closest('li[data-file]'); if (!li) return;
+        $('#dlg').close('cancel');
+        try { const data = await (await this.api('load?file=' + encodeURIComponent(li.dataset.file))).json(); this.loadProject(data); this.fileName = li.dataset.file; } catch (err) { this.toast('Öffnen fehlgeschlagen: ' + err.message); }
+      });
+    } else if (act === 'duplicate') {
+      await this.refreshFiles();
+      const cur = this.nameParts($('#projName').value);
+      this.dialog(`<h2>Kopie speichern unter</h2>${this.nameFields({ tisch: cur.tisch, nach: cur.nach, proj: cur.proj ? cur.proj + ' (Kopie)' : '' })}<div class="dlg-btns"><button class="btn" value="cancel">Abbrechen</button><button class="btn primary" value="ok">Speichern</button></div>`,
+        (rv, f) => { if (rv === 'ok' && f.n.value) { $('#projName').value = f.n.value; this.fileName = null; this.save(); } });
+      this.guardNameFields($('#dlgForm'));
+    } else if (act === 'export') {
+      const data = this.projectData();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' }));
+      a.download = this.fileFor(data.name);
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    } else if (act === 'import') $('#fileInput').click();
+    else if (act === 'settings') Settings.open(this);
+    else if (act === 'image') Export.saveImage();
+    else if (act === 'print') Export.print();
+    else if (act === 'examples') this.examplesDialog();
+    else if (act === 'backups') this.backupsDialog();
+  },
+
+  bindUi() {
+    $('#modeParts').onclick = () => this.setMode('parts');
+    $('#modeCode').onclick = () => this.setMode('code');
+    $('#simBtn').onclick = () => this.toggleSim();
+    $('#undoBtn').onclick = () => (this.focusArea === 'code' ? this.workspace.undo(false) : this.undo());
+    $('#redoBtn').onclick = () => (this.focusArea === 'code' ? this.workspace.undo(true) : this.redo());
+    $('#zoomFit').onclick = () => this.circuit.fitView();
+    const zoom = f => { const r = $('#circuit').getBoundingClientRect(); const v = this.circuit.view; const k = Math.max(0.3, Math.min(5, v.k * f)); v.x = r.width / 2 - (r.width / 2 - v.x) * k / v.k; v.y = r.height / 2 - (r.height / 2 - v.y) * k / v.k; v.k = k; this.circuit.applyView(); };
+    $('#zoomIn').onclick = () => zoom(1.25);
+    $('#zoomOut').onclick = () => zoom(0.8);
+    $('#tabBlocks').onclick = () => this.setCodeView('blocks');
+    $('#tabBoth').onclick = () => this.setCodeView('both');
+    $('#tabText').onclick = () => this.setCodeView('text');
+    $('#extBtn').onclick = () => this.extensionDialog();
+    $('#copyCode').onclick = () => { navigator.clipboard.writeText($('#textcode').textContent).then(() => this.toast('Code kopiert.')); };
+    $('#tabMsgs').onclick = () => this.showBottom('msgs');
+    $('#tabSerial').onclick = () => this.showBottom('serial');
+    $('#tabComm').onclick = () => this.showBottom('comm');
+    CommPanel.init(this);
+    SerialLink.init(this);
+    $('#bottomToggle').onclick = () => { $('#bottom').classList.toggle('collapsed'); $('#bottomToggle').textContent = $('#bottom').classList.contains('collapsed') ? '▴' : '▾'; this.resizeBlockly(); };
+    $('#boardSel').addEventListener('change', e => { if (this.sim.running) this.stopSim(); this.setBoard(e.target.value); });
+    $('#projName').addEventListener('focus', e => { this.nameBefore = e.target.value; });
+    $('#projName').addEventListener('change', async e => {
+      const ok = this.checkName(e.target.value);
+      if (!ok) { e.target.value = this.nameBefore || e.target.value; this.toast('Der Name braucht Tisch-Nr., Nachname und Projekt, z. B. 11 – Müller – Ampelschaltung.'); return; }
+      await this.refreshFiles();
+      if (this.nameTaken(ok)) { e.target.value = this.nameBefore || e.target.value; this.toast(`Ein Projekt „${ok}“ gibt es schon. Bitte einen anderen Namen wählen.`); return; }
+      e.target.value = ok;
+      if (!(await this.renameFile(ok))) { e.target.value = this.nameBefore; this.toast('Umbenennen fehlgeschlagen.'); return; }
+      this.nameBefore = ok; this.scheduleSave();
+    });
+    $('#setBtn').onclick = () => Settings.open(this);
+    $('#fileBtn').onclick = e => { e.stopPropagation(); $('#fileMenu').hidden = !$('#fileMenu').hidden; };
+    document.addEventListener('click', e => { if (!e.target.closest('.menu')) $('#fileMenu').hidden = true; });
+    $('#fileMenu').addEventListener('click', e => { const b = e.target.closest('button'); if (b) this.fileAction(b.dataset.act); });
+    $('#fileInput').addEventListener('change', async e => {
+      const f = e.target.files[0]; if (!f) return;
+      try {
+        const data = JSON.parse(await f.text());
+        if (data.format !== FORMAT) throw new Error('Keine Arduino-Werkstatt-Datei');
+        // Gleichnamiges Projekt nicht überschreiben: dann „(2)“, „(3)“ … anhängen
+        await this.refreshFiles(); this.fileName = null;
+        const base = data.name || 'Neues Projekt'; let name = base;
+        for (let k = 2; this.nameTaken(name, true); k++) name = `${base} (${k})`;
+        data.name = name;
+        this.loadProject(data); this.fileName = null; this.save();
+      } catch (err) { this.toast('Datei konnte nicht geöffnet werden: ' + err.message); }
+      e.target.value = '';
+    });
+    $('#uploadBtn').onclick = () => Uploader.openUsb(this);
+    $('#btBtn').onclick = () => { if (BOARD !== 'esp32') { this.toast('Übertragen per Bluetooth geht nur mit dem ESP32.'); return; } Uploader.mode = 'bt'; Uploader.open(this); };
+    this.bindProps();
+    window.addEventListener('resize', () => this.resizeBlockly());
+    window.addEventListener('keydown', e => {
+      const inField = e.target.closest && e.target.closest('input, select, textarea, .blocklyHtmlInput');
+      if (inField || this.focusArea !== 'circuit') return;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.stopImmediatePropagation(); e.shiftKey ? this.redo() : this.undo(); return; }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); e.stopImmediatePropagation(); this.redo(); return; }
+      if (this.sim.running) return;
+      if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); e.stopImmediatePropagation(); this.circuit.deleteSelection(); }
+      else if (e.key === 'r' || e.key === 'R') { this.circuit.rotateSelection(); }
+      else if (e.key === 'Escape') { this.circuit.cancelWire(); this.circuit.select(null); }
+    }, true);
+    const stage = $('#circuit');
+    stage.addEventListener('pointermove', () => {
+      if (this.circuit.wiring) this.hint('Klicke auf einen Anschluss oder ein Loch. Klicks dazwischen setzen Knickpunkte. Esc bricht ab.');
+      else this.hint(null);
+    });
+  },
+};
+
+function highlightCpp(code) {
+  return esc(code)
+    .replace(/(\/\/[^\n]*)/g, '<span class="c">$1</span>')
+    .replace(/(&quot;.*?&quot;)/g, '<span class="s">$1</span>')
+    .replace(/^(#include)/gm, '<span class="k">$1</span>')
+    .replace(/\b(void|int|for|if|else|while|return|true|false)\b/g, '<span class="k">$1</span>')
+    .replace(/\b(HIGH|LOW|OUTPUT|INPUT|LED_BUILTIN)\b/g, '<span class="n">$1</span>');
+}
+
+window.addEventListener('DOMContentLoaded', () => App.init());

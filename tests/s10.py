@@ -1,0 +1,26 @@
+from playwright.sync_api import sync_playwright
+import os
+with sync_playwright() as p:
+    b = p.chromium.launch(); pg = b.new_page(viewport={'width':1400,'height':900})
+    errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
+    pg.goto('http://127.0.0.1:8642/'); pg.wait_for_timeout(900)
+    pg.evaluate("n=>{const f=document.querySelector('#dlgForm');const p=n.split(/\s+[-–]\s+/);f.tisch.value=p[0].padStart(2,'0');f.nach.value=p[1];f.proj.value=p.slice(2).join(' – ')}", '09 – Einstellungen – Aichler'); pg.click('button[value=new]'); pg.wait_for_timeout(400)
+    pg.click('#setBtn'); pg.wait_for_timeout(600)
+    print('Zeile:', pg.inner_text('.set-sec .set-line'))
+    pg.screenshot(path='s10a.png')
+    pg.click('#setTools'); pg.wait_for_timeout(1500); print('Prüfen:', pg.inner_text('#upMsg'))
+    pg.click('#setCache'); pg.wait_for_timeout(800); print('Cache:', pg.inner_text('#upMsg'))
+    pg.click('#setErase'); pg.wait_for_timeout(200); print('Knopf:', pg.inner_text('#setErase'))
+    pg.click('#setErase'); pg.wait_for_timeout(1500); print('Löschen:', pg.inner_text('#upMsg'))
+    pg.check('#setDetails')
+    pg.click('#setCheck'); pg.wait_for_timeout(800); print('Update:', pg.inner_text('#setUpd'))
+    pg.screenshot(path='s10b.png')
+    pg.click('#setInstall'); pg.wait_for_timeout(3000)
+    print('Install:', pg.inner_text('#upMsg')); print('Schritte:', pg.inner_text('#upSteps'))
+    pg.screenshot(path='s10c.png')
+    print('Fehler:', errs)
+    b.close()
+base='/tmp/claude-0/stick3'
+print('neue app:', 'NEU-0.9.1' in open(base+'/app/index.html').read(), '| alte app gesichert:', os.path.exists(base+'/.update-alt/app'))
+print('exe:', open(base+'/start.exe').read().strip(), '| .alt:', os.path.exists(base+'/start.exe.alt'), '| LIESMICH:', os.path.exists(base+'/LIESMICH.txt'))
+print('Werkzeuge unberührt:', not os.path.exists(base+'/Werkzeuge/x.txt'), '| Projekte da:', os.path.isdir(base+'/Projekte'))

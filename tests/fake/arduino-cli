@@ -1,0 +1,20 @@
+#!/bin/bash
+# Test-Ersatz für arduino-cli
+args="$*"; echo "$args" >> /tmp/claude-0/fake/calls.log
+case "$args" in
+  *" version"*) echo "arduino-cli  Version: 1.3.1 Commit: test";;
+  *"core list"*) echo '{"platforms":[{"id":"arduino:avr","installed_version":"1.8.6"},{"id":"esp32:esp32","installed_version":"3.3.12"}]}';;
+  *"lib list"*) echo '{"installed_libraries":[{"library":{"name": "LiquidCrystal I2C"}},{"library":{"name": "Servo"}},{"library":{"name": "Adafruit NeoPixel"}},{"library":{"name": "Keypad"}},{"library":{"name": "Adafruit ADS1X15"}},{"library":{"name": "Adafruit INA219"}},{"library":{"name": "Adafruit SSD1306"}},{"library":{"name": "Adafruit GFX Library"}}]}';;
+  *"core update-index"*) echo "Downloading index: package_index.tar.bz2 downloaded"; sleep 0.3;;
+  *"core install esp32:esp32"*) for x in esp32:esp-x32@2405 esp32:esptool_py@4.9 esp32:esp32@3.2.0; do echo "Downloading $x..."; sleep 0.2; echo "$x installed"; done;;
+  *"core install arduino:avr"*) for x in avr-gcc@7.3.0 avrdude@6.3.0 arduino:avr@1.8.6; do echo "Downloading $x..."; sleep 0.3; echo "$x installed"; done;;
+  *"lib install"*) for x in LiquidCrystal_I2C Servo Adafruit_NeoPixel Keypad Adafruit_BusIO; do echo "Installing $x..."; sleep 0.1; echo "Installed $x"; done;;
+  *"board details"*) if [ -f /tmp/claude-0/fake/no_minspiffs ]; then echo '{"config_options":[{"option":"PartitionScheme","values":[{"value":"default"},{"value":"huge_app"}]}]}'; else echo '{"config_options":[{"option":"PartitionScheme","values":[{"value":"default"},{"value":"min_spiffs"}]},{"option":"UploadSpeed","values":[{"value":"921600"},{"value":"115200"}]}]}'; fi;;
+  *"board list"*) echo '{"detected_ports":[{"port":{"address":"COM3","label":"COM3","protocol":"serial","protocol_label":"Serial Port (USB)","properties":{"pid":"0x7523","vid":"0x1A86"}}},{"port":{"address":"COM1","label":"COM1","protocol":"serial","protocol_label":"Serial Port","properties":{}}},{"port":{"address":"COM5","label":"COM5","protocol":"serial","protocol_label":"Serial Port (USB)","properties":{"pid":"0xEA60","vid":"0x10C4"}}}]}';;
+  *compile*) sk="${@: -1}"; [ -f /tmp/claude-0/fake/slow ] && sleep 3; if [[ "$args" == *" -v "* ]]; then echo "Using board 'esp32' from platform"; echo "Detecting libraries used..."; echo "/x/bin/xtensa-esp32-elf-g++ -c -E @/x/flags a.cpp"; echo "Alternatives for Wire.h: [Wire@3.3.2]"; sleep 0.3; echo "Generating function prototypes..."; echo "Compiling sketch..."; echo "/x/bin/xtensa-esp32-elf-g++ -MMD -c @/x/f sketch.cpp"; sleep 0.2; echo "Compiling libraries..."; echo "Using previously compiled file: /b/Wire.cpp.o"; echo "Compiling core..."; echo "Using precompiled core: /b/core.a"; echo "Linking everything together..."; sleep 0.2; fi; if grep -q FEHLERTEST "$sk/werkstatt.ino"; then echo "$sk/werkstatt.ino:5:3: error: 'foo' was not declared in this scope"; exit 1; fi
+             out=""; prev=""; for a in "$@"; do [ "$prev" = "--output-dir" ] && out="$a"; prev="$a"; done
+             if [ -n "$out" ]; then mkdir -p "$out"; head -c 50001 /dev/urandom > "$out/werkstatt.ino.bin"; fi
+             sleep 0.5; echo "Sketch uses 2464 bytes (7%) of program storage space. Maximum is 32256 bytes."; echo "Global variables use 228 bytes (11%) of dynamic memory";;
+  *upload*) if [[ "$args" == *COM1* ]]; then echo "avrdude: stk500_recv(): programmer is not responding"; echo "avrdude: stk500_getsync() attempt 10 of 10: not in sync: resp=0x00"; exit 1; fi
+            sleep 0.5; echo "avrdude: 2464 bytes of flash verified"; echo "avrdude done.  Thank you.";;
+esac

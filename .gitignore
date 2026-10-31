@@ -1,0 +1,7 @@
+# Gebaute Pakete und lokale Daten
+*.zip
+Projekte/
+Werkzeuge/
+launcher/*.exe
+tests/__pycache__/
+tests/*.png

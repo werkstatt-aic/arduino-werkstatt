@@ -1,0 +1,144 @@
+ARDUINO-WERKSTATT – Testversion 0.9.3 (Stick-Version, Teil 6)
+============================================================
+
+STARTEN
+  Doppelklick auf "Arduino-Werkstatt starten.exe". Es öffnet sich ein
+  Chrome-Fenster. Nichts wird installiert. Beim ersten Start kann Windows
+  warnen: "Weitere Informationen" und dann "Trotzdem ausführen" klicken.
+  Neue Version einspielen: Nur den Ordner "app" und die Datei
+  "Arduino-Werkstatt starten.exe" ersetzen. Die Ordner "Projekte" und
+  "Werkzeuge" bleiben, wie sie sind (sonst müsste man neu einrichten).
+
+START
+  Beim Start erscheint eine Auswahl: neues Projekt anlegen, zuletzt bearbeitetes
+  oder ein anderes Projekt öffnen, oder ein Beispiel öffnen.
+  Für ein neues Projekt gibt man Tisch-Nr. (01 bis 19), Nachname und
+  Projektname ein. Daraus wird z. B. "11 – Müller – Ampelschaltung".
+  Ein vorhandenes Projekt wird nie überschrieben.
+
+SPEICHERN UND SICHERUNGEN
+  Alles wird automatisch im Ordner "Projekte" neben dieser Datei gespeichert.
+  Zusätzlich legt die Werkstatt beim Arbeiten höchstens alle 5 Minuten eine
+  Sicherung an (die letzten 15 je Projekt, Ordner "Projekte\.sicherungen").
+  Zurückholen: Datei > Ältere Fassung wiederherstellen.
+
+BEISPIELE, BILD UND DRUCKEN (Menü "Datei")
+  - Beispiel öffnen: fertige Projekte (Blinken, Ampel, Taster, Dimmer,
+    Thermometer, Servo, Motor, Webseite, Funk-Klingel) als neues Projekt.
+  - Schaltung als Bild speichern: PNG-Datei im Ordner "Downloads".
+  - Drucken: Schaltung, Blöcke und C++-Code auf Papier oder als PDF.
+
+BEDIENUNG IN KÜRZE
+  - Bauteile aus der Leiste rechts ziehen oder doppelklicken.
+  - Leitung: auf einen Anschluss klicken, dann auf das Ziel. Klicks dazwischen
+    setzen Knickpunkte. Esc bricht ab.
+  - Bauteil anklicken: Eigenschaften oben rechts. R = drehen, Entf = löschen,
+    Strg+Z = rückgängig. Ansicht verschieben: freie Stelle ziehen. Zoom: Mausrad.
+  - Beine, die in der Steckplatine stecken, sind schwarz umrandet.
+  - Simulation: Taster, Sensortaste, Bewegungsmelder und Tastenfeld mit der Maus
+    drücken. Licht, Temperatur, Feuchte, Abstand, Poti und Spannung im
+    Eigenschaftsfeld verstellen (auch während der Simulation).
+  - Code: Ansicht "Blöcke", "Blöcke + Text" oder "Text (C++)".
+  - "Erweiterungen ..." schaltet NeoPixel, Tastenfeld, Multimeter, OLED-Anzeige
+    und Kommunikation für das jeweilige Projekt zu. Die passenden Bauteile
+    erscheinen dann auch in der Bauteilleiste.
+  - OLED-Grafikeditor: Im Block "OLED-Bild ... zeichnen" auf das Bild klicken.
+  - Mathe: runden (auch auf/ab), Betrag, Quadratwurzel.
+  - Motortreiber L9110S (Bauteile > Module) mit dem Block "Motor am
+    Motortreiber" unter "Ausgang": vorwärts, rückwärts, anhalten, Tempo in %.
+
+SERIELLER MONITOR
+  - Zeigt die Ausgaben der Simulation. In die Zeile unten kann man Text
+    eingeben, der über USB an das Programm geht.
+  - "Mit Mikrocontroller verbinden": zeigt die Ausgaben des echten Arduino
+    oder ESP32 (USB-Kabel). Beim Hochladen wird die Verbindung kurz getrennt
+    und danach automatisch wiederhergestellt.
+
+KOMMUNIKATION (nur ESP32, unter "Erweiterungen ...")
+  - USB: Text und Zahlen vom seriellen Monitor empfangen.
+  - WLAN: mit einem WLAN verbinden oder ein eigenes WLAN öffnen.
+  - Eigene Webseite: Werte anzeigen, Knöpfe und Schieberegler. Im Browser des
+    Handys die IP-Adresse des ESP32 aufrufen (eigenes WLAN: 192.168.4.1).
+  - Funk zwischen ESP32 (ohne Router): Alle ESP32 mit derselben Gruppe
+    (z. B. Tisch-Nr.) empfangen die Nachrichten der anderen.
+  - In der Simulation zeigt der Bereich "WLAN & Funk" unten das WLAN, die
+    Webseite (mit klickbaren Knöpfen) und die Funk-Nachrichten.
+
+AUF DEN ARDUINO HOCHLADEN
+  Einmalige Einrichtung (am besten zu Hause, Internet nötig, ca. 250 MB):
+  - Werkstatt starten, oben auf "Hochladen" klicken, dann "Jetzt einrichten".
+  - Es entsteht der Ordner "Werkzeuge" neben der Startdatei.
+  - Diesen Ordner einfach auf alle anderen Sticks kopieren. Dort ist dann
+    keine Einrichtung und kein Internet mehr nötig.
+  Hochladen:
+  - Arduino per USB anstecken, "Hochladen" klicken. Der Anschluss (COM...)
+    wird automatisch gesucht. Nachbauten erscheinen als "Arduino-Nachbau (CH340)".
+  - Wird kein Arduino gefunden: anderes USB-Kabel probieren (manche Kabel
+    können nur laden) bzw. den Treiber "CH340" installieren.
+  - Das Hochladen funktioniert nur mit "Arduino-Werkstatt starten.exe",
+    nicht mit dem Notstart.
+
+ESP32
+  - Oben rechts "ESP32" wählen oder einen ESP32 aus der Bauteilleiste ziehen:
+    "ESP32 (38 Pin)" oder "ESP32 auf Expansion Board". Die Auswahl stellt sich
+    dann automatisch um.
+  - Die Anschlusslisten in den Blöcken passen sich an. Heikle Pins (Boot-Pins,
+    USB-Verbindung, Flash) und D21/D22 (I²C) werden gar nicht angeboten. D34, D35, D36 (VP) und
+    D39 (VN) gibt es nur als Eingang.
+  - Der ESP32 arbeitet mit 3,3 V. Analogwerte reichen von 0 bis 4095.
+  - Expansion Board: Zu jedem Pin gibt es von innen nach außen G (GND,
+    schwarz), V (Spannung je nach Jumper "JUMP", 3,3 V oder 5 V, rot) und
+    S (Signal, gelb). Den Jumper stellt man im
+    Eigenschaftsfeld um. Die Stromleiste rechts liefert immer 3,3 V und 5 V.
+  - Zum Hochladen das USB-Kabel direkt in die Buchse am ESP32 stecken. Die
+    USB-Buchsen am Expansion Board liefern nur Strom.
+  - Hochladen: Für den ESP32 gibt es eine eigene, zusätzliche Einrichtung
+    (etwa 1 GB). Klappt das Übertragen nicht, beim Hochladen die Taste "BOOT"
+    auf dem ESP32 gedrückt halten, bis "Connecting..." verschwindet.
+
+ÜBERTRAGEN PER BLUETOOTH (nur ESP32)
+  1. Einmal per USB-Kabel hochladen und dabei "Bluetooth-Übertragung in das
+     Programm einbauen" anhaken. Den Namen des ESP32 kann man dort ändern
+     (vorbelegt mit "ESP-" und dem Nachnamen aus dem Projektnamen).
+  2. Danach im Hochladen-Fenster "Bluetooth" wählen (oder oben auf das
+     Bluetooth-Zeichen klicken) und "Hochladen" klicken. In der Liste den
+     eigenen ESP32 auswählen.
+  - Neu in 0.8.3: neuer, schlanker Bluetooth-Empfänger (NimBLE). Das Programm
+    ist dadurch nur noch etwa halb so groß und wird schneller übersetzt und
+    übertragen. Beim ersten Mal wird der Bluetooth-Baustein automatisch aus
+    dem Internet nachgeladen. Danach den ESP32 EINMAL per USB mit gesetztem
+    Haken neu bespielen.
+  - Der Computer braucht Bluetooth (eingebaut oder USB-Stick).
+  - Die Bluetooth-Übertragung bleibt nur erhalten, solange der Haken gesetzt
+    ist. Bei der Übertragung per Bluetooth ist er immer gesetzt.
+
+WARUM DAUERT DAS ÜBERSETZEN BEIM ERSTEN MAL SO LANGE?
+  - Beim ersten Übersetzen nach einem Update (und beim ersten Mal mit
+    Bluetooth) wird alles vorbereitet. Das dauert einige Minuten.
+  - Danach geht es deutlich schneller, auch beim Wechsel zu einem anderen
+    Projekt: Für den ESP32 werden immer dieselben Bibliotheken eingebunden,
+    deshalb muss nicht jedes Mal alles neu übersetzt werden.
+  - Im Hochladen-Fenster steht hinter jedem Schritt, wie lange er gedauert hat.
+  - Am schnellsten geht es, wenn der Ordner Arduino-Werkstatt auf der
+    Festplatte liegt statt auf einem USB-Stick.
+
+EINSTELLUNGEN (Zahnrad oben rechts oder Datei > Einstellungen)
+  - Version anzeigen, nach Updates suchen oder ein Update aus einer
+    ZIP-Datei einspielen. Dabei werden nur "app" und die Startdatei ersetzt,
+    "Werkzeuge" und "Projekte" bleiben erhalten. Danach startet die
+    Werkstatt neu (das alte Fenster schließt sich).
+  - Werkzeuge prüfen, Uno/ESP32 neu einrichten, Zwischenspeicher leeren.
+  - ESP32 komplett löschen (wenn er hängt oder per Bluetooth nicht mehr
+    erreichbar ist). Danach wieder ein Programm hochladen.
+  - Zeitmessung beim Übersetzen: zeigt, welcher Teil wie lange dauert.
+
+NOCH NICHT ENTHALTEN (folgt)
+  - Eigene Bauteile und Blöcke selbst hinzufügen
+  - Schulversion mit Anmeldung und Klassenzimmermodus
+
+NOTSTART
+  Falls das Startprogramm gesperrt ist: "Notstart ohne Startprogramm.bat".
+  Projekte werden dann nur im Browser gespeichert (Datei > Als Datei herunterladen).
+
+Verwendete freie Software: Blockly (Apache-Lizenz 2.0), siehe app/lib/blockly/LICENSE.
+Alle Bauteilgrafiken sind eigene Zeichnungen.

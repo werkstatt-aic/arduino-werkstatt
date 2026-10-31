@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arduino-Werkstatt</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23137a7f'/%3E%3Cpath d='M9 12h14v8H9z' fill='none' stroke='white' stroke-width='2.4'/%3E%3Cpath d='M12 9v3M16 9v3M20 9v3M12 20v3M16 20v3M20 20v3' stroke='white' stroke-width='2'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#137a7f"/><path d="M9 12h14v8H9z" fill="none" stroke="#fff" stroke-width="2.4"/><path d="M12 9v3M16 9v3M20 9v3M12 20v3M16 20v3M20 20v3" stroke="#fff" stroke-width="2"/></svg>
+    <span>Arduino-Werkstatt</span>
+  </div>
+  <div class="filebox">
+    <input id="projName" class="projname" value="Neues Projekt" spellcheck="false" title="Projektname (Muster: Nr – Thema – Nachname)">
+    <div class="menu">
+      <button class="btn ghost" id="fileBtn" aria-haspopup="true">Datei ▾</button>
+      <div class="menu-pop" id="fileMenu" hidden>
+        <button data-act="new">Neues Projekt</button>
+        <button data-act="open">Projekt öffnen …</button>
+        <button data-act="duplicate">Kopie speichern unter …</button>
+        <button data-act="examples">Beispiel öffnen …</button>
+        <button data-act="backups">Ältere Fassung wiederherstellen …</button>
+        <hr>
+        <button data-act="export">Als Datei herunterladen</button>
+        <button data-act="import">Datei vom Computer öffnen …</button>
+        <hr>
+        <button data-act="image">Schaltung als Bild speichern</button>
+        <button data-act="print">Drucken …</button>
+        <hr>
+        <button data-act="settings">Einstellungen …</button>
+      </div>
+    </div>
+    <span id="saveState" class="savestate"></span>
+  </div>
+  <div class="center">
+    <div class="seg" role="tablist">
+      <button id="modeParts" class="on" role="tab">Bauteile</button>
+      <button id="modeCode" role="tab">Code</button>
+    </div>
+  </div>
+  <div class="actions">
+    <button class="btn icon ghost" id="undoBtn" title="Rückgängig (Strg+Z)">↶</button>
+    <button class="btn icon ghost" id="redoBtn" title="Wiederholen (Strg+Y)">↷</button>
+    <select id="boardSel" class="board" title="Mikrocontroller">
+      <option value="uno">Arduino Uno</option>
+      <option value="esp32">ESP32</option>
+    </select>
+    <button class="btn primary" id="simBtn"><span class="ico">▶</span> <span class="lbl">Simulation starten</span></button>
+    <button class="btn" id="uploadBtn" title="Programm auf den Arduino übertragen">⇪ Hochladen</button>
+    <button class="btn icon" id="btBtn" title="Per Bluetooth übertragen (ESP32)">ᛒ</button>
+    <button class="btn icon ghost" id="setBtn" title="Einstellungen">⚙</button>
+  </div>
+</header>
+
+<main class="main mode-parts" id="main">
+  <section class="stage" id="stage">
+    <svg id="circuit" class="circuit"></svg>
+    <div class="empty" id="emptyHint">
+      <div class="empty-card">
+        <h2>Leere Werkbank</h2>
+        <p>Ziehe den <b>Arduino Uno</b> aus der Bauteilleiste rechts hierher. Mit der Vorlage <b>Arduino + Steckplatine</b> ist beides schon verbunden.</p>
+      </div>
+    </div>
+    <div class="props" id="props" hidden></div>
+    <div class="zoom">
+      <button class="btn icon" id="zoomFit" title="Alles anzeigen">⤢</button>
+      <button class="btn icon" id="zoomIn" title="Vergrößern">+</button>
+      <button class="btn icon" id="zoomOut" title="Verkleinern">−</button>
+    </div>
+    <div class="hint" id="hint"></div>
+  </section>
+
+  <aside class="parts" id="parts">
+    <div class="parts-head">
+      <input id="partSearch" type="search" placeholder="Bauteil suchen" spellcheck="false">
+    </div>
+    <div id="partList" class="part-list"></div>
+  </aside>
+
+  <section class="codepanel" id="codepanel">
+    <div class="code-head">
+      <div class="seg small">
+        <button id="tabBlocks" class="on">Blöcke</button>
+        <button id="tabBoth">Blöcke + Text</button>
+        <button id="tabText">Text (C++)</button>
+      </div>
+      <div class="code-tools">
+        <button class="btn ghost small" id="copyCode" hidden>Code kopieren</button>
+        <button class="btn small" id="extBtn" title="Zusätzliche Block-Kategorien ein- oder ausschalten">Erweiterungen …</button>
+      </div>
+    </div>
+    <div class="code-body view-blocks" id="codeBody">
+      <div class="blockly" id="blockly"></div>
+      <pre class="textcode" id="textcode"></pre>
+    </div>
+  </section>
+</main>
+
+<footer class="bottom" id="bottom">
+  <div class="bottom-tabs">
+    <button id="tabMsgs" class="on">Prüfung <span class="badge" id="msgBadge" hidden>0</span></button>
+    <button id="tabSerial">Serieller Monitor</button>
+    <button id="tabComm" hidden>WLAN &amp; Funk</button>
+    <button class="toggle" id="bottomToggle" title="Ein-/ausklappen">▾</button>
+  </div>
+  <div class="bottom-body">
+    <ul class="msgs" id="msgs"><li class="ok">Starte die Simulation, um deine Schaltung und dein Programm zu prüfen.</li></ul>
+    <div class="serial-wrap" id="serialWrap" hidden>
+      <pre class="serial" id="serial"></pre>
+      <form class="serial-in" id="serialIn"><input type="text" id="serialText" placeholder="Text über USB an das Programm senden (Enter)" spellcheck="false" autocomplete="off"><button class="btn small">Senden</button><span class="serial-tools"><button type="button" class="btn small ghost" id="serialClr">Leeren</button><button type="button" class="btn small primary" id="serialConn" title="Ausgaben des echten Arduino/ESP32 anzeigen (USB-Kabel)">Mit Mikrocontroller verbinden</button></span></form>
+    </div>
+    <div class="comm" id="comm" hidden></div>
+  </div>
+</footer>
+
+<dialog id="dlg" class="dlg"><form method="dialog" id="dlgForm"></form></dialog>
+<input type="file" id="fileInput" accept=".awp,.json" hidden>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="lib/blockly/blockly_compressed.js"></script>
+<script src="lib/blockly/blocks_compressed.js"></script>
+<script src="lib/blockly/javascript_compressed.js"></script>
+<script src="lib/blockly/msg/de.js"></script>
+<script src="js/font5x7.js"></script>
+<script src="js/components.js"></script>
+<script src="js/solver.js"></script>
+<script src="js/bitmap.js"></script>
+<script src="js/blocks.js"></script>
+<script src="js/sim.js"></script>
+<script src="js/comm.js"></script>
+<script src="js/serial.js"></script>
+<script src="js/circuit.js"></script>
+<script src="js/upload.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/examples.js"></script>
+<script src="js/export.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
