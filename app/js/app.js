@@ -444,6 +444,11 @@ const App = {
         case 'ina219':
           h += `<label>Adresse</label><select data-prop="address" ${dis}>${[64, 65, 68, 69].map(v => `<option value="${v}" ${Number(c.props.address) === v ? 'selected' : ''}>0x${v.toString(16)}</option>`).join('')}</select>`;
           break;
+        case 'l298n':
+          h += `<label>Jumper auf ENA (Motor A)</label><select data-prop="ena" ${dis}><option value="1" ${String(c.props.ena) !== '0' ? 'selected' : ''}>gesteckt (immer freigegeben)</option><option value="0" ${String(c.props.ena) === '0' ? 'selected' : ''}>entfernt (ENA anschließen)</option></select>`;
+          h += `<label>Jumper auf ENB (Motor B)</label><select data-prop="enb" ${dis}><option value="1" ${String(c.props.enb) !== '0' ? 'selected' : ''}>gesteckt (immer freigegeben)</option><option value="0" ${String(c.props.enb) === '0' ? 'selected' : ''}>entfernt (ENB anschließen)</option></select>`;
+          h += '<div class="note">Motorspannung an „12V“ und GND anschließen (z. B. Spannungsquelle oder 5 V). Der L298N verliert etwa 2 V. GND muss mit dem GND des Mikrocontrollers verbunden sein.</div>';
+          break;
         case 'esp32exp':
           h += `<label>Jumper „JUMP“ (Spannung an den V-Pins)</label><select data-prop="jump" ${dis}><option value="3.3" ${String(c.props.jump) !== '5' ? 'selected' : ''}>3,3 V</option><option value="5" ${String(c.props.jump) === '5' ? 'selected' : ''}>5 V</option></select>`;
           h += '<div class="note">Die USB-Buchsen am Board liefern nur Strom. Zum Hochladen das Kabel in die Buchse am ESP32 stecken.</div>';

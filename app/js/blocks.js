@@ -208,7 +208,7 @@ function defineBlocks() {
     B({ type: 'ard_motor', message0: 'Motor am Motortreiber %1 IA an %2 IB an %3 %4 mit %5 %% Geschwindigkeit', args0: [{ type: 'input_dummy' },
       { type: 'field_dropdown', name: 'IA', options: PIN.pwm }, { type: 'field_dropdown', name: 'IB', options: PIN.pwm },
       { type: 'field_dropdown', name: 'DIR', options: [['vorwärts', '1'], ['rückwärts', '-1'], ['anhalten', '0']] }, { type: 'input_value', name: 'SPEED', check: 'Number' }],
-    inputsInline: true, tooltip: 'Für Motortreiber wie L9110S oder L298N: IA und IB sind die beiden Steuereingänge eines Motors (z. B. A-IA und A-IB). Geschwindigkeit 0 bis 100 %.' }, COL.out),
+    inputsInline: true, tooltip: 'Für Motortreiber wie L9110S (A-IA/A-IB) oder L298N (IN1/IN2 bzw. IN3/IN4, Jumper auf ENA/ENB gesteckt): die beiden Steuereingänge eines Motors. Geschwindigkeit 0 bis 100 %.' }, COL.out),
     B({ type: 'ard_notone', message0: 'Lautsprecher an Anschluss %1 ausschalten', args0: [{ type: 'field_dropdown', name: 'PIN', options: PIN.out }] }, COL.out),
     /* Eingang */
     { type: 'ard_digital_read', message0: 'Digitalen Anschluss %1 lesen', args0: [{ type: 'field_dropdown', name: 'PIN', options: PIN.inp }], output: 'Number', colour: COL.inp },

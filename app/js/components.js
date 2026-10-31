@@ -510,6 +510,28 @@ function renderDriver(comp) {
   return s + pinsOf(comp);
 }
 
+/* Motortreiber L298N: Steuerleiste ENA, IN1–IN4, ENB; Schraubklemmen +12V, GND, +5V; Motor A (OUT1/2), Motor B (OUT3/4) */
+function renderL298(comp) {
+  const p = comp.props;
+  let s = `<rect class="body" x="-50" y="-104" width="120" height="112" rx="4" fill="#c62828" stroke="#8e1b1b"/>`;
+  // Kühlkörper
+  s += `<rect x="-14" y="-100" width="48" height="40" rx="2" fill="#202020"/>`;
+  for (let i = 0; i < 7; i++) s += `<rect x="${-11 + i * 6.5}" y="-98" width="3" height="36" fill="#3a3a3a"/>`;
+  s += `<rect x="-6" y="-58" width="32" height="12" rx="1" fill="#111"/><text x="10" y="-49.5" class="tiny" text-anchor="middle" fill="#ddd">L298N</text>`;
+  // Schraubklemmen
+  const clamp = (x, y, w, h) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="1.5" fill="#1e63c5" stroke="#0f3f85"/>`;
+  s += clamp(-66, -88, 14, 28) + clamp(68, -88, 14, 28) + clamp(-47, -12, 34, 14);
+  for (const pin of comp.def.pins) if (/^(OUT|VS|GND|V5)/.test(pin.id)) s += `<circle cx="${pin.x}" cy="${pin.y}" r="3.2" fill="#c9ced2" stroke="#7d868c"/>`;
+  s += `<text x="-59" y="-91" class="tiny" text-anchor="middle">Motor A</text><text x="75" y="-91" class="tiny" text-anchor="middle">Motor B</text>`;
+  s += `<text x="-40" y="16" class="tiny" text-anchor="middle">12V</text><text x="-30" y="16" class="tiny" text-anchor="middle">GND</text><text x="-20" y="16" class="tiny" text-anchor="middle">5V</text>`;
+  // Steuerleiste mit Jumpern auf ENA/ENB
+  const labs = ['ENA', 'IN1', 'IN2', 'IN3', 'IN4', 'ENB'];
+  labs.forEach((l, i) => { s += hdr(i * 10, 0) + `<text x="${i * 10}" y="-8" class="tiny" text-anchor="middle" fill="#fff">${l}</text>`; });
+  if (String(p.ena) !== '0') s += `<rect x="-4" y="-5" width="8" height="12" rx="1" fill="#1d4fa8"/>`;
+  if (String(p.enb) !== '0') s += `<rect x="46" y="-5" width="8" height="12" rx="1" fill="#1d4fa8"/>`;
+  return s + pinsOf(comp);
+}
+
 function renderSource(comp) {
   const v = Number(comp.props.volt) || 0;
   let s = leg(0, 0, 0, -8) + leg(20, 0, 20, -8);
@@ -704,6 +726,11 @@ const COMPONENTS = {
   mdriver: { name: 'Motortreiber L9110S', label: 'Motor\u00adtreiber L9110S', category: 'Module', render: renderDriver, bbox: [-28, -70, 80, 4],
     pins: [L('BIA', 0, 'B-IA (Motor B)'), L('BIB', 10, 'B-IB (Motor B)'), L('GND', 20), L('VCC', 30, 'VCC (Motorspannung)'), L('AIA', 40, 'A-IA (Motor A)'), L('AIB', 50, 'A-IB (Motor A)'),
       S('MA1', -19, -53, 'Motor A Anschluss 1'), S('MA2', -19, -39, 'Motor A Anschluss 2'), S('MB1', 71, -53, 'Motor B Anschluss 1'), S('MB2', 71, -39, 'Motor B Anschluss 2')], props: {} },
+  l298n: { name: 'Motortreiber L298N', label: 'Motor\u00adtreiber L298N', category: 'Module', render: renderL298, bbox: [-70, -106, 86, 20],
+    pins: [S('ENA', 0, 0, 'ENA (Freigabe Motor A)'), S('IN1', 10, 0, 'IN1 (Motor A)'), S('IN2', 20, 0, 'IN2 (Motor A)'), S('IN3', 30, 0, 'IN3 (Motor B)'), S('IN4', 40, 0, 'IN4 (Motor B)'), S('ENB', 50, 0, 'ENB (Freigabe Motor B)'),
+      S('VS', -40, -5, '+12V (Motorspannung, z. B. Batterie)'), S('GND', -30, -5, 'GND'), S('V5', -20, -5, '+5V'),
+      S('OUT1', -59, -81, 'OUT1 (Motor A)'), S('OUT2', -59, -67, 'OUT2 (Motor A)'), S('OUT3', 75, -81, 'OUT3 (Motor B)'), S('OUT4', 75, -67, 'OUT4 (Motor B)')],
+    props: { ena: '1', enb: '1' } },
   ina219: { name: 'Strommesser INA219', ext: 'multimeter',  category: 'Module', render: renderINA, bbox: [-8, -62, 58, 4],
     pins: [L('VCC', 0), L('GND', 10), L('SCL', 20), L('SDA', 30), L('VINM', 40, 'VIN–'), L('VINP', 50, 'VIN+')], props: { address: 64 } },
 };

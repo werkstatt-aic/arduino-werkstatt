@@ -44,8 +44,10 @@ BEDIENUNG IN KÜRZE
     erscheinen dann auch in der Bauteilleiste.
   - OLED-Grafikeditor: Im Block "OLED-Bild ... zeichnen" auf das Bild klicken.
   - Mathe: runden (auch auf/ab), Betrag, Quadratwurzel.
-  - Motortreiber L9110S (Bauteile > Module) mit dem Block "Motor am
+  - Motortreiber L9110S und L298N (Bauteile > Module) mit dem Block "Motor am
     Motortreiber" unter "Ausgang": vorwärts, rückwärts, anhalten, Tempo in %.
+    L298N: IN1/IN2 (Motor A) bzw. IN3/IN4 (Motor B), Jumper auf ENA/ENB
+    gesteckt lassen. Motorspannung an "12V" und GND (z. B. Spannungsquelle).
 
 SERIELLER MONITOR
   - Zeigt die Ausgaben der Simulation. In die Zeile unten kann man Text

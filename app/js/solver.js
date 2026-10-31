@@ -119,6 +119,13 @@ function solveCircuit(project, nl, io) {
     const o = io.outputs[pin];
     if (o) { sources.push({ n: nl.net(uno.id, pin), G: 1 / 25, V: o.v, id: pin }); outByNet.set(nl.net(uno.id, pin), o); }
   }
+  // Versorgungsspannung an einem Netz: 5 V / 3,3 V des Mikrocontrollers oder eine Spannungsquelle gegen GND
+  const supplyAt = net => {
+    if (net === n5) return 5;
+    if (net === n33) return 3.3;
+    const s = project.components.find(x => x.type === 'source' && nl.net(x.id, 'P') === net && nl.net(x.id, 'N') === g);
+    return s ? Number(s.props.volt) || 0 : 0;
+  };
   // Pegel an einem Eingang (0 … 1, bei PWM der Tastgrad)
   const level = net => { const o = outByNet.get(net); return o && o.v > M.logic / 2 ? (o.duty == null ? 1 : o.duty) : 0; };
 
@@ -164,6 +171,19 @@ function solveCircuit(project, nl, io) {
       case 'strip': case 'ring': if (sup()) R(n('VCC'), n('GND'), 1000); break;
       case 'ads1115': for (const p of ['A0', 'A1', 'A2', 'A3']) R(n(p), g, 3e6); break;
       case 'ina219': R(n('VINP'), n('VINM'), 0.1); res.shuntI[c.id] = [n('VINP'), n('VINM')]; break;
+      case 'l298n': {
+        // L298N: OUT1/OUT2 folgen IN1/IN2, wenn ENA freigibt (Jumper oder Pegel). Etwa 2 V Spannungsverlust.
+        if (n('GND') !== g) break;
+        const vs = supplyAt(n('VS'));
+        if (!vs) break;
+        const vout = Math.max(0, vs - 2);
+        for (const [en, a, b, o1, o2, jp] of [['ENA', 'IN1', 'IN2', 'OUT1', 'OUT2', c.props.ena], ['ENB', 'IN3', 'IN4', 'OUT3', 'OUT4', c.props.enb]]) {
+          const e = String(jp) !== '0' ? 1 : level(n(en));
+          sources.push({ n: n(o1), G: 1 / 2, V: vout * e * level(n(a)), id: c.id + ':' + o1 });
+          sources.push({ n: n(o2), G: 1 / 2, V: vout * e * level(n(b)), id: c.id + ':' + o2 });
+        }
+        break;
+      }
       case 'mdriver': {
         // L9110S: Ausgang 1 folgt IA, Ausgang 2 folgt IB (mittlere Spannung bei PWM)
         const v = sup();
