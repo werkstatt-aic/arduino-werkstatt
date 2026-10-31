@@ -37,7 +37,7 @@ button { font: inherit; color: inherit; }
 .seg.small button { padding: 3px 12px; font-size: 13px; }
 .menu { position: relative; }
 .menu-pop { position: absolute; top: 36px; left: 0; z-index: 30; background: #fff; border: 1px solid var(--line); border-radius: var(--r); box-shadow: 0 8px 24px rgba(0,0,0,.12); padding: 5px; min-width: 230px; }
-.menu-pop button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 7px 10px; border-radius: 6px; cursor: pointer; }
+.menu-pop button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 7px 10px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
 .menu-pop button:hover { background: var(--accent-bg); }
 .menu-pop hr { border: 0; border-top: 1px solid var(--line); margin: 4px 0; }
 
