@@ -80,7 +80,7 @@ const App = {
     let last = {};
     try { last = JSON.parse(localStorage.getItem('werkstatt.schueler') || '{}'); } catch (e) { last = {}; }
     const tisch = pre.tisch || last.tisch || '', nach = pre.nach != null ? pre.nach : (last.nach || '');
-    const opts = '<option value="">–</option>' + Array.from({ length: 19 }, (_, i) => String(i + 1).padStart(2, '0')).map(n => `<option ${n === tisch ? 'selected' : ''}>${n}</option>`).join('');
+    const opts = '<option value="">–</option>' + Array.from({ length: 18 }, (_, i) => String(i + 1).padStart(2, '0')).map(n => `<option ${n === tisch ? 'selected' : ''}>${n}</option>`).join('');
     return `<div class="name3">
         <label>Tisch-Nr.<select name="tisch">${opts}</select></label>
         <label>Nachname<input type="text" name="nach" value="${esc(nach)}" spellcheck="false" autocomplete="off"></label>
@@ -464,7 +464,7 @@ const App = {
         case 'button': case 'button2': case 'pushbutton': case 'touch': case 'pir': h += pressNote; break;
         case 'keypad3': case 'keypad4': h += '<div class="note">In der Simulation die Tasten mit der Maus drücken.</div>'; break;
       }
-      if (!sim) h += `<div class="btns">${!c.def.fixed ? '<button class="btn small" data-act="rotate">Drehen (R)</button>' : ''}<button class="btn danger small" data-act="delete">Löschen (Entf)</button></div>`;
+      if (!sim) h += `<div class="btns">${!c.def.fixed ? '<button class="btn small" data-act="rotate">Drehen (R)</button><button class="btn small" data-act="dup">Verdoppeln (Strg+D)</button>' : ''}<button class="btn danger small" data-act="delete">Löschen (Entf)</button></div>`;
     }
     box.innerHTML = h;
     box.hidden = false;
@@ -478,6 +478,7 @@ const App = {
       if (b.dataset.color) { this.circuit.setWireColor(sel.id, b.dataset.color); this.onSelect(sel); }
       if (b.dataset.act === 'delete') this.circuit.deleteSelection();
       if (b.dataset.act === 'rotate') this.circuit.rotateSelection();
+      if (b.dataset.act === 'dup') this.circuit.duplicateSelection();
     });
     box.addEventListener('change', e => {
       const sel = this.circuit.sel; if (!sel) return;
@@ -519,7 +520,7 @@ const App = {
     if (a.p === 'SDA' || b.p === 'SDA') return 'gruen';
     if (isRail(a, 'm') || isRail(b, 'm')) return 'schwarz';
     if (isRail(a, 'p') || isRail(b, 'p')) return 'rot';
-    return 'gruen';
+    return 'blau'; // Grün und Gelb bleiben SDA/SCL vorbehalten
   },
 
   /* ---------- Oberfläche ---------- */
@@ -604,6 +605,33 @@ const App = {
         this.toast(`Fassung vom ${label(li.dataset.v)} wiederhergestellt.`);
       } catch (err) { this.toast('Wiederherstellen fehlgeschlagen: ' + err.message); }
     });
+  },
+
+  helpDialog() {
+    const row = (k, t) => `<tr><td>${k}</td><td>${t}</td></tr>`;
+    this.dialog(`<h2>Bedienung und Tastenkürzel</h2><div class="help">
+      <h3>Schaltung</h3><table>
+      ${row('Ziehen / Doppelklick', 'Bauteil aus der Leiste rechts auf die Werkbank')}
+      ${row('Klick auf Anschluss', 'Kabel beginnen, Klick auf das Ziel beendet es. Klicks dazwischen setzen Knickpunkte.')}
+      ${row('Esc', 'Kabel abbrechen, Auswahl aufheben')}
+      ${row('R', 'Bauteil drehen')}
+      ${row('Entf', 'Bauteil oder Kabel löschen')}
+      ${row('Strg + D', 'Bauteil verdoppeln')}
+      ${row('Strg + Z / Strg + Y', 'Rückgängig / Wiederholen')}
+      ${row('Kabel anklicken', 'Farbe wählen. Weiße Punkte an den Enden ziehen = umstecken, Knickpunkte ziehen = verschieben.')}
+      ${row('Mausrad', 'Vergrößern / Verkleinern')}
+      ${row('Freie Fläche ziehen', 'Ansicht verschieben (⤢ zeigt alles)')}
+      </table>
+      <h3>Blöcke</h3><table>
+      ${row('Strg + C / Strg + V', 'Block kopieren / einfügen')}
+      ${row('Entf', 'Block löschen (oder in den Papierkorb ziehen)')}
+      ${row('Rechtsklick', 'Duplizieren, Kommentar, Hilfe')}
+      ${row('Strg + Z / Strg + Y', 'Rückgängig / Wiederholen')}
+      </table>
+      <h3>Simulation</h3><table>
+      ${row('Taster, Tastenfeld', 'mit der Maus gedrückt halten')}
+      ${row('Sensoren', 'Bauteil anklicken und Wert im Eigenschaftsfeld verstellen')}
+      </table></div><div class="dlg-btns"><button class="btn primary" value="ok">Schließen</button></div>`);
   },
 
   /* Kommunikationsblöcke im Uno-Projekt mit Hinweis kennzeichnen */
@@ -768,12 +796,18 @@ const App = {
     $('#btBtn').onclick = () => { if (BOARD !== 'esp32') { this.toast('Übertragen per Bluetooth geht nur mit dem ESP32.'); return; } Uploader.mode = 'bt'; Uploader.open(this); };
     this.bindProps();
     window.addEventListener('resize', () => this.resizeBlockly());
+    // Hilfe: Tastenkürzel und Bedienung (Knopf „?“, Taste F1 oder ?)
+    $('#helpBtn').onclick = () => this.helpDialog();
+    window.addEventListener('keydown', e => {
+      if ((e.key === 'F1' || (e.key === '?' && !(e.target.closest && e.target.closest('input, textarea, .blocklyHtmlInput')))) && !$('#dlg').open) { e.preventDefault(); this.helpDialog(); }
+    });
     window.addEventListener('keydown', e => {
       const inField = e.target.closest && e.target.closest('input, select, textarea, .blocklyHtmlInput');
       if (inField || this.focusArea !== 'circuit') return;
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.stopImmediatePropagation(); e.shiftKey ? this.redo() : this.undo(); return; }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); e.stopImmediatePropagation(); this.redo(); return; }
       if (this.sim.running) return;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') { e.preventDefault(); e.stopImmediatePropagation(); this.circuit.duplicateSelection(); return; }
       if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); e.stopImmediatePropagation(); this.circuit.deleteSelection(); }
       else if (e.key === 'r' || e.key === 'R') { this.circuit.rotateSelection(); }
       else if (e.key === 'Escape') { this.circuit.cancelWire(); this.circuit.select(null); }

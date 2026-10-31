@@ -195,9 +195,11 @@ class CircuitEditor {
 
   renderWires() {
     let s = '';
+    const ed = this.drag && this.drag.kind === 'end' ? this.drag : null;
     for (const w of this.project.wires) {
-      const a = this.pinPos(w.a), b = this.pinPos(w.b);
+      let a = this.pinPos(w.a), b = this.pinPos(w.b);
       if (!a || !b) continue;
+      if (ed && ed.w === w) { if (ed.end === 'a') a = ed.pos; else b = ed.pos; }
       const pts = [a, ...w.pts, b];
       const d = this.wirePath(pts);
       const sel = this.sel && this.sel.kind === 'wire' && this.sel.id === w.id;
@@ -208,6 +210,7 @@ class CircuitEditor {
       if (w.color === 'weiss') s += `<path d="${d}" class="wire-edge"/>`;
       s += `<circle cx="${a[0]}" cy="${a[1]}" r="2.6" fill="${col}" class="wire-end"/><circle cx="${b[0]}" cy="${b[1]}" r="2.6" fill="${col}" class="wire-end"/>`;
       if (sel) w.pts.forEach((p, i) => { s += `<circle cx="${p[0]}" cy="${p[1]}" r="3.5" class="wire-knot" data-knot="${i}"/>`; });
+      if (sel) for (const [end, p] of [['a', a], ['b', b]]) s += `<circle cx="${p[0]}" cy="${p[1]}" r="4.5" class="wire-endh" data-end="${end}"><title>Ziehen, um das Kabel an einen anderen Anschluss zu stecken</title></circle>`;
       s += '</g>';
     }
     this.L.wire.innerHTML = s;
@@ -320,6 +323,14 @@ class CircuitEditor {
       this.drawTemp(e);
       return;
     }
+    const endh = t.closest('.wire-endh');
+    if (endh) {
+      const w = this.project.wires.find(x => x.id === wireEl.dataset.id);
+      this.drag = { kind: 'end', w, end: endh.dataset.end, pos: this.pinPos(w[endh.dataset.end]), snap: JSON.stringify(this.app.snapshotData()) };
+      this.L.wire.style.pointerEvents = 'none'; // damit der Anschluss darunter gefunden wird
+      svg_capture(this.svg, e);
+      return;
+    }
     if (knot) {
       const w = this.project.wires.find(x => x.id === wireEl.dataset.id);
       this.app.pushUndo();
@@ -382,6 +393,9 @@ class CircuitEditor {
         this.renderWires();
         this.renderSelection();
       }
+    } else if (d.kind === 'end') {
+      d.pos = this.pt(e);
+      this.renderWires();
     } else if (d.kind === 'knot') {
       const [x, y] = this.pt(e);
       d.w.pts[d.i] = [Math.round(x / 5) * 5, Math.round(y / 5) * 5];
@@ -390,7 +404,7 @@ class CircuitEditor {
     }
   }
 
-  onUp() {
+  onUp(e) {
     if (this.pressedBtn) { this.app.sim.pressButton(this.pressedBtn, false); this.pressedBtn = null; }
     if (this.pressedKey) { this.app.sim.pressKey(this.pressedKey, null); this.pressedKey = null; }
     const d = this.drag;
@@ -403,6 +417,33 @@ class CircuitEditor {
       this.app.changed();
     }
     if (d.kind === 'knot' && d.moved) this.app.changed();
+    if (d.kind === 'end') {
+      // Kabelende auf einen anderen Anschluss umstecken
+      const el = e && document.elementFromPoint(e.clientX, e.clientY);
+      const pinEl = el && el.closest && el.closest('.pin');
+      this.L.wire.style.pointerEvents = '';
+      const ref = pinEl && this.pinRef(pinEl), other = d.w[d.end === 'a' ? 'b' : 'a'];
+      if (ref && !(ref.c === other.c && ref.p === other.p) && !(ref.c === d.w[d.end].c && ref.p === d.w[d.end].p)) {
+        this.app.pushUndoRaw(d.snap);
+        d.w[d.end] = ref;
+        this.app.changed();
+      }
+      this.renderWires();
+    }
+  }
+
+  /* Ausgewähltes Bauteil verdoppeln (Strg+D) */
+  duplicateSelection() {
+    if (!this.sel || this.sel.kind !== 'comp') return;
+    const c = this.comp(this.sel.id);
+    if (!c) return;
+    if (c.def.fixed) { this.app.toast('Mikrocontroller und Steckplatine lassen sich nicht verdoppeln.'); return; }
+    this.app.pushUndo();
+    const k = makeComp(c.type, c.x + 30, c.y + 30, c.rot, JSON.parse(JSON.stringify(c.props)), this.newId('c'));
+    this.project.components.push(k);
+    this.renderAll();
+    this.select({ kind: 'comp', id: k.id });
+    this.app.changed();
   }
 
   drawTemp(e) {

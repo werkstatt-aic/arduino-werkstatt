@@ -35,6 +35,7 @@ class Simulator {
     CommPanel.render(this);
     this.messages = new Map();
     this.lastYield = performance.now();
+    this.t0 = performance.now();
     this.lastHl = 0;
     this.nl = buildNetlist(this.project);
     this.app.serialClear();
@@ -81,6 +82,7 @@ class Simulator {
         const t = performance.now();
         if (force || t - S.lastYield > 12) { S.lastYield = t; await new Promise(r => setTimeout(r, force ? 1 : 0)); check(); }
       },
+      millis(div) { const t = performance.now() - S.t0; return div === 1 ? Math.floor(t) : t / div; },
       async wait(ms) {
         check();
         ms = Math.max(0, Number(ms) || 0);

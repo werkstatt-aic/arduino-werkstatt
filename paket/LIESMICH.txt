@@ -12,7 +12,7 @@ STARTEN
 START
   Beim Start erscheint eine Auswahl: neues Projekt anlegen, zuletzt bearbeitetes
   oder ein anderes Projekt öffnen, oder ein Beispiel öffnen.
-  Für ein neues Projekt gibt man Tisch-Nr. (01 bis 19), Nachname und
+  Für ein neues Projekt gibt man Tisch-Nr. (01 bis 18), Nachname und
   Projektname ein. Daraus wird z. B. "11 – Müller – Ampelschaltung".
   Ein vorhandenes Projekt wird nie überschrieben.
 
@@ -33,7 +33,13 @@ BEDIENUNG IN KÜRZE
   - Leitung: auf einen Anschluss klicken, dann auf das Ziel. Klicks dazwischen
     setzen Knickpunkte. Esc bricht ab.
   - Bauteil anklicken: Eigenschaften oben rechts. R = drehen, Entf = löschen,
-    Strg+Z = rückgängig. Ansicht verschieben: freie Stelle ziehen. Zoom: Mausrad.
+    Strg+D = verdoppeln, Strg+Z = rückgängig. Ansicht verschieben: freie Stelle
+    ziehen. Zoom: Mausrad. Alle Kürzel: Knopf "?" unten links oder F1.
+  - Kabel anklicken: Farbe wählen; die weißen Punkte an den Enden ziehen, um
+    das Kabel umzustecken. Neue Signalkabel sind blau, Grün/Gelb ist für
+    SDA/SCL, Rot für Plus, Schwarz für GND.
+  - Steuerung: "warten bis ..." (z. B. bis ein Taster gedrückt ist) und
+    "Zeit seit Start" zum Messen von Zeiten.
   - Beine, die in der Steckplatine stecken, sind schwarz umrandet.
   - Simulation: Taster, Sensortaste, Bewegungsmelder und Tastenfeld mit der Maus
     drücken. Licht, Temperatur, Feuchte, Abstand, Poti und Spannung im

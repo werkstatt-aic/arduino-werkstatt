@@ -289,3 +289,6 @@ input.bad { border-color: var(--err) !important; box-shadow: 0 0 0 2px var(--err
 .bottom.tall .bottom-body { height: 210px; }
 .serial-wrap.live .serial { background: #fbfdf7; }
 .start-item.ex span { display: flex; flex-direction: column; gap: 2px; } .start-item.ex small { color: var(--muted); font-weight: 400; font-size: 12px; }
+.circuit .wire-endh { fill: #fff; stroke: var(--accent); stroke-width: 1.6; cursor: grab; }
+.help h3 { font-size: 14px; margin: 14px 0 6px; } .help table { border-collapse: collapse; width: 100%; font-size: 13px; }
+.help td { padding: 4px 8px; border-bottom: 1px solid var(--line); vertical-align: top; } .help td:first-child { white-space: nowrap; font-weight: 600; width: 34%; }

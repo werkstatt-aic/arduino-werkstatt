@@ -10,7 +10,9 @@ Blockbasierte Arduino-Lernumgebung (Uno und ESP32) mit Simulation und Hochladen 
 | `app/js/components.js` | Alle Bauteile: Zeichnung (SVG), Anschlüsse, Kategorien, Mikrocontroller-Daten |
 | `app/js/solver.js` | Elektrik: Netzliste und Knotenspannungsverfahren (Ströme, Spannungen) |
 | `app/js/sim.js` | Simulation: führt den Blockcode aus und steuert die Bauteile |
-| `app/js/blocks.js` | Alle Blöcke, Werkzeugkasten, Code-Erzeugung für Simulation (JS) und Arduino (C++), Bluetooth-Empfänger |
+| `app/js/blocks.js` | Alle Blöcke, Anschlusslisten, Werkzeugkasten, Erweiterungen |
+| `app/js/code_sim.js` | Code-Erzeugung für die Simulation (JavaScript) |
+| `app/js/code_cpp.js` | Code-Erzeugung für Arduino/ESP32 (C++): Datentypen, Bluetooth-Empfänger, WLAN/Webseite/Funk |
 | `app/js/circuit.js` | Schaltungseditor (Ziehen, Verdrahten, Vorlagen) |
 | `app/js/bitmap.js`, `font5x7.js` | Grafikeditor für OLED-Bilder, Pixelschrift |
 | `app/js/upload.js` | Hochladen per USB und Bluetooth (Web Bluetooth) |
@@ -55,7 +57,7 @@ Umgebungsvariablen nur für Tests: `WERKSTATT_CLI_URL`, `WERKSTATT_UPDATE_API`, 
   Dienst-UUIDs `8e4f000x-6a1b-4c5e-9d2a-7765726b7374`.
 - **Sicherheit:** Das Startprogramm nimmt nur Anfragen von der eigenen Seite an (Host-/Origin-Prüfung),
   damit fremde Webseiten im selben Browser nichts auslösen können.
-- **Projektnamen:** „Tisch-Nr – Nachname – Projekt“ (Tisch 01–19); vorhandene Projekte werden nie überschrieben.
+- **Projektnamen:** „Tisch-Nr – Nachname – Projekt“ (Tisch 01–18); vorhandene Projekte werden nie überschrieben.
 - **Sicherungen:** `Projekte/.sicherungen/<Projekt>/`, höchstens alle 5 Minuten, die letzten 15.
 - **Kommunikation:** WLAN/Webseite/ESP-NOW-Funk nur für ESP32; bei eingeschalteter Erweiterung werden
   `WiFi.h`, `WebServer.h`, `esp_now.h` fest eingebunden (eigener Zwischenordner `-net`).

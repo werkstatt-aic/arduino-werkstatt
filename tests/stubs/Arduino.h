@@ -15,7 +15,7 @@ int analogRead(uint8_t);
 #ifdef ESP32
 uint32_t analogReadMilliVolts(uint8_t);
 #endif
-void analogWrite(uint8_t, int); void delay(unsigned long); void delayMicroseconds(unsigned int);
+void analogWrite(uint8_t, int); void delay(unsigned long); unsigned long millis(); void delayMicroseconds(unsigned int);
 unsigned long pulseIn(uint8_t, uint8_t, unsigned long timeout = 1000000L);
 void tone(uint8_t, unsigned int, unsigned long duration = 0); void noTone(uint8_t);
 long map(long, long, long, long, long); long random(long); long random(long, long);
