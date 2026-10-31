@@ -251,7 +251,69 @@ func releaseAPI() string {
 
 var httpClient = &http.Client{Timeout: 10 * time.Minute, Transport: &http.Transport{Proxy: http.ProxyFromEnvironment}}
 
+// Neueste Version suchen: in der Datei update/version.json der Ablage (schnell, ohne
+// Abfrage-Grenze) und unter den GitHub-Releases. Die neuere von beiden gewinnt.
 func latestRelease() (*releaseInfo, string, error) {
+	r1, u1, e1 := latestFromRepo()
+	r2, u2, e2 := latestFromReleases()
+	switch {
+	case e1 == nil && e2 == nil:
+		if versionLess(r2.Tag, r1.Tag) || u2 == "" {
+			return r1, u1, nil
+		}
+		return r2, u2, nil
+	case e1 == nil:
+		return r1, u1, nil
+	case e2 == nil:
+		return r2, u2, nil
+	}
+	return nil, "", e2
+}
+
+func repoUpdateURL() string {
+	if u := os.Getenv("WERKSTATT_UPDATE_RAW"); u != "" { // nur für Tests
+		return u
+	}
+	if updateRepoName() == "" {
+		return ""
+	}
+	return "https://raw.githubusercontent.com/" + updateRepoName() + "/main/update/version.json"
+}
+
+func latestFromRepo() (*releaseInfo, string, error) {
+	src := repoUpdateURL()
+	if src == "" {
+		return nil, "", fmt.Errorf("Die Update-Suche ist noch nicht eingerichtet.")
+	}
+	req, _ := http.NewRequest("GET", src, nil)
+	req.Header.Set("User-Agent", "Arduino-Werkstatt/"+version)
+	req.Header.Set("Cache-Control", "no-cache")
+	c := *httpClient
+	c.Timeout = 15 * time.Second
+	resp, err := c.Do(req)
+	if err != nil {
+		return nil, "", fmt.Errorf("Keine Verbindung zum Update-Server. Besteht eine Internetverbindung?")
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return nil, "", fmt.Errorf("Keine Update-Datei gefunden (%d).", resp.StatusCode)
+	}
+	var v struct {
+		Version string `json:"version"`
+		Zip     string `json:"zip"`
+		Notes   string `json:"notes"`
+	}
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&v); err != nil || v.Version == "" || v.Zip == "" {
+		return nil, "", fmt.Errorf("Die Update-Datei ist unverständlich.")
+	}
+	zip := v.Zip
+	if !strings.HasPrefix(zip, "https://") && !strings.HasPrefix(zip, "http://") {
+		zip = src[:strings.LastIndex(src, "/")+1] + zip // relativ zur version.json
+	}
+	return &releaseInfo{Tag: v.Version, Body: v.Notes}, zip, nil
+}
+
+func latestFromReleases() (*releaseInfo, string, error) {
 	api := releaseAPI()
 	if api == "" {
 		return nil, "", fmt.Errorf("Die Update-Suche ist noch nicht eingerichtet.")

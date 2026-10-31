@@ -28,10 +28,14 @@ Blockbasierte Arduino-Lernumgebung (Uno und ESP32) mit Simulation und Hochladen 
 
 ## Neue Version veröffentlichen
 
-1. In `launcher/main.go` die Konstante `version` erhöhen (z. B. `0.9.3`).
-2. `./bauen.sh` ausführen → `Arduino-Werkstatt-0.9.3.zip`.
-3. Bei GitHub ein Release mit dem Tag `v0.9.3` anlegen und die ZIP-Datei anhängen.
-   Die Werkstatt findet es über „Einstellungen › Nach Updates suchen“ (Ablage in `launcher/settings.go`, `updateRepo`).
+1. In `launcher/main.go` die Konstante `version` erhöhen (z. B. `0.9.4`).
+2. `./bauen.sh` ausführen → `Arduino-Werkstatt-0.9.4.zip`.
+3. Die ZIP-Datei als `update/Arduino-Werkstatt.zip` in die Ablage legen und `update/version.json` anpassen:
+   `{"version": "0.9.4", "zip": "Arduino-Werkstatt.zip", "notes": "Was ist neu …"}` – committen und pushen.
+4. Optional zusätzlich ein GitHub-Release mit dem Tag `v0.9.4` und der ZIP-Datei anlegen.
+
+Die Werkstatt (ab 0.9.3) prüft unter „Einstellungen › Nach Updates suchen“ beide Quellen und nimmt die neuere
+(Ablage in `launcher/settings.go`, `updateRepo`). Version 0.9.1/0.9.2 kennen nur die GitHub-Releases.
 
 ## Testen
 

@@ -1,5 +1,6 @@
 # Gebaute Pakete und lokale Daten
 *.zip
+!update/Arduino-Werkstatt.zip
 Projekte/
 Werkzeuge/
 launcher/*.exe

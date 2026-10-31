@@ -1,0 +1,5 @@
+{
+ "version": "0.9.3",
+ "zip": "Arduino-Werkstatt.zip",
+ "notes": "**Neu in 0.9.3**\n- Neues Startfenster: Tisch-Nr., Nachname und Projekt (z. B. „11 – Müller – Ampelschaltung“); vorhandene Projekte werden nie überschrieben\n- Kommunikation für den ESP32: USB senden/empfangen, WLAN, eigene Webseite (Werte, Knöpfe, Schieberegler), Funk zwischen ESP32 – mit Simulation\n- Serieller Monitor: Eingabezeile und Verbindung zum echten Arduino/ESP32\n- Beispielprojekte, automatische Sicherungen, Schaltung als Bild, Drucken\n- Motortreiber L9110S, Blöcke für Runden, Betrag und Wurzel\n- Vorübersetzen beim Öffnen des Hochladen-Fensters, schnellerer Bluetooth-Empfänger\n- Einstellungen mit Update-Funktion"
+}

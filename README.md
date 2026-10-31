@@ -11,8 +11,8 @@ Blockbasierte Arduino-Lernumgebung für den Unterricht – als Ersatz für Tinke
 
 ## Herunterladen
 
-Die fertige Version gibt es unter **[Releases](../../releases/latest)** als ZIP-Datei
-(`Arduino-Werkstatt-<Version>.zip`). Entpacken und „Arduino-Werkstatt starten.exe“ starten.
+Die fertige Version gibt es als ZIP-Datei: **[update/Arduino-Werkstatt.zip](update/Arduino-Werkstatt.zip)**
+(auf der Seite oben rechts „Download raw file“) oder unter **[Releases](../../releases/latest)**. Entpacken und „Arduino-Werkstatt starten.exe“ starten.
 Hinweise stehen in der Datei `LIESMICH.txt` im Paket.
 
 Vorhandene Installationen finden neue Versionen unter **Einstellungen › Nach Updates suchen**.
