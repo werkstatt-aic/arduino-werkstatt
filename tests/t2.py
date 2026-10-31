@@ -7,7 +7,7 @@ with sync_playwright() as p:
     errs=[]
     pg.on('console', lambda m: errs.append(m.type+': '+m.text) if m.type in ('error','warning') else None)
     pg.on('pageerror', lambda e: errs.append('PAGEERR: '+str(e)))
-    pg.goto(url); pg.wait_for_timeout(800)
+    pg.goto(url); pg.wait_for_timeout(800); pg.evaluate("()=>{const d=document.querySelector('#dlg'); if(d.open) d.close();}")
     r = pg.evaluate("""() => {
       const C = App.circuit;
       App.loadProject(App.blankProject('Test LED'));

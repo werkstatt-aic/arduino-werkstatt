@@ -194,6 +194,7 @@ const App = {
     Blockly.Events.enable();
     this.workspace.clearUndo();
     this.markBoardBlocks();
+    SerialLink.setUi();
     this.needCenter = true;
     this.undoStack = []; this.redoStack = [];
     this.loading = false;
@@ -557,6 +558,7 @@ const App = {
       this.workspace.updateToolbox(buildToolbox(this.extensions));
       this.updateCommTab();
       this.markBoardBlocks();
+      SerialLink.setUi();
       this.buildPartList();
       this.filterParts();
       this.updateCodeText();

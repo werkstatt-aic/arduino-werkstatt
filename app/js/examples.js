@@ -2133,5 +2133,198 @@ const EXAMPLES = [
 ]
 },
 "blocks": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"ard_setup\" x=\"30\" y=\"30\"><statement name=\"DO\"><block type=\"com_radio_init\"><field name=\"G\">1</field></block></statement></block><block type=\"ard_loop\" x=\"30\" y=\"170\"><statement name=\"DO\"><block type=\"controls_if\"><value name=\"IF0\"><block type=\"logic_compare\"><field name=\"OP\">EQ</field><value name=\"A\"><block type=\"ard_digital_read\"><field name=\"PIN\">19</field></block></value><value name=\"B\"><shadow type=\"math_number\"><field name=\"NUM\">1</field></shadow></value></block></value><statement name=\"DO0\"><block type=\"com_radio_send\"><value name=\"V\"><shadow type=\"text\"><field name=\"TEXT\">Ding-Dong!</field></shadow></value><next><block type=\"ard_wait\"><field name=\"UNIT\">S</field><value name=\"N\"><shadow type=\"math_number\"><field name=\"NUM\">0.5</field></shadow></value></block></next></block></statement><next><block type=\"controls_if\"><value name=\"IF0\"><block type=\"com_radio_avail\"></block></value><statement name=\"DO0\"><block type=\"ard_serial\"><field name=\"NL\">Y</field><value name=\"V\"><block type=\"com_radio_text\"></block></value><next><block type=\"ard_builtin_led\"><field name=\"V\">HIGH</field><next><block type=\"ard_wait\"><field name=\"UNIT\">S</field><value name=\"N\"><shadow type=\"math_number\"><field name=\"NUM\">1</field></shadow></value><next><block type=\"ard_builtin_led\"><field name=\"V\">LOW</field></block></next></block></next></block></next></block></statement></block></next></block></statement></block></xml>"
+},
+{
+"id": "bluetooth",
+"title": "Handy schaltet LED (Bluetooth)",
+"board": "esp32",
+"ext": [
+"comm"
+],
+"desc": "Mit einer Bluetooth-App (z. B. „Serial Bluetooth Terminal“) „an“ oder „aus“ senden – der ESP32 schaltet die LED und antwortet.",
+"circuit": {
+"components": [
+{
+"id": "c1",
+"type": "breadboard",
+"x": 200,
+"y": 200,
+"rot": 0,
+"props": {}
+},
+{
+"id": "c2",
+"type": "esp32exp",
+"x": 280,
+"y": 520,
+"rot": 0,
+"props": {
+"jump": "3.3"
+}
+},
+{
+"id": "c7",
+"type": "led",
+"x": 260,
+"y": 310,
+"rot": 0,
+"props": {
+"color": "rot"
+}
+},
+{
+"id": "c8",
+"type": "resistor",
+"x": 270,
+"y": 330,
+"rot": 0,
+"props": {
+"ohm": 220
+}
+}
+],
+"wires": [
+{
+"id": "w3",
+"a": {
+"c": "c2",
+"p": "P3V3a"
+},
+"b": {
+"c": "c1",
+"p": "bp-1"
+},
+"pts": [
+[
+550,
+530
+],
+[
+550,
+425
+],
+[
+180,
+425
+],
+[
+180,
+390
+]
+],
+"color": "rot"
+},
+{
+"id": "w4",
+"a": {
+"c": "c2",
+"p": "PGa"
+},
+"b": {
+"c": "c1",
+"p": "bm-2"
+},
+"pts": [
+[
+560,
+590
+],
+[
+560,
+435
+],
+[
+170,
+435
+],
+[
+170,
+380
+]
+],
+"color": "schwarz"
+},
+{
+"id": "w5",
+"a": {
+"c": "c1",
+"p": "bp-29"
+},
+"b": {
+"c": "c1",
+"p": "tp-29"
+},
+"pts": [
+[
+550,
+390
+],
+[
+550,
+220
+]
+],
+"color": "rot"
+},
+{
+"id": "w6",
+"a": {
+"c": "c1",
+"p": "bm-28"
+},
+"b": {
+"c": "c1",
+"p": "tm-28"
+},
+"pts": [
+[
+540,
+380
+],
+[
+540,
+210
+]
+],
+"color": "schwarz"
+},
+{
+"id": "w9",
+"a": {
+"c": "c1",
+"p": "10j"
+},
+"b": {
+"c": "c1",
+"p": "bm-10"
+},
+"pts": [],
+"color": "schwarz"
+},
+{
+"id": "w10",
+"a": {
+"c": "c2",
+"p": "D4"
+},
+"b": {
+"c": "c1",
+"p": "5j"
+},
+"pts": [
+[
+400,
+412
+],
+[
+260,
+412
+]
+],
+"color": "blau"
+}
+]
+},
+"blocks": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"ard_setup\" x=\"30\" y=\"30\"><statement name=\"DO\"><block type=\"com_bt_init\"><value name=\"N\"><shadow type=\"text\"><field name=\"TEXT\">ESP-Werkstatt</field></shadow></value></block></statement></block><block type=\"ard_loop\" x=\"30\" y=\"170\"><statement name=\"DO\"><block type=\"controls_if\"><value name=\"IF0\"><block type=\"com_bt_avail\"></block></value><statement name=\"DO0\"><block type=\"controls_if\"><value name=\"IF0\"><block type=\"logic_compare\"><field name=\"OP\">EQ</field><value name=\"A\"><block type=\"com_bt_text\"></block></value><value name=\"B\"><shadow type=\"text\"><field name=\"TEXT\">an</field></shadow></value></block></value><statement name=\"DO0\"><block type=\"ard_digital_write\"><field name=\"PIN\">4</field><field name=\"V\">HIGH</field><next><block type=\"com_bt_send\"><value name=\"V\"><shadow type=\"text\"><field name=\"TEXT\">LED ist an</field></shadow></value></block></next></block></statement><next><block type=\"controls_if\"><value name=\"IF0\"><block type=\"logic_compare\"><field name=\"OP\">EQ</field><value name=\"A\"><block type=\"com_bt_text\"></block></value><value name=\"B\"><shadow type=\"text\"><field name=\"TEXT\">aus</field></shadow></value></block></value><statement name=\"DO0\"><block type=\"ard_digital_write\"><field name=\"PIN\">4</field><field name=\"V\">LOW</field><next><block type=\"com_bt_send\"><value name=\"V\"><shadow type=\"text\"><field name=\"TEXT\">LED ist aus</field></shadow></value></block></next></block></statement></block></next></block></statement></block></statement></block></xml>"
 }
 ];

@@ -24,7 +24,7 @@ SPEICHERN UND SICHERUNGEN
 
 BEISPIELE, BILD UND DRUCKEN (Menü "Datei")
   - Beispiel öffnen: fertige Projekte (Blinken, Ampel, Taster, Dimmer,
-    Thermometer, Servo, Motor, Webseite, Funk-Klingel) als neues Projekt.
+    Thermometer, Servo, Motor, Webseite, Funk-Klingel, Bluetooth) als neues Projekt.
   - Schaltung als Bild speichern: PNG-Datei im Ordner "Downloads".
   - Drucken: Schaltung, Blöcke und C++-Code auf Papier oder als PDF.
 
@@ -58,9 +58,11 @@ BEDIENUNG IN KÜRZE
 SERIELLER MONITOR
   - Zeigt die Ausgaben der Simulation. In die Zeile unten kann man Text
     eingeben, der über USB an das Programm geht.
-  - "Mit Mikrocontroller verbinden": zeigt die Ausgaben des echten Arduino
-    oder ESP32 (USB-Kabel). Beim Hochladen wird die Verbindung kurz getrennt
-    und danach automatisch wiederhergestellt.
+  - "Per USB verbinden": zeigt die Ausgaben des echten Arduino oder ESP32
+    (USB-Kabel). Beim Hochladen wird die Verbindung kurz getrennt und danach
+    automatisch wiederhergestellt.
+  - "Per Bluetooth verbinden" (nur ESP32): ohne Kabel, wenn das Programm den
+    Block "Bluetooth einrichten" enthält.
 
 KOMMUNIKATION (nur ESP32, unter "Erweiterungen ...")
   - USB: Text und Zahlen vom seriellen Monitor empfangen.
@@ -69,8 +71,11 @@ KOMMUNIKATION (nur ESP32, unter "Erweiterungen ...")
     Handys die IP-Adresse des ESP32 aufrufen (eigenes WLAN: 192.168.4.1).
   - Funk zwischen ESP32 (ohne Router): Alle ESP32 mit derselben Gruppe
     (z. B. Tisch-Nr.) empfangen die Nachrichten der anderen.
-  - In der Simulation zeigt der Bereich "WLAN & Funk" unten das WLAN, die
-    Webseite (mit klickbaren Knöpfen) und die Funk-Nachrichten.
+  - Bluetooth: Texte und Zahlen mit einer Handy-App austauschen (z. B.
+    "Serial Bluetooth Terminal" für Android, "Bluefruit Connect" für Android
+    und iPhone). Auch der serielle Monitor kann sich per Bluetooth verbinden.
+  - In der Simulation zeigt der Bereich "WLAN, Funk & Bluetooth" unten das
+    WLAN, die Webseite (mit klickbaren Knöpfen), Funk- und Bluetooth-Nachrichten.
 
 AUF DEN ARDUINO HOCHLADEN
   Einmalige Einrichtung (am besten zu Hause, Internet nötig, ca. 250 MB):

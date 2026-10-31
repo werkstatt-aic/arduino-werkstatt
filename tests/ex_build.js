@@ -149,6 +149,18 @@
         [`<block type="controls_if"><value name="IF0">${pressed}</value><statement name="DO0">${chain([`<block type="com_radio_send"><value name="V">${T('Ding-Dong!')}</value></block>`, wait(0.5)])}</statement></block>`,
           `<block type="controls_if"><value name="IF0"><block type="com_radio_avail"></block></value><statement name="DO0">${chain([`<block type="ard_serial"><field name="NL">Y</field><value name="V"><block type="com_radio_text"></block></value></block>`, led('HIGH'), wait(1), led('LOW')])}</statement></block>`]) }); }
 
+  /* 10 Bluetooth: Handy schaltet LED (ESP32, LED an D4) */
+  { const k = base('esp32');
+    ledR(k, 5, 'rot');
+    k.up('D4', 5, k.bb.y + 212);
+    const is = w => `<block type="logic_compare"><field name="OP">EQ</field><value name="A"><block type="com_bt_text"></block></value><value name="B">${T(w)}</value></block>`;
+    const send = t => `<block type="com_bt_send"><value name="V">${T(t)}</value></block>`;
+    ex.push({ id: 'bluetooth', title: 'Handy schaltet LED (Bluetooth)', board: 'esp32', ext: ['comm'], desc: 'Mit einer Bluetooth-App (z. B. „Serial Bluetooth Terminal“) „an“ oder „aus“ senden – der ESP32 schaltet die LED und antwortet.', circuit: k.done(),
+      blocks: prog([`<block type="com_bt_init"><value name="N">${T('ESP-Werkstatt')}</value></block>`],
+        [`<block type="controls_if"><value name="IF0"><block type="com_bt_avail"></block></value><statement name="DO0">${chain([
+          `<block type="controls_if"><value name="IF0">${is('an')}</value><statement name="DO0">${chain([dw(4, 'HIGH'), send('LED ist an')])}</statement></block>`,
+          `<block type="controls_if"><value name="IF0">${is('aus')}</value><statement name="DO0">${chain([dw(4, 'LOW'), send('LED ist aus')])}</statement></block>`])}</statement></block>`]) }); }
+
   BOARD = 'uno';
   return ex;
 })();

@@ -104,14 +104,14 @@
   <div class="bottom-tabs">
     <button id="tabMsgs" class="on">Prüfung <span class="badge" id="msgBadge" hidden>0</span></button>
     <button id="tabSerial">Serieller Monitor</button>
-    <button id="tabComm" hidden>WLAN &amp; Funk</button>
+    <button id="tabComm" hidden>WLAN, Funk &amp; Bluetooth</button>
     <button class="toggle" id="bottomToggle" title="Ein-/ausklappen">▾</button>
   </div>
   <div class="bottom-body">
     <ul class="msgs" id="msgs"><li class="ok">Starte die Simulation, um deine Schaltung und dein Programm zu prüfen.</li></ul>
     <div class="serial-wrap" id="serialWrap" hidden>
       <pre class="serial" id="serial"></pre>
-      <form class="serial-in" id="serialIn"><input type="text" id="serialText" placeholder="Text über USB an das Programm senden (Enter)" spellcheck="false" autocomplete="off"><button class="btn small">Senden</button><span class="serial-tools"><button type="button" class="btn small ghost" id="serialClr">Leeren</button><button type="button" class="btn small primary" id="serialConn" title="Ausgaben des echten Arduino/ESP32 anzeigen (USB-Kabel)">Mit Mikrocontroller verbinden</button></span></form>
+      <form class="serial-in" id="serialIn"><input type="text" id="serialText" placeholder="Text über USB an das Programm senden (Enter)" spellcheck="false" autocomplete="off"><button class="btn small">Senden</button><span class="serial-tools"><button type="button" class="btn small ghost" id="serialClr">Leeren</button><button type="button" class="btn small primary" id="serialConn" title="Ausgaben des echten Arduino/ESP32 anzeigen (USB-Kabel)">Per USB verbinden</button><button type="button" class="btn small" id="serialBt" title="Mit einem ESP32 verbinden, dessen Programm den Block „Bluetooth einrichten“ enthält" hidden>Per Bluetooth verbinden</button></span></form>
     </div>
     <div class="comm" id="comm" hidden></div>
   </div>

@@ -3,7 +3,7 @@
 
 const COL = {
   ctrl: '#ffab19', loop: '#e08e0b', logic: '#4aa7c2', math: '#59c059', vars: '#ff8c1a', func: '#d65cd6',
-  out: '#4c97ff', inp: '#9966ff', show: '#0fa39a', neo: '#7a5cd6', kp: '#cf4f8f', mm: '#3a9a5b', mmi: '#6cc48a', mmc: '#c8742a', com: '#1e88a8', comu: '#6b7c8c', comw: '#3b6fb6', comf: '#c0563f', oled: '#3a64b0',
+  out: '#4c97ff', inp: '#9966ff', show: '#0fa39a', neo: '#7a5cd6', kp: '#cf4f8f', mm: '#3a9a5b', mmi: '#6cc48a', mmc: '#c8742a', com: '#1e88a8', comu: '#6b7c8c', comw: '#3b6fb6', comf: '#c0563f', comb: '#2d5fa8', oled: '#3a64b0',
 };
 /* Gewählter Mikrocontroller: 'uno' oder 'esp32' */
 let BOARD = 'uno';
@@ -49,7 +49,7 @@ const EXTENSIONS = {
   keypad: { name: 'Tastenfeld', desc: 'Folientastatur 3 × 4 oder 4 × 4 abfragen.' },
   multimeter: { name: 'Multimeter', desc: 'Spannung (ADS1115) und Strom (INA219) über I²C messen.' },
   oled: { name: 'OLED-Anzeige', desc: 'Grafikdisplay SSD1306, 128 × 64 Pixel, I²C.' },
-  comm: { name: 'Kommunikation', desc: 'USB (senden und empfangen), WLAN, eigene Webseite und Funk zwischen ESP32. Nur mit dem ESP32.', esp: true },
+  comm: { name: 'Kommunikation', desc: 'USB (senden und empfangen), WLAN, eigene Webseite, Funk zwischen ESP32 und Bluetooth (Handy-App). Nur mit dem ESP32.', esp: true },
 };
 
 function setupBlocklyMessages() {
@@ -200,6 +200,12 @@ function defineBlocks() {
     { type: 'com_radio_avail', message0: 'Funk-Nachricht empfangen?', output: 'Boolean', colour: COL.comf, tooltip: 'Prüft, ob eine neue Funk-Nachricht angekommen ist. Danach steht sie in „empfangene Funk-Nachricht“.' },
     { type: 'com_radio_text', message0: 'empfangene Funk-Nachricht', output: 'String', colour: COL.comf, tooltip: 'Die zuletzt empfangene Funk-Nachricht als Text.' },
     { type: 'com_radio_num', message0: 'empfangene Funk-Nachricht als Zahl', output: 'Number', colour: COL.comf, tooltip: 'Die zuletzt empfangene Funk-Nachricht als Zahl.' },
+    B({ type: 'com_bt_init', message0: 'Bluetooth mit Namen %1 einrichten', args0: [{ type: 'input_value', name: 'N' }], inputsInline: true, tooltip: 'Der ESP32 wird zu einem Bluetooth-Gerät, mit dem eine Handy-App (z. B. „Serial Bluetooth Terminal“ oder „Bluefruit Connect“) oder der serielle Monitor der Werkstatt Nachrichten austauschen kann. Muss einmal in „beim Start“ stehen. Ist die Bluetooth-Übertragung eingeschaltet, gilt deren Name.' }, COL.comb),
+    B({ type: 'com_bt_send', message0: 'über Bluetooth senden %1', args0: [{ type: 'input_value', name: 'V' }], inputsInline: true, tooltip: 'Sendet einen Text oder eine Zahl (mit Zeilenumbruch) an das verbundene Gerät.' }, COL.comb),
+    { type: 'com_bt_conn', message0: 'Bluetooth verbunden?', output: 'Boolean', colour: COL.comb, tooltip: 'Wahr, wenn gerade ein Handy oder der serielle Monitor verbunden ist.' },
+    { type: 'com_bt_avail', message0: 'über Bluetooth etwas empfangen?', output: 'Boolean', colour: COL.comb, tooltip: 'Prüft, ob eine neue Nachricht angekommen ist. Danach steht sie in „über Bluetooth empfangener Text“.' },
+    { type: 'com_bt_text', message0: 'über Bluetooth empfangener Text', output: 'String', colour: COL.comb, tooltip: 'Die zuletzt über Bluetooth empfangene Nachricht.' },
+    { type: 'com_bt_num', message0: 'über Bluetooth empfangene Zahl', output: 'Number', colour: COL.comb, tooltip: 'Die zuletzt über Bluetooth empfangene Nachricht als Zahl.' },
     /* Erweiterung OLED (SSD1306, 128 × 64, I²C-Adresse 0x3C) */
     B({ type: 'oled_init', message0: 'OLED einrichten', extensions: ['i2c_hint'], tooltip: 'Muss einmal in „beim Start“ stehen.' }, COL.oled),
     B({ type: 'oled_clear', message0: 'OLED leeren' }, COL.oled),
@@ -355,6 +361,13 @@ function buildToolbox(ext) {
     <block type="com_radio_avail"></block>
     <block type="com_radio_text"></block>
     <block type="com_radio_num"></block>
+    <label text="Bluetooth (Handy-App oder serieller Monitor)"></label>
+    <block type="com_bt_init"><value name="N">${txt('ESP-' + String(g).padStart(2, '0'))}</value></block>
+    <block type="com_bt_send"><value name="V">${txt('Hallo')}</value></block>
+    <block type="com_bt_conn"></block>
+    <block type="com_bt_avail"></block>
+    <block type="com_bt_text"></block>
+    <block type="com_bt_num"></block>
   </category>`;
   }
   return x + '</xml>';

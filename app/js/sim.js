@@ -32,6 +32,7 @@ class Simulator {
     this.ads = {}; this.ina = {};
     this.usbQ = []; this.usbVal = '';
     this.wifi = null; this.web = null; this.radio = null; this.radioQ = []; this.radioVal = ''; this.radioLog = [];
+    this.bt = null; this.btQ = []; this.btVal = ''; this.btLog = [];
     CommPanel.render(this);
     this.messages = new Map();
     this.lastYield = performance.now();
@@ -153,6 +154,12 @@ class Simulator {
       async radioAvail() { check(); if (!S.radio || !S.radioQ.length) return false; S.radioVal = S.radioQ.shift(); return true; },
       radioText() { return S.radioVal; },
       radioNum() { return parseFloat(String(S.radioVal).replace(',', '.')) || 0; },
+      async btInit(name) { check(); if (!S.bt) S.bt = { name: S.fmt(name), connected: true }; CommPanel.render(S); },
+      async btSend(v) { check(); if (!S.bt || !S.bt.connected) return; S.btLog.push({ out: true, text: S.fmt(v) }); CommPanel.render(S); },
+      btConn() { return !!(S.bt && S.bt.connected); },
+      async btAvail() { check(); if (!S.bt || !S.btQ.length) return false; S.btVal = S.btQ.shift(); return true; },
+      btText() { return S.btVal; },
+      btNum() { return parseFloat(String(S.btVal).replace(',', '.')) || 0; },
       async adsInit(addr, fs) { check(); S.adsInit(addr, fs); },
       async adsRead(addr, kind, ch) { check(); return S.adsRead(addr, kind, ch); },
       async inaInit(addr, cal) { check(); S.inaInit(addr, cal); },

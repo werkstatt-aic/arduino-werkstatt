@@ -7,7 +7,7 @@ with sync_playwright() as p:
     errs=[]
     pg.on('pageerror', lambda e: errs.append('PAGEERR: '+str(e)))
     pg.on('console', lambda m: errs.append(m.type+': '+m.text) if m.type in ('error','warning') else None)
-    pg.goto(url); pg.wait_for_timeout(800)
+    pg.goto(url); pg.wait_for_timeout(800); pg.evaluate("()=>{const d=document.querySelector('#dlg'); if(d.open) d.close();}")
     pg.evaluate("() => App.loadProject(App.blankProject('Maus Test'))")
     pg.drag_and_drop('.part[data-type="template"]', '#circuit', target_position={'x':500,'y':330})
     pg.wait_for_timeout(300)

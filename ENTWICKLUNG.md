@@ -17,8 +17,8 @@ Blockbasierte Arduino-Lernumgebung (Uno und ESP32) mit Simulation und Hochladen 
 | `app/js/bitmap.js`, `font5x7.js` | Grafikeditor für OLED-Bilder, Pixelschrift |
 | `app/js/upload.js` | Hochladen per USB und Bluetooth (Web Bluetooth) |
 | `app/js/settings.js` | Einstellungen (Updates, Werkzeuge, ESP32 löschen, Zeitmessung) |
-| `app/js/comm.js` | Anzeige „WLAN & Funk“ in der Simulation, Eingabezeile des seriellen Monitors |
-| `app/js/serial.js` | Serieller Monitor für echte Hardware (Web Serial) |
+| `app/js/comm.js` | Anzeige „WLAN, Funk & Bluetooth“ in der Simulation, Eingabezeile des seriellen Monitors |
+| `app/js/serial.js` | Serieller Monitor für echte Hardware (Web Serial per USB, Web Bluetooth per BLE-UART) |
 | `app/js/examples.js` | Beispielprojekte (erzeugt mit `tests/ex_build.py` + `ex_build.js`) |
 | `app/js/export.js` | Schaltung als Bild, Drucken |
 | `app/js/app.js` | Zusammenspiel der Oberfläche, Speichern, Projektverwaltung |
@@ -59,5 +59,6 @@ Umgebungsvariablen nur für Tests: `WERKSTATT_CLI_URL`, `WERKSTATT_UPDATE_API`, 
   damit fremde Webseiten im selben Browser nichts auslösen können.
 - **Projektnamen:** „Tisch-Nr – Nachname – Projekt“ (Tisch 01–18); vorhandene Projekte werden nie überschrieben.
 - **Sicherungen:** `Projekte/.sicherungen/<Projekt>/`, höchstens alle 5 Minuten, die letzten 15.
-- **Kommunikation:** WLAN/Webseite/ESP-NOW-Funk nur für ESP32; bei eingeschalteter Erweiterung werden
-  `WiFi.h`, `WebServer.h`, `esp_now.h` fest eingebunden (eigener Zwischenordner `-net`).
+- **Kommunikation:** WLAN/Webseite/ESP-NOW-Funk/Bluetooth (BLE-UART) nur für ESP32. Nutzt ein Programm WLAN, Webseite
+  oder Funk, werden `WiFi.h`, `WebServer.h`, `esp_now.h` gemeinsam eingebunden (eigener Zwischenordner `-net`);
+  Bluetooth (Empfänger oder Blöcke) nutzt NimBLE (Zwischenordner `-bt`). So bleibt der Zwischenspeicher je Kombination erhalten.

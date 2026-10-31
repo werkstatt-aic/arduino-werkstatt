@@ -78,8 +78,8 @@ void werkstattBluetooth()
 }
 
 /* ---------------- Arduino-C++ ---------------- */
-const FLOAT_BLOCKS = new Set(['com_usb_num', 'com_radio_num', 'ard_tmp36', 'ard_ultrasonic', 'read_voltmeter_differential', 'read_voltmeter_channel', 'calculate_pmfc_power', 'read_ina219_value']);
-const STRING_BLOCKS = new Set(['text', 'ard_join', 'kp_key', 'com_usb_text', 'com_wifi_ip', 'com_radio_text']);
+const FLOAT_BLOCKS = new Set(['com_usb_num', 'com_radio_num', 'com_bt_num', 'ard_tmp36', 'ard_ultrasonic', 'read_voltmeter_differential', 'read_voltmeter_channel', 'calculate_pmfc_power', 'read_ina219_value']);
+const STRING_BLOCKS = new Set(['text', 'ard_join', 'kp_key', 'com_usb_text', 'com_wifi_ip', 'com_radio_text', 'com_bt_text']);
 function valueType(b) {
   if (!b) return 'int';
   if (STRING_BLOCKS.has(b.type)) return 'String';
@@ -569,6 +569,87 @@ bool funkEmpfangen()
   A['com_radio_avail'] = () => { radio(); return ['funkEmpfangen()', A.ORDER_ATOMIC]; };
   A['com_radio_text'] = () => { radio(); return ['funkText', A.ORDER_ATOMIC]; };
   A['com_radio_num'] = () => { radio(); return ['funkText.toFloat()', A.ORDER_ATOMIC]; };
+  const COM_BLE = String.raw`// Bluetooth (BLE-UART): Nachrichten mit einer Handy-App oder dem seriellen Monitor der Werkstatt austauschen
+#define BT_UART "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
+#define BT_RX   "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
+#define BT_TX   "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
+static NimBLECharacteristic *btSenden = nullptr;
+static volatile bool btNeu = false;     // fertige Nachricht liegt bereit
+static volatile size_t btLaenge = 0;    // so viele Zeichen sind schon angekommen
+static volatile unsigned long btZeit = 0;
+static char btPuffer[201];
+String btText = "";
+
+class BtEmpfangCb : public NimBLECharacteristicCallbacks {
+  void onWrite(NimBLECharacteristic *c, NimBLEConnInfo &info) override {
+    if (btNeu) return; // vorige Nachricht wurde noch nicht abgeholt
+    btZeit = millis();
+    NimBLEAttValue v = c->getValue();
+    for (size_t i = 0; i < v.size(); i++) {
+      char z = (char)v.data()[i];
+      if (z == '\n' || z == '\r') { if (btLaenge > 0) { btPuffer[btLaenge] = 0; btNeu = true; return; } continue; }
+      if (btLaenge < 200) btPuffer[btLaenge++] = z;
+    }
+    btZeit = millis();
+  }
+};
+
+void btEinrichten(String name)
+{
+  // Ist die Bluetooth-Übertragung eingeschaltet, läuft Bluetooth schon (mit deren Namen)
+  bool neu = !NimBLEDevice::isInitialized();
+  if (neu) NimBLEDevice::init(name.c_str());
+  NimBLEServer *server = NimBLEDevice::createServer();
+  server->advertiseOnDisconnect(true);
+  NimBLEAdvertising *werbung = NimBLEDevice::getAdvertising();
+  werbung->stop();
+  NimBLEService *dienst = server->createService(BT_UART);
+  dienst->createCharacteristic(BT_RX, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR)->setCallbacks(new BtEmpfangCb());
+  btSenden = dienst->createCharacteristic(BT_TX, NIMBLE_PROPERTY::NOTIFY);
+  dienst->start();
+  server->start();
+  if (neu) {
+    werbung->addServiceUUID(BT_UART);
+    werbung->enableScanResponse(true);
+    werbung->setName(name.c_str());
+  }
+  werbung->start();
+}
+
+bool btVerbunden()
+{
+  return NimBLEDevice::getServer() != nullptr && NimBLEDevice::getServer()->getConnectedCount() > 0;
+}
+
+void btSende(String text)
+{
+  if (btSenden == nullptr || !btVerbunden()) return;
+  text += "\n";
+  for (unsigned int i = 0; i < text.length(); i += 20) { // in kleinen Stücken senden
+    String teil = text.substring(i, i + 20);
+    btSenden->setValue((const uint8_t *)teil.c_str(), teil.length());
+    btSenden->notify();
+    delay(5);
+  }
+}
+
+bool btEmpfangen()
+{
+  // Nachricht ohne Zeilenende (manche Apps): nach 100 ms Pause gilt sie als fertig
+  if (!btNeu && btLaenge > 0 && millis() - btZeit > 100) { btPuffer[btLaenge] = 0; btNeu = true; }
+  if (!btNeu) return false;
+  btText = String(btPuffer);
+  btLaenge = 0;
+  btNeu = false;
+  return true;
+}`;
+  const ble = () => { A.includes_.ble = '#include <NimBLEDevice.h>'; A.helpers_.ble = COM_BLE; };
+  A['com_bt_init'] = b => { ble(); return `btEinrichten(${str(b, 'N')});\n`; };
+  A['com_bt_send'] = b => { ble(); return `btSende(${str(b, 'V')});\n`; };
+  A['com_bt_conn'] = () => { ble(); return ['btVerbunden()', A.ORDER_ATOMIC]; };
+  A['com_bt_avail'] = () => { ble(); return ['btEmpfangen()', A.ORDER_ATOMIC]; };
+  A['com_bt_text'] = () => { ble(); return ['btText', A.ORDER_ATOMIC]; };
+  A['com_bt_num'] = () => { ble(); return ['btText.toFloat()', A.ORDER_ATOMIC]; };
   // Kommunikationsblöcke gibt es nur für den ESP32: beim Arduino Uno nichts erzeugen (sonst Übersetzungsfehler)
   for (const k of Object.keys(A).filter(k => /^com_/.test(k))) {
     const gen = A[k];

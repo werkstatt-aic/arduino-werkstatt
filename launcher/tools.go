@@ -579,7 +579,7 @@ func apiUpload(w http.ResponseWriter, r *http.Request) {
 	if withBT {
 		name += "-bt"
 	}
-	if strings.Contains(string(code), "<WebServer.h>") { // Kommunikation (WLAN, Webseite, Funk)
+	if strings.Contains(string(code), "<WiFi.h>") { // Kommunikation (WLAN, Webseite, Funk)
 		name += "-net"
 	}
 	build := filepath.Join(workDir(), name)

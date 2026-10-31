@@ -255,7 +255,8 @@ const Uploader = {
       // Wechsel der Bibliotheken (anderes Projekt) alle Bibliotheken neu – das dauert lange.
       // Nicht benutzte Teile entfernt der Linker wieder.
       if (BOARD === 'esp32') {
-        const net = this.app.extensions.includes('comm') ? '#include <WiFi.h>\n#include <WebServer.h>\n#include <esp_now.h>\n' : '';
+        // WLAN-Teile nur, wenn das Programm sie nutzt: sie machen das Programm um gut 500 KB größer
+        const net = c.includes('<WiFi.h>') ? '#include <WiFi.h>\n#include <WebServer.h>\n#include <esp_now.h>\n' : '';
         c = ESP_FIXED_INCLUDES + net + (c.includes('<NimBLEDevice.h>') ? '#include <NimBLEDevice.h>\n#include <Update.h>\n' : '') + c;
       }
       return c;

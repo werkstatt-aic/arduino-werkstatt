@@ -94,6 +94,12 @@ function setupSimGenerator() {
   J['com_radio_avail'] = () => ['(await api.radioAvail())', J.ORDER_ATOMIC];
   J['com_radio_text'] = () => ['api.radioText()', J.ORDER_ATOMIC];
   J['com_radio_num'] = () => ['api.radioNum()', J.ORDER_ATOMIC];
+  J['com_bt_init'] = b => `await api.btInit(${t(b, 'N')});\n`;
+  J['com_bt_send'] = b => `await api.btSend(${t(b, 'V')});\n`;
+  J['com_bt_conn'] = () => ['api.btConn()', J.ORDER_ATOMIC];
+  J['com_bt_avail'] = () => ['(await api.btAvail())', J.ORDER_ATOMIC];
+  J['com_bt_text'] = () => ['api.btText()', J.ORDER_ATOMIC];
+  J['com_bt_num'] = () => ['api.btNum()', J.ORDER_ATOMIC];
 
   /* Funktionen: in der Simulation asynchron, damit „warten“ darin funktioniert */
   const procName = b => J.nameDB_.getName(b.getFieldValue('NAME'), Blockly.PROCEDURE_CATEGORY_NAME);
