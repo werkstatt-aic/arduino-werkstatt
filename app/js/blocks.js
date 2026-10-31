@@ -3,7 +3,7 @@
 
 const COL = {
   ctrl: '#ffab19', loop: '#e08e0b', logic: '#4aa7c2', math: '#59c059', vars: '#ff8c1a', func: '#d65cd6',
-  out: '#4c97ff', inp: '#9966ff', show: '#0fa39a', neo: '#7a5cd6', kp: '#cf4f8f', mm: '#3a9a5b', mmi: '#6cc48a', mmc: '#c8742a', com: '#1e88a8', comu: '#6b7c8c', comw: '#3b6fb6', comf: '#c0563f', comb: '#2d5fa8', oled: '#3a64b0',
+  out: '#4c97ff', inp: '#9966ff', show: '#0fa39a', neo: '#7a5cd6', kp: '#cf4f8f', mm: '#3a9a5b', mmi: '#6cc48a', mmc: '#c8742a', com: '#1e88a8', comu: '#6b7c8c', comw: '#3b6fb6', comf: '#c0563f', comb: '#2d5fa8', oled: '#3a64b0', list: '#e8603c',
 };
 /* Gewählter Mikrocontroller: 'uno' oder 'esp32' */
 let BOARD = 'uno';
@@ -15,7 +15,6 @@ const btName = n => (String(n || '').normalize('NFKD').replace(/[^\x20-\x7e]/g, 
 
 /* Anschlüsse */
 const UNO_DIGITAL = Array.from({ length: 12 }, (_, i) => [`D${i + 2}`, String(i + 2)]); // ohne D0/D1 (USB-Verbindung)
-const UNO_PWM = ['3', '5', '6', '9', '10', '11'].map(p => ['D' + p, p]);
 const UNO_ANALOG = ['A0', 'A1', 'A2', 'A3'].map(p => [p, p]); // ohne A4/A5 (I²C)
 /* ESP32: nur unkritische Pins. Weggelassen: Boot-Pins (0, 2, 5, 12, 15), TX0/RX0 (1, 3), Flash-Pins (6–11)
    und D21/D22 (I²C: SDA/SCL). 34, 35, 36 (VP), 39 (VN) gibt es nur als Eingang. Analog nur ADC1 (funktioniert auch mit WLAN). */
@@ -24,13 +23,13 @@ const espLab = n => 'D' + n + (n === 36 ? ' (VP)' : n === 39 ? ' (VN)' : '');
 const PIN = {
   out: () => BOARD === 'esp32' ? ESP_SAFE.map(n => [espLab(n), String(n)]) : UNO_DIGITAL,
   inp: () => BOARD === 'esp32' ? ESP_SAFE.concat([34, 35, 36, 39]).sort((a, b) => a - b).map(n => [espLab(n), String(n)]) : UNO_DIGITAL,
-  pwm: () => BOARD === 'esp32' ? PIN.out() : UNO_PWM,
+  pwm: () => PIN.out(), // bewusst alle Anschlüsse: die Schüler sollen selbst einen PWM-Anschluss (~) wählen
   ana: () => BOARD === 'esp32' ? [32, 33, 34, 35, 36, 39].map(n => [espLab(n), 'D' + n]) : UNO_ANALOG,
 };
 /* Startwerte im Werkzeugkasten je nach Mikrocontroller */
 const DEF = () => BOARD === 'esp32'
-  ? { dw: '4', dr: '4', pwm: '4', servo: '13', tone: '4', ana: 'D32', trig: '18', echo: '19', neo: '4', mA: '25', mB: '26', max: 4095, kpR: ['13', '14', '27', '26'], kpC: ['25', '33', '32', '23'] }
-  : { dw: '2', dr: '2', pwm: '3', servo: '3', tone: '8', ana: 'A0', trig: '7', echo: '8', neo: '6', mA: '5', mB: '6', max: 1023, kpR: ['9', '8', '7', '6'], kpC: ['5', '4', '3', '2'] };
+  ? { dw: '4', dr: '4', pwm: '4', servo: '13', tone: '4', ana: 'D32', trig: '18', echo: '19', neo: '4', mA: '25', mB: '26', dht: '4', st: ['25', '26', '27', '14'], max: 4095, kpR: ['13', '14', '27', '26'], kpC: ['25', '33', '32', '23'] }
+  : { dw: '2', dr: '2', pwm: '3', servo: '3', tone: '8', ana: 'A0', trig: '7', echo: '8', neo: '6', mA: '5', mB: '6', dht: '2', st: ['8', '9', '10', '11'], max: 1023, kpR: ['9', '8', '7', '6'], kpC: ['5', '4', '3', '2'] };
 const HIGHLOW = [['HOCH', 'HIGH'], ['NIEDRIG', 'LOW']];
 const NOTES = [['C', '0'], ['D', '2'], ['E', '4'], ['F', '5'], ['G', '7'], ['A', '9'], ['H', '11']];
 const ACCS = [['–', '0'], ['#', '1'], ['b', '-1']];
@@ -38,6 +37,11 @@ const OCTS = ['2', '3', '4', '5', '6', '7'].map(o => [o, o]);
 const ADS_ADDR = [['0x48 (ADDR an GND)', '0x48'], ['0x49 (ADDR an VDD)', '0x49'], ['0x4A (ADDR an SDA)', '0x4A'], ['0x4B (ADDR an SCL)', '0x4B']];
 const INA_ADDR = [['0x40 (Standard)', '0x40'], ['0x41', '0x41'], ['0x44', '0x44'], ['0x45', '0x45']];
 const ADS_RANGE = { 6: 6.144, 4: 4.096, 2: 2.048, 1: 1.024 };
+
+/* Zahlenliste aus einem Textfeld („262, 294, 330“ oder „1.5; 2“): Kommazahlen mit Punkt */
+function parseListNumbers(text) {
+  return String(text || '').split(/[\s,;]+/).filter(x => x !== '').map(Number).filter(x => isFinite(x)).slice(0, 100);
+}
 
 function noteFreq(semi, acc, oct) {
   const midi = 12 * (Number(oct) + 1) + Number(semi) + Number(acc);
@@ -76,6 +80,8 @@ function setupBlocklyMessages() {
     MATH_CONSTRAIN_TITLE: '%1 begrenzen auf %2 bis %3',
     NEW_VARIABLE: 'Variable erstellen …',
     NEW_VARIABLE_TITLE: 'Name der neuen Variable:',
+    VARIABLE_ALREADY_EXISTS: 'Den Namen „%1“ gibt es schon.',
+    VARIABLE_ALREADY_EXISTS_FOR_ANOTHER_TYPE: 'Den Namen „%1“ gibt es schon (als Variable oder Liste). Bitte einen anderen wählen.',
     DELETE_BLOCK: 'Block löschen',
     PROCEDURES_DEFNORETURN_TITLE: 'Funktion',
     PROCEDURES_DEFRETURN_TITLE: 'Funktion',
@@ -126,7 +132,7 @@ function defineBlocks() {
     message1: '%1', args1: [{ type: 'input_statement', name: 'DO' }], inputsInline: true, tooltip: 'Zählt aufwärts oder abwärts (je nachdem, ob „bis“ größer oder kleiner als „von“ ist).' }, COL.loop),
     /* Ausgang */
     B({ type: 'ard_digital_write', message0: 'Anschluss %1 auf %2 einstellen', args0: [{ type: 'field_dropdown', name: 'PIN', options: PIN.out }, { type: 'field_dropdown', name: 'V', options: HIGHLOW }] }, COL.out),
-    B({ type: 'ard_analog_write', message0: 'PWM-Ausgang %1 auf %2 einstellen', args0: [{ type: 'field_dropdown', name: 'PIN', options: PIN.pwm }, { type: 'input_value', name: 'V', check: 'Number' }], inputsInline: true, tooltip: 'Wert von 0 (aus) bis 255 (voll an).' }, COL.out),
+    B({ type: 'ard_analog_write', message0: 'PWM-Ausgang %1 auf %2 einstellen', args0: [{ type: 'field_dropdown', name: 'PIN', options: PIN.pwm }, { type: 'input_value', name: 'V', check: 'Number' }], inputsInline: true, tooltip: 'Wert von 0 (aus) bis 255 (voll an). Beim Arduino Uno können das nur die Anschlüsse mit ~ (D3, D5, D6, D9, D10, D11), die anderen sind nur ganz an oder aus.' }, COL.out),
     B({ type: 'ard_builtin_led', message0: 'integrierte LED auf %1 einstellen', args0: [{ type: 'field_dropdown', name: 'V', options: HIGHLOW }], tooltip: 'Eingebaute Leuchte: „L“ am Arduino Uno (D13), blaue LED am ESP32 (D2).' }, COL.out),
     B({ type: 'ard_servo', message0: 'Servo an PWM-Ausgang %1 auf %2 Grad drehen', args0: [{ type: 'field_dropdown', name: 'PIN', options: PIN.pwm }, { type: 'input_value', name: 'DEG', check: 'Number' }], inputsInline: true }, COL.out),
     B({ type: 'ard_tone', message0: 'Auf Lautsprecher an Anschluss %1 Ton %2 %3 %4 für %5 Sekunden spielen', args0: [
@@ -138,11 +144,17 @@ function defineBlocks() {
       { type: 'field_dropdown', name: 'IA', options: PIN.pwm }, { type: 'field_dropdown', name: 'IB', options: PIN.pwm },
       { type: 'field_dropdown', name: 'DIR', options: [['vorwärts', '1'], ['rückwärts', '-1'], ['anhalten', '0']] }, { type: 'input_value', name: 'SPEED', check: 'Number' }],
     inputsInline: true, tooltip: 'Für Motortreiber wie L9110S (A-IA/A-IB) oder L298N (IN1/IN2 bzw. IN3/IN4, Jumper auf ENA/ENB gesteckt): die beiden Steuereingänge eines Motors. Geschwindigkeit 0 bis 100 %.' }, COL.out),
+    B({ type: 'ard_stepper', message0: 'Schrittmotor IN1 %1 IN2 %2 IN3 %3 IN4 %4 %5 um %6 %7 %8 drehen mit %9 U/min', args0: [
+      { type: 'field_dropdown', name: 'P1', options: PIN.out }, { type: 'field_dropdown', name: 'P2', options: PIN.out }, { type: 'field_dropdown', name: 'P3', options: PIN.out }, { type: 'field_dropdown', name: 'P4', options: PIN.out }, { type: 'input_dummy' },
+      { type: 'input_value', name: 'N', check: 'Number' }, { type: 'field_dropdown', name: 'UNIT', options: [['Grad', 'DEG'], ['Umdrehungen', 'REV'], ['Schritte', 'STEP']] },
+      { type: 'field_dropdown', name: 'DIR', options: [['im Uhrzeigersinn', 'CW'], ['gegen den Uhrzeigersinn', 'CCW']] }, { type: 'input_value', name: 'RPM', check: 'Number' }],
+    inputsInline: true, tooltip: 'Für den Schrittmotor 28BYJ-48 mit Treiberplatine ULN2003 (2048 Schritte = 1 Umdrehung). Geschwindigkeit 1 bis 15 Umdrehungen pro Minute. Das Programm wartet, bis der Motor angekommen ist.' }, COL.out),
     B({ type: 'ard_notone', message0: 'Lautsprecher an Anschluss %1 ausschalten', args0: [{ type: 'field_dropdown', name: 'PIN', options: PIN.out }] }, COL.out),
     /* Eingang */
     { type: 'ard_digital_read', message0: 'Digitalen Anschluss %1 lesen', args0: [{ type: 'field_dropdown', name: 'PIN', options: PIN.inp }], output: 'Number', colour: COL.inp },
     { type: 'ard_analog_read', message0: 'Analogen Anschluss %1 lesen', args0: [{ type: 'field_dropdown', name: 'PIN', options: PIN.ana }], output: 'Number', colour: COL.inp },
     { type: 'ard_tmp36', message0: 'Temperatursensor an Anschluss %1 in Einheiten %2 lesen', args0: [{ type: 'field_dropdown', name: 'PIN', options: PIN.ana }, { type: 'field_dropdown', name: 'UNIT', options: [['°C', 'C'], ['°F', 'F']] }], output: 'Number', colour: COL.inp, tooltip: 'Für den Temperatursensor TMP36.' },
+    { type: 'ard_dht', message0: 'Sensor DHT%1 an Anschluss %2 %3 lesen', args0: [{ type: 'field_dropdown', name: 'MODEL', options: [['11', '11'], ['22', '22']] }, { type: 'field_dropdown', name: 'PIN', options: PIN.inp }, { type: 'field_dropdown', name: 'WHAT', options: [['Temperatur in °C', 'C'], ['Luftfeuchtigkeit in %', 'H'], ['Temperatur in °F', 'F']] }], output: 'Number', colour: COL.inp, tooltip: 'Für den Temperatur- und Feuchtesensor DHT11 (blau) oder DHT22 (weiß). Der Sensor liefert höchstens jede Sekunde (DHT22: alle 2 Sekunden) einen neuen Wert. Ungültige Messung: nan.' },
     { type: 'ard_ultrasonic', message0: 'Ultraschall-Abstandssensor an Trigger-Anschluss %1 Echo-Anschluss %2 in Einheiten %3', args0: [{ type: 'field_dropdown', name: 'TRIG', options: PIN.out }, { type: 'field_dropdown', name: 'ECHO', options: PIN.inp }, { type: 'field_dropdown', name: 'UNIT', options: [['cm', 'CM'], ['Zoll', 'IN']] }], output: 'Number', colour: COL.inp, tooltip: 'Für den Ultraschallsensor HC-SR04.' },
     /* Anzeige */
     B({ type: 'ard_lcd_init', message0: 'LCD einrichten', extensions: ['i2c_hint'], tooltip: 'Muss einmal in „beim Start“ stehen.' }, COL.show),
@@ -156,6 +168,15 @@ function defineBlocks() {
     { type: 'ard_round', message0: '%1 %2', args0: [{ type: 'field_dropdown', name: 'OP', options: [['runde', 'ROUND'], ['runde auf', 'UP'], ['runde ab', 'DOWN']] }, { type: 'input_value', name: 'V', check: 'Number' }], inputsInline: true, output: 'Number', colour: COL.math, tooltip: 'Runden auf eine ganze Zahl: „runde“ kaufmännisch (2,5 → 3), „runde auf“ immer nach oben, „runde ab“ immer nach unten.' },
     { type: 'ard_math1', message0: '%1 von %2', args0: [{ type: 'field_dropdown', name: 'OP', options: [['Betrag', 'ABS'], ['Quadratwurzel', 'SQRT']] }, { type: 'input_value', name: 'V', check: 'Number' }], inputsInline: true, output: 'Number', colour: COL.math, tooltip: 'Betrag: Zahl ohne Vorzeichen (−3 → 3). Quadratwurzel: z. B. von 16 → 4.' },
     { type: 'ard_map', message0: '%1 von %2 … %3 auf %4 … %5 umrechnen', args0: [{ type: 'input_value', name: 'V', check: 'Number' }, { type: 'input_value', name: 'A', check: 'Number' }, { type: 'input_value', name: 'B', check: 'Number' }, { type: 'input_value', name: 'C', check: 'Number' }, { type: 'input_value', name: 'D', check: 'Number' }], inputsInline: true, output: 'Number', colour: COL.math, tooltip: 'Rechnet einen Wert von einem Bereich in einen anderen um, z. B. 0…1023 (Arduino) bzw. 0…4095 (ESP32) auf 0…255.' },
+
+    /* Listen (feste Länge, Nummern ab 1) */
+    B({ type: 'list_new', message0: 'Liste %1 mit %2 Einträgen anlegen (alle 0)', args0: [{ type: 'field_variable', name: 'L', variable: 'Messwerte', variableTypes: ['Liste'], defaultType: 'Liste' }, { type: 'field_number', name: 'N', value: 10, min: 1, max: 100, precision: 1 }], tooltip: 'Legt eine Liste mit fester Anzahl von Einträgen an (höchstens 100). Gehört meist in „beim Start“.' }, COL.list),
+    B({ type: 'list_init', message0: 'Liste %1 aus den Zahlen %2 anlegen', args0: [{ type: 'field_variable', name: 'L', variable: 'Messwerte', variableTypes: ['Liste'], defaultType: 'Liste' }, { type: 'field_input', name: 'V', text: '262, 294, 330' }], tooltip: 'Legt eine Liste mit diesen Zahlen an, z. B. Tonhöhen, Anschlüsse oder Wartezeiten. Zahlen durch Komma trennen, Kommazahlen mit Punkt (2.5).' }, COL.list),
+    { type: 'list_get', message0: 'Eintrag Nr. %1 der Liste %2', args0: [{ type: 'input_value', name: 'I', check: 'Number' }, { type: 'field_variable', name: 'L', variable: 'Messwerte', variableTypes: ['Liste'], defaultType: 'Liste' }], inputsInline: true, output: 'Number', colour: COL.list, tooltip: 'Liest einen Eintrag. Der erste Eintrag hat die Nummer 1.' },
+    B({ type: 'list_set', message0: 'Eintrag Nr. %1 der Liste %2 auf %3 setzen', args0: [{ type: 'input_value', name: 'I', check: 'Number' }, { type: 'field_variable', name: 'L', variable: 'Messwerte', variableTypes: ['Liste'], defaultType: 'Liste' }, { type: 'input_value', name: 'V', check: 'Number' }], inputsInline: true, tooltip: 'Ändert einen Eintrag. Der erste Eintrag hat die Nummer 1.' }, COL.list),
+    B({ type: 'list_push', message0: 'neuen Wert %1 hinten in Liste %2 nachschieben', args0: [{ type: 'input_value', name: 'V', check: 'Number' }, { type: 'field_variable', name: 'L', variable: 'Messwerte', variableTypes: ['Liste'], defaultType: 'Liste' }], inputsInline: true, tooltip: 'Alle Einträge rücken eins nach vorne, der älteste (Nr. 1) fällt weg, der neue Wert kommt ans Ende. Gut für Messreihen und gleitende Mittelwerte.' }, COL.list),
+    { type: 'list_len', message0: 'Anzahl Einträge der Liste %1', args0: [{ type: 'field_variable', name: 'L', variable: 'Messwerte', variableTypes: ['Liste'], defaultType: 'Liste' }], output: 'Number', colour: COL.list },
+    { type: 'list_stat', message0: '%1 der Liste %2', args0: [{ type: 'field_dropdown', name: 'OP', options: [['Mittelwert', 'AVG'], ['Summe', 'SUM'], ['kleinster Wert', 'MIN'], ['größter Wert', 'MAX']] }, { type: 'field_variable', name: 'L', variable: 'Messwerte', variableTypes: ['Liste'], defaultType: 'Liste' }], output: 'Number', colour: COL.list },
 
     /* Erweiterung NeoPixel */
     B({ type: 'neo_init', message0: 'NeoPixel an Anschluss %1 mit %2 LEDs einrichten', args0: [{ type: 'field_dropdown', name: 'PIN', options: PIN.out }, { type: 'field_number', name: 'N', value: 8, min: 1, max: 300, precision: 1 }] }, COL.neo),
@@ -245,12 +266,14 @@ function buildToolbox(ext) {
     <block type="ard_tone_freq"><field name="PIN">${D.tone}</field><value name="FREQ">${num(440)}</value><value name="DUR">${num(1)}</value></block>
     <block type="ard_notone"><field name="PIN">${D.tone}</field></block>
     <block type="ard_motor"><field name="IA">${D.mA}</field><field name="IB">${D.mB}</field><value name="SPEED">${num(100)}</value></block>
+    <block type="ard_stepper">${D.st.map((p, i) => `<field name="P${i + 1}">${p}</field>`).join('')}<value name="N">${num(90)}</value><value name="RPM">${num(10)}</value></block>
   </category>
   <category name="Eingang" colour="${COL.inp}">
     <block type="ard_digital_read"><field name="PIN">${D.dr}</field></block>
     <block type="ard_analog_read"><field name="PIN">${D.ana}</field></block>
     <block type="ard_tmp36"><field name="PIN">${D.ana}</field></block>
     <block type="ard_ultrasonic"><field name="TRIG">${D.trig}</field><field name="ECHO">${D.echo}</field></block>
+    <block type="ard_dht"><field name="PIN">${D.dht}</field></block>
   </category>
   <category name="Anzeige" colour="${COL.show}">
     <block type="ard_lcd_init"></block>
@@ -295,6 +318,7 @@ function buildToolbox(ext) {
     <block type="math_constrain"><value name="LOW">${num(0)}</value><value name="HIGH">${num(100)}</value></block>
   </category>
   <category name="Variablen" colour="${COL.vars}" custom="VARIABLE"></category>
+  <category name="Listen" colour="${COL.list}" custom="LISTE"></category>
   <category name="Funktionen" colour="${COL.func}" custom="PROCEDURE"></category>`;
   if (ext.length) x += `<sep></sep>`;
   if (ext.includes('neopixel')) x += `
@@ -371,6 +395,40 @@ function buildToolbox(ext) {
   </category>`;
   }
   return x + '</xml>';
+}
+
+/* Werkzeugkasten „Listen“: Knopf zum Anlegen und Blöcke für die zuletzt angelegte Liste */
+function listFlyout(ws) {
+  const out = [];
+  const btn = document.createElement('button');
+  btn.setAttribute('text', 'Liste erstellen …'); btn.setAttribute('callbackKey', 'NEUE_LISTE');
+  out.push(btn);
+  const lists = ws.getVariablesOfType('Liste');
+  if (!lists.length) {
+    const l = document.createElement('label'); l.setAttribute('text', 'Eine Liste speichert viele Zahlen unter einem Namen.'); out.push(l);
+    return out;
+  }
+  const last = lists[lists.length - 1];
+  const f = `<field name="L" id="${last.getId()}" variabletype="Liste">${esc(last.name)}</field>`;
+  const xml = [
+    `<block type="list_new">${f}</block>`,
+    `<block type="list_init">${f}</block>`,
+    `<block type="list_get"><value name="I">${num(1)}</value>${f}</block>`,
+    `<block type="list_set"><value name="I">${num(1)}</value>${f}<value name="V">${num(0)}</value></block>`,
+    `<block type="list_push"><value name="V">${num(0)}</value>${f}</block>`,
+    `<block type="list_len">${f}</block>`,
+    `<block type="list_stat">${f}</block>`,
+  ];
+  for (const x of xml) out.push(Blockly.Xml.textToDom(x));
+  return out;
+}
+function registerListCategory(ws) {
+  ws.registerToolboxCategoryCallback('LISTE', listFlyout);
+  ws.registerButtonCallback('NEUE_LISTE', () => {
+    const t = Blockly.Msg.NEW_VARIABLE_TITLE;
+    Blockly.Msg.NEW_VARIABLE_TITLE = 'Name der neuen Liste:';
+    try { Blockly.Variables.createVariableButtonHandler(ws, null, 'Liste'); } finally { Blockly.Msg.NEW_VARIABLE_TITLE = t; }
+  });
 }
 
 const DEFAULT_BLOCKS_XML = `<xml xmlns="https://developers.google.com/blockly/xml"><block type="ard_setup" x="30" y="30"></block><block type="ard_loop" x="30" y="150"></block></xml>`;

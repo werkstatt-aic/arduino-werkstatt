@@ -481,8 +481,11 @@ class CircuitEditor {
     for (const w of this.project.wires) for (const p of w.pts) { x0 = Math.min(x0, p[0]); y0 = Math.min(y0, p[1]); x1 = Math.max(x1, p[0]); y1 = Math.max(y1, p[1]); }
     const r = this.svg.getBoundingClientRect();
     const pad = 40;
-    const k = Math.max(0.3, Math.min(3, Math.min((r.width - 2 * pad) / (x1 - x0), (r.height - 2 * pad) / (y1 - y0))));
-    this.view = { k, x: (r.width - (x1 - x0) * k) / 2 - x0 * k, y: (r.height - (y1 - y0) * k) / 2 - y0 * k };
+    // links Platz lassen, wenn dort die Aufgabenkarte steht (nur bei genug Breite)
+    const tp = document.querySelector('#taskPanel');
+    const left = tp && !tp.hidden && r.width > 900 ? tp.getBoundingClientRect().width + 12 : 0;
+    const k = Math.max(0.3, Math.min(3, Math.min((r.width - left - 2 * pad) / (x1 - x0), (r.height - 2 * pad) / (y1 - y0))));
+    this.view = { k, x: left + (r.width - left - (x1 - x0) * k) / 2 - x0 * k, y: (r.height - (y1 - y0) * k) / 2 - y0 * k };
     this.applyView();
   }
 }

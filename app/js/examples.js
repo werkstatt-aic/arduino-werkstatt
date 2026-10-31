@@ -1437,7 +1437,7 @@ const EXAMPLES = [
 "y": 330,
 "rot": 0,
 "props": {
-"position": 80,
+"position": 20,
 "ohm": 10000
 }
 },

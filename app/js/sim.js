@@ -24,6 +24,7 @@ class Simulator {
     this.kpReported = new Map();
     this.broken = new Set();
     this.servo = {};
+    this.stepper = {};
     this.tones = {};
     this.lcd = { ready: false, backlight: false, lines: ['', ''], cur: [0, 0] };
     this.neo = null;
@@ -97,7 +98,10 @@ class Simulator {
         check();
         val = Math.max(0, Math.min(255, Math.round(Number(val) || 0)));
         const M = S.m(), pwm = !M.pwm || M.pwm.includes(pin);
-        if (!pwm) S.outputs[pin] = { v: val >= 128 ? M.logic : 0, duty: 1 };
+        if (!pwm) {
+          S.outputs[pin] = { v: val >= 128 ? M.logic : 0, duty: 1 };
+          if (val > 0 && val < 255) S.msg('nopwm' + pin, 'warn', `Anschluss ${pin} kann kein PWM, er ist nur ganz an oder aus (Wert ${val} → ${val >= 128 ? 'an' : 'aus'}). Für Zwischenwerte einen Anschluss mit ~ nehmen: ${M.pwm.join(", ")}.`);
+        }
         else S.outputs[pin] = { v: val > 0 ? M.logic : 0, duty: val / 255 };
         S.update();
       },
@@ -111,6 +115,24 @@ class Simulator {
         await this.analogWrite(ia, dir > 0 ? v : 0); await this.analogWrite(ib, dir < 0 ? v : 0);
       },
       async servo(pin, deg) { check(); S.setServo(pin, Number(deg) || 0); },
+      async dht(pin, model, what) { check(); return S.dhtRead(pin, model, what); },
+      async stepper(pins, amount, unit, dir, rpm) { check(); await S.stepperMove(this, pins, amount, unit, dir, rpm); },
+      /* Listen: Nummern ab 1, außerhalb wird auf den ersten/letzten Eintrag begrenzt (wie im C++-Code) */
+      listPos(l, i, name) {
+        if (!l.length) { S.msg('list' + name, 'warn', `Die Liste „${name}“ hat noch keine Einträge. Lege sie zuerst mit „Liste … anlegen“ an.`); return -1; }
+        const n = Math.trunc(Number(i) || 0);
+        if (n < 1 || n > l.length) S.msg('list' + name, 'warn', `Liste „${name}“: Einen Eintrag Nr. ${n} gibt es nicht (nur 1 bis ${l.length}).`);
+        return Math.max(0, Math.min(l.length - 1, n - 1));
+      },
+      listGet(l, i, name) { const p = this.listPos(l, i, name); return p < 0 ? 0 : l[p]; },
+      listSet(l, i, v, name) { const p = this.listPos(l, i, name); if (p >= 0) l[p] = Number(v) || 0; },
+      listPush(l, v) { if (l.length) { l.shift(); l.push(Number(v) || 0); } },
+      listStat(l, op) {
+        if (!l.length) return 0;
+        const sum = l.reduce((a, b) => a + b, 0);
+        return op === 'AVG' ? sum / l.length : op === 'SUM' ? sum : op === 'MIN' ? Math.min(...l) : Math.max(...l);
+      },
+      listFrom(text) { return parseListNumbers(text); },
       async tone(pin, freq, dur) { check(); S.playTone(pin, Number(freq) || 0, Number(dur) || 0); },
       async noTone(pin) { check(); S.stopTone(pin); },
       async serial(v, nl) { check(); S.app.serialWrite(S.fmt(v) + (nl ? '\n' : '')); },
@@ -168,12 +190,16 @@ class Simulator {
   }
 
   fmt(v) {
-    if (typeof v === 'number') return Number.isInteger(v) ? String(v) : v.toFixed(2);
+    if (typeof v === 'number') return Number.isNaN(v) ? 'nan' : Number.isInteger(v) ? String(v) : v.toFixed(2);
     if (typeof v === 'boolean') return v ? '1' : '0';
     return String(v);
   }
 
-  msg(key, level, text) { this.messages.set(key, { level, text }); this.app.showMessages(this.messages); }
+  msg(key, level, text) {
+    const old = this.messages.get(key);
+    if (old && old.level === level && old.text === text) return; // schon angezeigt: nicht ständig zur Prüfung umschalten
+    this.messages.set(key, { level, text }); this.app.showMessages(this.messages);
+  }
   clearMsg(key) { if (this.messages.delete(key)) this.app.showMessages(this.messages); }
 
   uno() { return this.project.components.find(c => c.def.mcu); }
@@ -211,9 +237,72 @@ class Simulator {
   ultrasonic(trig, echo, unit) {
     const c = this.project.components.find(x => x.type === 'ultrasonic' && this.powered(x) &&
       this.nl.net(x.id, 'TRIG') === this.unoNet(trig) && this.nl.net(x.id, 'ECHO') === this.unoNet(echo));
-    if (!c) return 0;
+    if (!c) {
+      this.msg('us' + trig, 'warn', `Kein Ultraschallsensor mit Trig an ${trig} und Echo an ${echo} gefunden (auch VCC an 5 V und GND prüfen). Der Messwert ist 0.`);
+      return 0;
+    }
+    this.clearMsg('us' + trig);
     const dur = Math.round(Math.max(2, Math.min(400, Number(c.props.dist))) / 0.01723);
     return dur * (unit === 'CM' ? 0.01723 : 0.00675);
+  }
+
+  /* Temperatur- und Feuchtesensor DHT11/DHT22 */
+  dhtRead(pin, model, what) {
+    const c = this.project.components.find(x => x.type === 'dht' && this.nl.net(x.id, 'DATA') === this.unoNet(pin));
+    if (!c || !this.powered(c)) {
+      this.msg('dht' + pin, 'warn', `Kein Temperatur- und Feuchtesensor DHT an ${pin} gefunden (Daten-Anschluss „out“, + und – prüfen). Der Messwert ist ungültig (nan).`);
+      return NaN;
+    }
+    if (String(c.props.model) !== String(model)) {
+      this.msg('dht' + pin, 'warn', `Im Block ist DHT${model} eingestellt, in der Schaltung steckt ein DHT${c.props.model}. Am echten Sensor kommen dann falsche Werte heraus.`);
+      return NaN;
+    }
+    this.clearMsg('dht' + pin);
+    const d22 = String(model) === '22';
+    if (what === 'H') { const h = Math.max(d22 ? 0 : 20, Math.min(d22 ? 100 : 90, Number(c.props.hum))); return d22 ? Math.round(h * 10) / 10 : Math.round(h); }
+    const t = Math.max(d22 ? -40 : 0, Math.min(d22 ? 80 : 50, Number(c.props.temp)));
+    const tc = d22 ? Math.round(t * 10) / 10 : Math.round(t);
+    return what === 'F' ? tc * 9 / 5 + 32 : tc;
+  }
+
+  /* Schrittmotor 28BYJ-48 mit ULN2003: 2048 Schritte je Umdrehung, höchstens etwa 15 U/min.
+     Das Programm wartet, bis der Motor angekommen ist (wie auf dem echten Mikrocontroller). */
+  async stepperMove(api, pins, amount, unit, dir, rpm) {
+    const nets = pins.map(p => this.unoNet(p));
+    const all = this.project.components.filter(x => x.type === 'stepper');
+    const c = all.find(x => ['IN1', 'IN2', 'IN3', 'IN4'].every((p, i) => this.nl.net(x.id, p) === nets[i]));
+    let steps = Math.round(Math.abs(Number(amount) || 0) * (unit === 'REV' ? 2048 : unit === 'DEG' ? 2048 / 360 : 1));
+    rpm = Math.max(1, Math.min(15, Number(rpm) || 1));
+    const msPerStep = 60000 / (2048 * rpm);
+    if (!c) {
+      const swapped = all.find(x => ['IN1', 'IN2', 'IN3', 'IN4'].every(p => nets.includes(this.nl.net(x.id, p))));
+      this.msg('step' + pins.join(), 'warn', swapped ? 'Schrittmotor: IN1 bis IN4 sind anders angeschlossen als im Block eingestellt. Der echte Motor würde nur brummen und ruckeln.' : `Schrittmotor: An ${pins.join(', ')} ist kein Schrittmotor-Treiber (IN1 bis IN4) angeschlossen.`);
+      await api.wait(steps * msPerStep);
+      return;
+    }
+    if (!this.powered(c)) {
+      this.msg('step' + pins.join(), 'warn', 'Schrittmotor: Der Treiber ULN2003 braucht Strom (– an GND, + an 5V).');
+      await api.wait(steps * msPerStep);
+      return;
+    }
+    this.clearMsg('step' + pins.join());
+    const st = this.stepper[c.id] || (this.stepper[c.id] = { angle: 0, phase: 0, coils: [0, 0, 0, 0] });
+    const sign = dir === 'CCW' ? -1 : 1;
+    const PH = [[1, 1, 0, 0], [0, 1, 1, 0], [0, 0, 1, 1], [1, 0, 0, 1]];
+    const t0 = performance.now();
+    let done = 0;
+    while (done < steps) {
+      await api.wait(Math.min(40, (steps - done) * msPerStep));
+      const target = Math.min(steps, Math.round((performance.now() - t0) / msPerStep));
+      const d = Math.max(1, target - done);
+      done += d;
+      st.phase = (((st.phase + sign * d) % 4) + 4) % 4;
+      st.angle = (st.angle + sign * d * 360 / 2048) % 360;
+      st.coils = PH[st.phase];
+      this.render();
+    }
+    st.coils = [0, 0, 0, 0]; // Spulen aus
+    this.render();
   }
 
   /* ---------- Aktoren ---------- */
@@ -461,6 +550,8 @@ class Simulator {
         case 'touch': case 'pir': states[c.id] = { active: this.pressed.has(c.id) }; break;
         case 'keypad3': case 'keypad4': states[c.id] = { key: this.keys.get(c.id) || null }; break;
         case 'servo': states[c.id] = { angle: this.servo[c.id] || 0 }; break;
+        case 'stepper': { const s = this.stepper[c.id]; states[c.id] = s ? { angle: s.angle, coils: s.coils } : null; break; }
+        case 'relay': states[c.id] = { on: !!(res && res.relay[c.id]) }; break;
         case 'piezo': states[c.id] = { sounding: Object.values(this.tones).some(t => t.ids.includes(c.id)) }; break;
         case 'motor': case 'gearmotor': {
           const a = res ? res.V[this.nl.net(c.id, 'P')] : 0, b = res ? res.V[this.nl.net(c.id, 'N')] : 0;

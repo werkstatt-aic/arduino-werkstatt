@@ -61,7 +61,7 @@ const Uploader = {
     this.setupBoard = board;
     const esp = board === 'esp32';
     this.app.dialog(`<h2>Werkzeuge einrichten${esp ? ' für den ESP32' : ''}</h2>
-      <p>Zum Übertragen braucht die Werkstatt einmalig das offizielle Arduino-Übersetzungsprogramm, das Paket für den ${esp ? '<b>ESP32</b>' : 'Arduino Uno'} und die Bibliotheken für LCD, Servo, NeoPixel, Tastenfeld, Messmodule und OLED.</p>
+      <p>Zum Übertragen braucht die Werkstatt einmalig das offizielle Arduino-Übersetzungsprogramm, das Paket für den ${esp ? '<b>ESP32</b>' : 'Arduino Uno'} und die Bibliotheken für LCD, Servo, NeoPixel, Tastenfeld, Messmodule, OLED und DHT-Sensor.</p>
       <p>Dafür ist <b>einmal eine Internetverbindung</b> nötig (${esp ? 'etwa 1 GB, das ESP32-Paket ist groß. Das dauert eine Weile' : 'etwa 250 MB, einige Minuten'}). Alles landet im Ordner <b>„Werkzeuge“</b> neben der Startdatei. Diesen Ordner kann man danach auf andere Sticks kopieren, dann ist dort keine Einrichtung mehr nötig.</p>
       <div class="up-steps" id="upSteps" hidden></div>
       <div class="up-bar" id="upBar" hidden><div></div></div>

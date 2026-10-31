@@ -5,13 +5,13 @@ STARTEN
   Doppelklick auf "Arduino-Werkstatt starten.exe". Es öffnet sich ein
   Chrome-Fenster. Nichts wird installiert. Beim ersten Start kann Windows
   warnen: "Weitere Informationen" und dann "Trotzdem ausführen" klicken.
-  Neue Version einspielen: Nur den Ordner "app" und die Datei
-  "Arduino-Werkstatt starten.exe" ersetzen. Die Ordner "Projekte" und
-  "Werkzeuge" bleiben, wie sie sind (sonst müsste man neu einrichten).
+  Neue Version einspielen: am einfachsten über Einstellungen > Nach Updates
+  suchen. Die Ordner "Projekte", "Aufgaben" und "Werkzeuge" bleiben, wie sie
+  sind (sonst müsste man neu einrichten).
 
 START
   Beim Start erscheint eine Auswahl: neues Projekt anlegen, zuletzt bearbeitetes
-  oder ein anderes Projekt öffnen, oder ein Beispiel öffnen.
+  oder ein anderes Projekt öffnen, eine Aufgabe wählen oder ein Beispiel öffnen.
   Für ein neues Projekt gibt man Tisch-Nr. (01 bis 18), Nachname und
   Projektname ein. Daraus wird z. B. "11 – Müller – Ampelschaltung".
   Ein vorhandenes Projekt wird nie überschrieben.
@@ -21,6 +21,31 @@ SPEICHERN UND SICHERUNGEN
   Zusätzlich legt die Werkstatt beim Arbeiten höchstens alle 5 Minuten eine
   Sicherung an (die letzten 15 je Projekt, Ordner "Projekte\.sicherungen").
   Zurückholen: Datei > Ältere Fassung wiederherstellen.
+
+AUFGABEN (Menü "Datei > Aufgaben")
+  - 17 Aufgaben in vier Stufen: Grundlagen (LED, Blinklicht, Ampel, Taster,
+    Lauflicht, PWM), Sensoren (Nachtlicht, Thermometer, Abstandswarner,
+    Messreihe), Motoren (Servo-Schranke, Lüfter, Schrittmotor, Bewässerung mit
+    Relais) und Kommunikation (ESP32: Bluetooth, USB-Befehle, Webseite).
+  - Eine Aufgabe wird als neues Projekt angelegt. Links erscheint die
+    Aufgabenkarte mit Ziel, benötigten Bauteilen und Tipps, die man
+    nacheinander aufdecken kann.
+  - "Aufgabe prüfen" startet die Simulation und testet automatisch, z. B. ob
+    die LED im Sekundentakt blinkt oder ob der Taster etwas bewirkt (die
+    Werkstatt drückt ihn selbst, verstellt Sensoren und schickt Nachrichten).
+    Was noch nicht stimmt, steht mit Hinweis darunter.
+  - Gelöste Aufgaben bekommen einen Haken (gespeichert in
+    "Projekte\.geloest.json").
+  - Für Lehrkräfte: In den Einstellungen den "Lehrkraft-Modus" einschalten.
+    Dann gibt es unter "Datei > Aufgaben" zusätzlich "Neue Aufgabe aus dem
+    aktuellen Projekt", Bearbeiten, Exportieren, Importieren und Löschen.
+    Am besten zuerst die Lösung als Projekt bauen, dann die Aufgabe anlegen,
+    Prüfungen auswählen und mit "Prüfungen testen" an der Lösung ausprobieren.
+    Als Startvorlage für die Schüler gibt es: leere Werkbank, Mikrocontroller
+    + Steckplatine (mit oder ohne LCD), die Schaltung der Lösung ohne Programm
+    oder Schaltung und Programm (z. B. für eine Fehlersuche).
+    Eigene Aufgaben liegen als .aufgabe-Dateien im Ordner "Aufgaben" und
+    lassen sich auf andere Sticks kopieren oder dort importieren.
 
 BEISPIELE, BILD UND DRUCKEN (Menü "Datei")
   - Beispiel öffnen: fertige Projekte (Blinken, Ampel, Taster, Dimmer,
@@ -50,6 +75,16 @@ BEDIENUNG IN KÜRZE
     erscheinen dann auch in der Bauteilleiste.
   - OLED-Grafikeditor: Im Block "OLED-Bild ... zeichnen" auf das Bild klicken.
   - Mathe: runden (auch auf/ab), Betrag, Quadratwurzel.
+  - PWM-Blöcke (PWM-Ausgang, Servo, Motor): Alle Anschlüsse sind wählbar. Beim
+    Arduino Uno können nur D3, D5, D6, D9, D10 und D11 (mit ~ gekennzeichnet)
+    Zwischenwerte. An anderen Anschlüssen ist der Ausgang nur ganz an oder aus;
+    die Simulation zeigt dann einen Hinweis.
+  - Listen (eigene Kategorie): Liste anlegen (mit Anzahl oder aus Zahlen wie
+    "262, 294, 330"), Eintrag lesen/setzen, neuen Wert hinten nachschieben
+    (für Messreihen), Anzahl, Mittelwert, Summe, kleinster/größter Wert.
+  - Neue Bauteile: Temperatur- und Feuchtesensor DHT11/DHT22, Relais-Modul
+    (schaltet einen eigenen Stromkreis über COM/NO/NC), Schrittmotor 28BYJ-48
+    mit Treiber ULN2003 (Block "Schrittmotor ... drehen" unter "Ausgang").
   - Motortreiber L9110S und L298N (Bauteile > Module) mit dem Block "Motor am
     Motortreiber" unter "Ausgang": vorwärts, rückwärts, anhalten, Tempo in %.
     L298N: IN1/IN2 (Motor A) bzw. IN3/IN4 (Motor B), Jumper auf ENA/ENB
@@ -61,6 +96,8 @@ SERIELLER MONITOR
   - "Per USB verbinden": zeigt die Ausgaben des echten Arduino oder ESP32
     (USB-Kabel). Beim Hochladen wird die Verbindung kurz getrennt und danach
     automatisch wiederhergestellt.
+  - "Messwerte speichern": alle Zahlen aus dem Monitor als Tabelle (CSV) mit
+    Datum, Uhrzeit und Zeit in Sekunden – öffnet sich direkt in Excel.
   - "Per Bluetooth verbinden" (nur ESP32): ohne Kabel, wenn das Programm den
     Block "Bluetooth einrichten" enthält.
 
@@ -138,12 +175,13 @@ WARUM DAUERT DAS ÜBERSETZEN BEIM ERSTEN MAL SO LANGE?
 EINSTELLUNGEN (Zahnrad oben rechts oder Datei > Einstellungen)
   - Version anzeigen, nach Updates suchen oder ein Update aus einer
     ZIP-Datei einspielen. Dabei werden nur "app" und die Startdatei ersetzt,
-    "Werkzeuge" und "Projekte" bleiben erhalten. Danach startet die
+    "Werkzeuge", "Projekte" und "Aufgaben" bleiben erhalten. Danach startet die
     Werkstatt neu (das alte Fenster schließt sich).
   - Werkzeuge prüfen, Uno/ESP32 neu einrichten, Zwischenspeicher leeren.
   - ESP32 komplett löschen (wenn er hängt oder per Bluetooth nicht mehr
     erreichbar ist). Danach wieder ein Programm hochladen.
   - Zeitmessung beim Übersetzen: zeigt, welcher Teil wie lange dauert.
+  - Lehrkraft-Modus: eigene Aufgaben erstellen und verwalten.
 
 NOCH NICHT ENTHALTEN (folgt)
   - Eigene Bauteile und Blöcke selbst hinzufügen

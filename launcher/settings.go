@@ -368,7 +368,7 @@ func apiUpdateCheck(w http.ResponseWriter, r *http.Request) {
 
 // Installiert ein Update: ?from=github lädt die neueste Version herunter,
 // sonst wird die ZIP-Datei im Body erwartet. Ersetzt nur "app", die Startdatei
-// sowie LIESMICH und Notstart. "Werkzeuge" und "Projekte" bleiben unberührt.
+// sowie LIESMICH und Notstart. "Werkzeuge", "Projekte" und "Aufgaben" bleiben unberührt.
 func apiUpdateInstall(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Nur POST", 405)

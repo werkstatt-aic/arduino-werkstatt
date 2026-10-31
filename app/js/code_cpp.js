@@ -78,7 +78,7 @@ void werkstattBluetooth()
 }
 
 /* ---------------- Arduino-C++ ---------------- */
-const FLOAT_BLOCKS = new Set(['com_usb_num', 'com_radio_num', 'com_bt_num', 'ard_tmp36', 'ard_ultrasonic', 'read_voltmeter_differential', 'read_voltmeter_channel', 'calculate_pmfc_power', 'read_ina219_value']);
+const FLOAT_BLOCKS = new Set(['ard_dht', 'com_usb_num', 'com_radio_num', 'com_bt_num', 'ard_tmp36', 'ard_ultrasonic', 'read_voltmeter_differential', 'read_voltmeter_channel', 'calculate_pmfc_power', 'read_ina219_value']);
 const STRING_BLOCKS = new Set(['text', 'ard_join', 'kp_key', 'com_usb_text', 'com_wifi_ip', 'com_radio_text', 'com_bt_text']);
 function valueType(b) {
   if (!b) return 'int';
@@ -94,6 +94,11 @@ function valueType(b) {
   if (b.type === 'ard_millis') return b.getFieldValue('U') === 'S' ? 'float' : 'long';
   if (b.type === 'ard_math1') return b.getFieldValue('OP') === 'SQRT' ? 'float' : valueType(b.getInputTargetBlock('V'));
   if (b.type === 'math_constrain') return widest(['VALUE', 'LOW', 'HIGH'].map(n => valueType(b.getInputTargetBlock(n))));
+  if (b.type === 'list_get') return listType(b.getFieldValue('L'));
+  if (b.type === 'list_stat') {
+    const t = listType(b.getFieldValue('L')), op = b.getFieldValue('OP');
+    return op === 'AVG' ? 'float' : op === 'SUM' && t === 'int' ? 'long' : t;
+  }
   if (b.type === 'procedures_callreturn') {
     const def = Blockly.Procedures.getDefinition(b.getProcedureCall(), b.workspace);
     return def && def.getInput('RETURN') ? valueType(def.getInputTargetBlock('RETURN')) : 'int';
@@ -101,13 +106,21 @@ function valueType(b) {
   return 'int';
 }
 const TYPE_RANK = { int: 0, long: 1, float: 2, String: 3 };
+/* Listen enthalten nur Zahlen: int, long oder float */
+const listType = id => { const t = (Arduino.listTypes_ || {})[id] || 'int'; return t === 'String' ? 'float' : t; };
 const widest = ts => ts.reduce((a, t) => (TYPE_RANK[t] > TYPE_RANK[a] ? t : a), 'int');
 function inferVarTypes(ws) {
   const types = {};
   const add = (id, t) => { if (!types[id] || TYPE_RANK[t] > TYPE_RANK[types[id]]) types[id] = t; };
+  const lists = {};
+  const addL = (id, t) => { if (t === 'String') t = 'float'; if (!lists[id] || TYPE_RANK[t] > TYPE_RANK[lists[id]]) lists[id] = t; };
+  Arduino.listTypes_ = lists;
   for (let pass = 0; pass < 3; pass++) {
     Arduino.varTypes_ = types;
     for (const b of ws.getAllBlocks(false)) {
+      if (b.type === 'list_set' || b.type === 'list_push') addL(b.getFieldValue('L'), valueType(b.getInputTargetBlock('V')));
+      else if (b.type === 'list_init') addL(b.getFieldValue('L'), parseListNumbers(b.getFieldValue('V')).every(Number.isInteger) ? 'int' : 'float');
+      else if (b.type === 'list_new') addL(b.getFieldValue('L'), 'int');
       if (b.type === 'variables_set') add(b.getFieldValue('VAR'), valueType(b.getInputTargetBlock('VALUE')));
       else if (b.type === 'ard_count') add(b.getFieldValue('VAR'), widest(['FROM', 'TO', 'STEP'].map(n => valueType(b.getInputTargetBlock(n)))));
       else if (/^procedures_call/.test(b.type)) {
@@ -132,7 +145,7 @@ const Arduino = new Blockly.Generator('Arduino');
 Arduino.ORDER_ATOMIC = 0; Arduino.ORDER_UNARY = 3; Arduino.ORDER_MULT = 5; Arduino.ORDER_ADD = 6;
 Arduino.ORDER_REL = 8; Arduino.ORDER_EQ = 9; Arduino.ORDER_AND = 13; Arduino.ORDER_OR = 14; Arduino.ORDER_NONE = 99;
 Arduino.INDENT = '  ';
-Arduino.addReservedWords('setup,loop,if,else,for,while,do,int,float,long,char,byte,void,return,break,continue,true,false,HIGH,LOW,INPUT,OUTPUT,String,Serial,delay,lcd,oled,pixels,tastenfeld,taste,millis,random,tone,noTone,pinMode,digitalWrite,digitalRead,analogWrite,analogRead,map,constrain,pow,min,max,abs');
+Arduino.addReservedWords('setup,loop,if,else,for,while,do,int,float,long,char,byte,void,return,break,continue,true,false,HIGH,LOW,INPUT,OUTPUT,String,Serial,delay,lcd,oled,pixels,tastenfeld,taste,millis,random,tone,noTone,pinMode,digitalWrite,digitalRead,analogWrite,analogRead,map,constrain,pow,min,max,abs,motor,ultraschallLaufzeit,schrittmotor,schrittPhase,listenStelle,listeMittelwert,listeSumme,listeMinimum,listeMaximum,lround,labs');
 Arduino.init = function (ws) {
   this.includes_ = {}; this.globals_ = {}; this.setupPre_ = {}; this.helpers_ = {}; this.functions_ = {};
   this.setupBody_ = ''; this.loopBody_ = ''; this.params_ = new Set(); this.bitmaps_ = {};
@@ -144,8 +157,21 @@ Arduino.init = function (ws) {
 };
 Arduino.finish = function () {
   const ws = this.workspace_ || Blockly.getMainWorkspace();
-  const vars = Blockly.Variables.allUsedVarModels(ws).filter(v => !this.params_.has(v.getId()))
+  const used = Blockly.Variables.allUsedVarModels(ws).filter(v => !this.params_.has(v.getId()));
+  const vars = used.filter(v => v.type !== 'Liste')
     .map(v => { const t = this.varTypes_[v.getId()] || 'int'; return `${t} ${this.nameDB_.getName(v.getId(), Blockly.VARIABLE_CATEGORY_NAME)} = ${t === 'String' ? '""' : '0'};`; });
+  // Listen: feste Größe (größte Anlege-Anweisung), die Anzahl kann beim Anlegen kleiner sein
+  for (const v of used.filter(m => m.type === 'Liste')) {
+    let size = 0;
+    for (const b of ws.getAllBlocks(false)) {
+      if (b.getFieldValue('L') !== v.getId()) continue;
+      if (b.type === 'list_new') size = Math.max(size, Number(b.getFieldValue('N')) || 1);
+      if (b.type === 'list_init') size = Math.max(size, parseListNumbers(b.getFieldValue('V')).length);
+    }
+    size = Math.max(1, Math.min(100, size || 10));
+    const n = this.nameDB_.getName(v.getId(), Blockly.VARIABLE_CATEGORY_NAME);
+    vars.push(`${listType(v.getId())} ${n}[${size}] = {0}; // Liste „${v.name}“\nint ${n}_anzahl = ${size};`);
+  }
   let out = '';
   const bt = BOARD === 'esp32' && BT_OPT.on;
   if (bt) {
@@ -229,6 +255,64 @@ Arduino.scrub_ = function (block, code, thisOnly) {
     mode(ia, 'OUTPUT'); mode(ib, 'OUTPUT');
     A.helpers_.motor = '// Motortreiber (z. B. L9110S): richtung 1 = vorwärts, -1 = rückwärts, 0 = anhalten\nvoid motor(int ia, int ib, int richtung, int prozent)\n{\n  int pwm = constrain(prozent, 0, 100) * 255 / 100;\n  analogWrite(ia, richtung > 0 ? pwm : 0);\n  analogWrite(ib, richtung < 0 ? pwm : 0);\n}';
     return `motor(${ia}, ${ib}, ${b.getFieldValue('DIR')}, ${v(b, 'SPEED')});\n`;
+  };
+  A['ard_stepper'] = b => {
+    A.helpers_.stepper = `// Schrittmotor 28BYJ-48 mit Treiber ULN2003: 2048 Schritte = 1 Umdrehung, höchstens 15 U/min
+int schrittPhase[40];
+void schrittmotor(int in1, int in2, int in3, int in4, long schritte, float upm)
+{
+  const byte spulen[4][4] = {{1, 1, 0, 0}, {0, 1, 1, 0}, {0, 0, 1, 1}, {1, 0, 0, 1}};
+  int pins[4] = {in1, in2, in3, in4};
+  for (int i = 0; i < 4; i++) pinMode(pins[i], OUTPUT);
+  upm = constrain(upm, 1, 15);
+  unsigned long pause = (unsigned long)(60000000.0 / (2048.0 * upm)); // Mikrosekunden je Schritt
+  int richtung = schritte < 0 ? -1 : 1;
+  int &phase = schrittPhase[in1 % 40];
+  for (long s = 0; s < labs(schritte); s++) {
+    phase = (phase + richtung + 4) % 4;
+    for (int i = 0; i < 4; i++) digitalWrite(pins[i], spulen[phase][i]);
+    delayMicroseconds(pause % 1000);
+    delay(pause / 1000);
+  }
+  for (int i = 0; i < 4; i++) digitalWrite(pins[i], LOW); // Spulen aus, damit nichts warm wird
+}`;
+    const ps = [1, 2, 3, 4].map(i => pinNum(b, 'P' + i)).join(', ');
+    const n = v(b, 'N', A.ORDER_MULT), u = b.getFieldValue('UNIT');
+    let steps = u === 'STEP' ? n : u === 'REV' ? `${n} * 2048` : `${n} * 2048.0 / 360.0`;
+    if (isNum(n)) steps = String(Math.round(Number(n) * (u === 'STEP' ? 1 : u === 'REV' ? 2048 : 2048 / 360)));
+    else steps = `lround(${steps})`;
+    if (b.getFieldValue('DIR') === 'CCW') steps = isNum(steps) ? '-' + steps : `-(${steps})`;
+    return `schrittmotor(${ps}, ${steps}, ${v(b, 'RPM', A.ORDER_NONE, '10')}); // ${{ DEG: 'Grad', REV: 'Umdrehungen', STEP: 'Schritte' }[u]}, ${b.getFieldValue('DIR') === 'CCW' ? 'gegen den Uhrzeigersinn' : 'im Uhrzeigersinn'}\n`;
+  };
+  A['ard_dht'] = b => {
+    const p = pinNum(b), m = b.getFieldValue('MODEL');
+    A.includes_.dht = '#include <DHT.h>';
+    A.globals_['dht' + p] = `DHT dht_${p}(${p}, DHT${m}); // Temperatur- und Feuchtesensor DHT${m}`;
+    A.setupPre_['dht' + p] = `dht_${p}.begin();`;
+    const w = b.getFieldValue('WHAT');
+    return [w === 'H' ? `dht_${p}.readHumidity()` : `dht_${p}.readTemperature(${w === 'F' ? 'true' : ''})`, A.ORDER_ATOMIC];
+  };
+  /* Listen */
+  const lst = b => varName(b.getFieldValue('L'));
+  const listPos = () => { A.helpers_.listPos = '// Listen: Nummer 1 … Anzahl in die Stelle 0 … Anzahl-1 umrechnen (außerhalb: erster bzw. letzter Eintrag)\nint listenStelle(long nummer, int anzahl)\n{\n  if (nummer < 1 || anzahl < 1) return 0;\n  if (nummer > anzahl) return anzahl - 1;\n  return nummer - 1;\n}'; };
+  A['list_new'] = b => { const l = lst(b), n = Math.max(1, Math.min(100, Number(b.getFieldValue('N')) || 1)); return `${l}_anzahl = ${n};\nfor (int i = 0; i < ${n}; i++) ${l}[i] = 0;\n`; };
+  A['list_init'] = b => { const l = lst(b), z = parseListNumbers(b.getFieldValue('V')); return `${l}_anzahl = ${z.length};\n` + z.map((x, i) => `${l}[${i}] = ${x};`).join(' ') + (z.length ? '\n' : ''); };
+  A['list_get'] = b => { listPos(); const l = lst(b); return [`${l}[listenStelle(${v(b, 'I', A.ORDER_NONE, '1')}, ${l}_anzahl)]`, A.ORDER_ATOMIC]; };
+  A['list_set'] = b => { listPos(); const l = lst(b); return `${l}[listenStelle(${v(b, 'I', A.ORDER_NONE, '1')}, ${l}_anzahl)] = ${v(b, 'V')};\n`; };
+  A['list_push'] = b => { const l = lst(b); return `for (int i = 0; i + 1 < ${l}_anzahl; i++) ${l}[i] = ${l}[i + 1]; // alle eins nach vorne\nif (${l}_anzahl > 0) ${l}[${l}_anzahl - 1] = ${v(b, 'V')};\n`; };
+  A['list_len'] = b => [`${lst(b)}_anzahl`, A.ORDER_ATOMIC];
+  A['list_stat'] = b => {
+    const t = listType(b.getFieldValue('L')), op = b.getFieldValue('OP');
+    const sumT = t === 'int' ? 'long' : t;
+    const H = {
+      AVG: `float listeMittelwert(const ${t} *liste, int anzahl)\n{\n  float summe = 0;\n  for (int i = 0; i < anzahl; i++) summe += liste[i];\n  return anzahl > 0 ? summe / anzahl : 0;\n}`,
+      SUM: `${sumT} listeSumme(const ${t} *liste, int anzahl)\n{\n  ${sumT} summe = 0;\n  for (int i = 0; i < anzahl; i++) summe += liste[i];\n  return summe;\n}`,
+      MIN: `${t} listeMinimum(const ${t} *liste, int anzahl)\n{\n  ${t} m = liste[0];\n  for (int i = 1; i < anzahl; i++) if (liste[i] < m) m = liste[i];\n  return m;\n}`,
+      MAX: `${t} listeMaximum(const ${t} *liste, int anzahl)\n{\n  ${t} m = liste[0];\n  for (int i = 1; i < anzahl; i++) if (liste[i] > m) m = liste[i];\n  return m;\n}`,
+    };
+    A.helpers_['list' + op + t] = H[op];
+    const fn = { AVG: 'listeMittelwert', SUM: 'listeSumme', MIN: 'listeMinimum', MAX: 'listeMaximum' }[op];
+    return [`${fn}(${lst(b)}, ${lst(b)}_anzahl)`, A.ORDER_ATOMIC];
   };
   A['ard_round'] = b => [`(long)${{ ROUND: 'round', UP: 'ceil', DOWN: 'floor' }[b.getFieldValue('OP')]}(${v(b, 'V')})`, A.ORDER_UNARY];
   A['ard_math1'] = b => [b.getFieldValue('OP') === 'ABS' ? `fabs(${v(b, 'V')})` : `sqrt(${v(b, 'V')})`, A.ORDER_ATOMIC];

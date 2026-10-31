@@ -2,10 +2,18 @@
 'use strict';
 
 const Settings = {
+  bindTeacher() {
+    const cb = document.querySelector('#setTeacher');
+    if (cb) cb.onchange = () => { try { localStorage.setItem('werkstatt.lehrkraft', cb.checked ? '1' : '0'); } catch (e) { /* ohne Speicher */ } };
+  },
   async open(app) {
     this.app = app;
     if (!app.launcher) {
-      app.dialog(`<h2>Einstellungen</h2><p>Die Einstellungen gibt es nur, wenn die Werkstatt über <b>„Arduino-Werkstatt starten.exe“</b> gestartet wurde.</p><div class="dlg-btns"><button class="btn primary" value="ok">Verstanden</button></div>`);
+      app.dialog(`<h2>Einstellungen</h2><p>Updates und Werkzeuge gibt es nur, wenn die Werkstatt über <b>„Arduino-Werkstatt starten.exe“</b> gestartet wurde.</p><section class="set-sec">
+        <h3>Aufgaben</h3>
+        <label class="up-check"><input type="checkbox" id="setTeacher" ${TaskEditor.teacherMode() ? 'checked' : ''}> Lehrkraft-Modus: eigene Aufgaben erstellen, bearbeiten, importieren und löschen (unter „Datei › Aufgaben“)</label>
+      </section><div class="dlg-btns"><button class="btn primary" value="ok">Schließen</button></div>`);
+      this.bindTeacher();
       return;
     }
     let info = {};
@@ -23,7 +31,7 @@ const Settings = {
           <input type="file" id="setZipFile" accept=".zip" hidden>
         </div>
         <div class="set-note" id="setUpd">${info.updateRepo ? '' : 'Die automatische Update-Suche wird noch eingerichtet. Updates lassen sich schon jetzt aus einer ZIP-Datei einspielen.'}</div>
-        <div class="set-note">Beim Update werden nur das Programm und die Startdatei ersetzt. Die Ordner „Werkzeuge“ und „Projekte“ bleiben erhalten.</div>
+        <div class="set-note">Beim Update werden nur das Programm und die Startdatei ersetzt. Die Ordner „Werkzeuge“, „Projekte“ und „Aufgaben“ bleiben erhalten.</div>
       </section>
       <section class="set-sec">
         <h3>Werkzeuge zum Hochladen</h3>
@@ -49,6 +57,10 @@ const Settings = {
         <h3>Hochladen</h3>
         <label class="up-check"><input type="checkbox" id="setDetails" ${details ? 'checked' : ''}> Zeitmessung beim Übersetzen anzeigen (welcher Teil wie lange dauert)</label>
       </section>
+      <section class="set-sec">
+        <h3>Aufgaben</h3>
+        <label class="up-check"><input type="checkbox" id="setTeacher" ${TaskEditor.teacherMode() ? 'checked' : ''}> Lehrkraft-Modus: eigene Aufgaben erstellen, bearbeiten, importieren und löschen (unter „Datei › Aufgaben“)</label>
+      </section>
       <div class="up-steps" id="upSteps" hidden></div>
       <div class="up-bar" id="upBar" hidden><div></div></div>
       <div class="up-msg" id="upMsg"></div>
@@ -56,6 +68,7 @@ const Settings = {
       <div class="dlg-btns"><button class="btn primary" value="cancel">Schließen</button></div>`);
     const d = document.querySelector('#dlg'), $q = s => document.querySelector(s);
     d.oncancel = e => { if (this.busy) e.preventDefault(); };
+    this.bindTeacher();
     Uploader.app = app;
 
     $q('#setDetails').onchange = e => { try { localStorage.setItem('werkstatt.details', e.target.checked ? '1' : '0'); } catch (err) { /* ohne Speicher */ } };

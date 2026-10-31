@@ -30,6 +30,18 @@ function setupSimGenerator() {
   J['ard_tone'] = b => `await api.tone(${pin(b)}, ${noteFreq(b.getFieldValue('NOTE'), b.getFieldValue('ACC'), b.getFieldValue('OCT'))}, ${v(b, 'DUR')});\n`;
   J['ard_tone_freq'] = b => `await api.tone(${pin(b)}, ${v(b, 'FREQ')}, ${v(b, 'DUR')});\n`;
   J['ard_motor'] = b => `await api.motor(${pin(b, 'IA')}, ${pin(b, 'IB')}, ${b.getFieldValue('DIR')}, ${v(b, 'SPEED')});\n`;
+  J['ard_stepper'] = b => `await api.stepper([${[1, 2, 3, 4].map(i => pin(b, 'P' + i)).join(', ')}], ${v(b, 'N')}, '${b.getFieldValue('UNIT')}', '${b.getFieldValue('DIR')}', ${v(b, 'RPM', J.ORDER_NONE, '10')});\n`;
+  J['ard_dht'] = b => [`(await api.dht(${pin(b)}, '${b.getFieldValue('MODEL')}', '${b.getFieldValue('WHAT')}'))`, J.ORDER_ATOMIC];
+  /* Listen */
+  const lst = b => vname(b.getFieldValue('L'));
+  const lname = b => JSON.stringify(b.getField('L').getText());
+  J['list_new'] = b => `${lst(b)} = new Array(${Math.max(1, Math.min(100, Number(b.getFieldValue('N')) || 1))}).fill(0);\n`;
+  J['list_init'] = b => `${lst(b)} = ${JSON.stringify(parseListNumbers(b.getFieldValue('V')))};\n`;
+  J['list_get'] = b => [`api.listGet(${lst(b)}, ${v(b, 'I', J.ORDER_NONE, '1')}, ${lname(b)})`, J.ORDER_FUNCTION_CALL];
+  J['list_set'] = b => `api.listSet(${lst(b)}, ${v(b, 'I', J.ORDER_NONE, '1')}, ${v(b, 'V')}, ${lname(b)});\n`;
+  J['list_push'] = b => `api.listPush(${lst(b)}, ${v(b, 'V')});\n`;
+  J['list_len'] = b => [`${lst(b)}.length`, J.ORDER_MEMBER];
+  J['list_stat'] = b => [`api.listStat(${lst(b)}, '${b.getFieldValue('OP')}')`, J.ORDER_FUNCTION_CALL];
   J['ard_round'] = b => [`Math.${{ ROUND: 'round', UP: 'ceil', DOWN: 'floor' }[b.getFieldValue('OP')]}(${v(b, 'V')})`, J.ORDER_FUNCTION_CALL];
   J['ard_math1'] = b => [`Math.${b.getFieldValue('OP') === 'ABS' ? 'abs' : 'sqrt'}(${v(b, 'V')})`, J.ORDER_FUNCTION_CALL];
   J['ard_notone'] = b => `await api.noTone(${pin(b)});\n`;
@@ -124,8 +136,11 @@ function setupSimGenerator() {
 function generateSimCode(ws) {
   let code = Blockly.JavaScript.workspaceToCode(ws);
   // Startwerte wie im C++-Code: Text-Variablen leer, alle anderen 0
-  const types = inferVarTypes(ws), textNames = new Set();
-  for (const m of ws.getAllVariables()) if (types[m.getId()] === 'String') textNames.add(Blockly.JavaScript.nameDB_.getName(m.getId(), Blockly.VARIABLE_CATEGORY_NAME));
-  code = code.replace(/^var (.+);$/m, (m, names) => 'var ' + names.split(', ').map(n => n + (textNames.has(n) ? " = ''" : ' = 0')).join(', ') + ';');
+  const types = inferVarTypes(ws), textNames = new Set(), listNames = new Set();
+  for (const m of ws.getAllVariables()) {
+    const n = Blockly.JavaScript.nameDB_.getName(m.getId(), Blockly.VARIABLE_CATEGORY_NAME);
+    if (m.type === 'Liste') listNames.add(n); else if (types[m.getId()] === 'String') textNames.add(n);
+  }
+  code = code.replace(/^var (.+);$/m, (m, names) => 'var ' + names.split(', ').map(n => n + (listNames.has(n) ? ' = []' : textNames.has(n) ? " = ''" : ' = 0')).join(', ') + ';');
   return code + '\nreturn { setup: typeof __setup === "function" ? __setup : null, loop: typeof __loop === "function" ? __loop : null };';
 }

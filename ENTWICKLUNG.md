@@ -21,9 +21,10 @@ Blockbasierte Arduino-Lernumgebung (Uno und ESP32) mit Simulation und Hochladen 
 | `app/js/serial.js` | Serieller Monitor für echte Hardware (Web Serial per USB, Web Bluetooth per BLE-UART) |
 | `app/js/examples.js` | Beispielprojekte (erzeugt mit `tests/ex_build.py` + `ex_build.js`) |
 | `app/js/export.js` | Schaltung als Bild, Drucken |
+| `app/js/tasks.js` | Aufgabenkarten: mitgelieferte Aufgaben, Prüf-Engine (Simulation), Aufgabenkarte, Editor für Lehrkräfte |
 | `app/js/app.js` | Zusammenspiel der Oberfläche, Speichern, Projektverwaltung |
 | `app/lib/blockly/` | Blockly (Apache-Lizenz 2.0), unverändert |
-| `launcher/` | Startprogramm in Go: kleiner Webserver nur für diesen PC, Speichern, arduino-cli, Updates |
+| `launcher/` | Startprogramm in Go: kleiner Webserver nur für diesen PC, Speichern, arduino-cli, Updates, Aufgaben (`tasks.go`) |
 | `paket/` | LIESMICH und Notstart-Datei für das ZIP-Paket |
 | `tests/` | Automatische Tests (Python + Playwright), Ersatz-arduino-cli, C++-Ersatzköpfe |
 | `bauen.sh` | Baut das ZIP-Paket für Windows |
@@ -62,3 +63,10 @@ Umgebungsvariablen nur für Tests: `WERKSTATT_CLI_URL`, `WERKSTATT_UPDATE_API`, 
 - **Kommunikation:** WLAN/Webseite/ESP-NOW-Funk/Bluetooth (BLE-UART) nur für ESP32. Nutzt ein Programm WLAN, Webseite
   oder Funk, werden `WiFi.h`, `WebServer.h`, `esp_now.h` gemeinsam eingebunden (eigener Zwischenordner `-net`);
   Bluetooth (Empfänger oder Blöcke) nutzt NimBLE (Zwischenordner `-bt`). So bleibt der Zwischenspeicher je Kombination erhalten.
+- **Aufgaben:** Mitgelieferte Aufgaben in `BUILTIN_TASKS` (`tasks.js`), eigene als JSON-Dateien `Aufgaben/*.aufgabe`
+  (Endpunkte `/api/tasks`, `/api/task-save`, `/api/task-delete`), gelöste in `Projekte/.geloest.json` (`/api/solved`).
+  Eine Prüfung ist `{k: <Art>, …}` mit den Arten aus `TASK_CHECKS`: statisch (Bauteil, Block), beobachtend (LED leuchtet,
+  blinkt, nacheinander, gedimmt, Servo, Motor, Summer, serieller Monitor, LCD), ausprobierend (Taster, Sensor, Nachricht)
+  und „keine Fehler“. Die Musterlösungen in `tests/tk5.js` müssen jede mitgelieferte Aufgabe lösen (`tests/tk5.py`).
+- **PWM-Auswahl:** Die PWM-Blöcke bieten bewusst alle Anschlüsse an; die Simulation verhält sich an Anschlüssen ohne PWM
+  wie der echte Uno (unter 128 aus, sonst an) und meldet einen Hinweis.

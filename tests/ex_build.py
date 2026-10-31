@@ -12,7 +12,7 @@ with sync_playwright() as p:
         data={'format':'arduino-werkstatt','version':1,'name':'14 – Test – '+e['title'],'board':e['board'],'extensions':e.get('ext',[]),'circuit':e['circuit'],'blocks':e['blocks']}
         pg.evaluate('(d)=>App.loadProject(d)', data); pg.wait_for_timeout(400)
         if e['id'] in ('dimmer','servo','motor'):
-            pg.evaluate("()=>{const c=App.project.components.find(c=>c.type==='poti'); c.props.position=80;}")
+            pg.evaluate("(v)=>{const c=App.project.components.find(c=>c.type==='poti'); c.props.position=v;}", 20 if e['id']=='motor' else 80)
         pg.evaluate("()=>App.startSim()"); pg.wait_for_timeout(2600)
         if e['id']=='taster':
             pg.evaluate("()=>App.sim.pressButton(App.project.components.find(c=>c.type==='button').id,true)"); pg.wait_for_timeout(500)

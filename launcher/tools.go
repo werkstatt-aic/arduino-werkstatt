@@ -33,6 +33,18 @@ var (
 var libraries = []string{
 	"LiquidCrystal I2C", "Servo", "Adafruit NeoPixel", "Keypad",
 	"Adafruit ADS1X15", "Adafruit INA219", "Adafruit SSD1306", "Adafruit GFX Library",
+	"DHT sensor library",
+}
+
+// Bibliotheken, die erst später dazugekommen sind: werden beim ersten Gebrauch nachinstalliert
+// (Kopfdatei im Programm → Bibliothek, Ordnername im Bibliotheksordner).
+var lateLibraries = []struct{ header, lib, dir, what string }{
+	{"<DHT.h>", "DHT sensor library", "DHT_sensor_library", "Baustein für den Sensor DHT"},
+}
+
+func libInstalled(dir string) bool {
+	_, err := os.Stat(filepath.Join(toolsDir(), "bibliotheken", "libraries", dir, "library.properties"))
+	return err == nil
 }
 
 const esp32Index = "https://espressif.github.io/arduino-esp32/package_esp32_index.json"
@@ -262,7 +274,7 @@ func apiInstall(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	s.line("##SCHRITT 4 Bibliotheken installieren (LCD, Servo, NeoPixel, Tastenfeld, Messmodule, OLED)")
+	s.line("##SCHRITT 4 Bibliotheken installieren (LCD, Servo, NeoPixel, Tastenfeld, Messmodule, OLED, DHT)")
 	if err := runCLI(s, append([]string{"lib", "install"}, libs...)...); err != nil {
 		fail("Die Bibliotheken konnten nicht installiert werden.", nil)
 		return
@@ -597,6 +609,16 @@ func apiUpload(w http.ResponseWriter, r *http.Request) {
 		if err := os.WriteFile(filepath.Join(sketch, "werkstatt.ino"), code, 0o644); err != nil {
 			s.line("##FEHLER Das Programm konnte nicht gespeichert werden: %s", err)
 			return
+		}
+		for _, l := range lateLibraries {
+			if strings.Contains(string(code), l.header) && !libInstalled(l.dir) {
+				s.line("##SCHRITT 1 %s einrichten (nur einmal nötig)", l.what)
+				if err := runCLI(s, "lib", "install", l.lib); err != nil {
+					s.line("##FEHLER Der %s konnte nicht installiert werden. Besteht eine Internetverbindung?", l.what)
+					return
+				}
+				stepShown = false
+			}
 		}
 		if withBT && !nimbleInstalled() {
 			s.line("##SCHRITT 1 Bluetooth-Baustein einrichten (nur einmal nötig)")

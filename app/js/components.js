@@ -424,6 +424,65 @@ function renderUltrasonic(comp) {
   return s + pinsOf(comp);
 }
 
+/* Temperatur- und Luftfeuchtesensor DHT11 (blau) / DHT22 (weiß) auf kleiner Platine */
+function renderDHT(comp) {
+  const d22 = String(comp.props.model) === '22';
+  const body = d22 ? '#f4f4f1' : '#3f86d8', edge = d22 ? '#b9bab3' : '#235fa8', slot = d22 ? '#c9cac3' : '#2a64a8';
+  let s = `<rect class="body" x="-8" y="-24" width="36" height="18" rx="2" fill="#1f5fae" stroke="#123f7a"/>`;
+  s += `<rect class="body" x="-3" y="-${d22 ? 74 : 64}" width="26" height="${d22 ? 52 : 42}" rx="2" fill="${body}" stroke="${edge}"/>`;
+  const rows = d22 ? 6 : 4;
+  for (let r = 0; r < rows; r++) for (let c = 0; c < 3; c++) s += `<rect x="${1 + c * 7}" y="${-(d22 ? 62 : 52) + r * 6.4}" width="4.6" height="3.6" rx=".6" fill="${slot}"/>`;
+  s += `<text x="10" y="-${d22 ? 66 : 56}" class="tiny" text-anchor="middle" fill="${d22 ? '#555' : '#fff'}">DHT${d22 ? '22' : '11'}</text>`;
+  s += headerLegs(comp, ['+', 'out', '–'], -6);
+  return s + pinsOf(comp);
+}
+
+/* Relais-Modul (1 Kanal): Steuerseite VCC, GND, IN; Schaltkontakte NO, COM, NC (Schraubklemme) */
+function renderRelay(comp, st) {
+  const on = st && st.on;
+  let s = `<rect class="body" x="-10" y="-82" width="72" height="76" rx="3" fill="#1d5fb8" stroke="#123f7a"/>`;
+  s += `<rect class="body" x="2" y="-66" width="44" height="38" rx="2" fill="#2f6fe0" stroke="#173f8a"/>`;
+  s += `<text x="24" y="-50" class="tiny" text-anchor="middle" fill="#fff">SRD-05VDC</text><text x="24" y="-42" class="tiny" text-anchor="middle" fill="#dfe8ff">10A 250VAC</text>`;
+  // Schraubklemme oben mit NO, COM, NC
+  s += `<rect x="-6" y="-100" width="44" height="18" rx="1.5" fill="#1e63c5" stroke="#0f3f85"/>`;
+  for (const p of comp.def.pins) if (p.kind === 'socket') s += `<circle cx="${p.x}" cy="${p.y}" r="3.6" fill="#c9ced2" stroke="#7d868c"/>`;
+  s += `<text x="2" y="-104" class="tiny" text-anchor="middle">NO</text><text x="16" y="-104" class="tiny" text-anchor="middle">COM</text><text x="30" y="-104" class="tiny" text-anchor="middle">NC</text>`;
+  // Schaltzustand: Kontakt liegt an NO (angezogen) oder NC (abgefallen)
+  s += `<path d="M16 -82 L${on ? 4 : 28} -74" stroke="#f2c200" stroke-width="2" stroke-linecap="round"/>`;
+  s += `<rect x="50" y="-60" width="7" height="5" rx="1" fill="${on ? '#ff3b30' : '#6b2a2a'}"/>`;
+  if (on) s += `<circle cx="53.5" cy="-57.5" r="6" fill="#ff3b30" opacity=".35"/>`;
+  s += `<text x="44" y="-16" class="tiny" text-anchor="middle" fill="#fff">${String(comp.props.trig) === 'L' ? 'LOW' : 'HIGH'}</text>`;
+  s += headerLegs({ def: { pins: comp.def.pins.filter(p => p.kind === 'leg') } }, ['VCC', 'GND', 'IN'], -6);
+  return s + pinsOf(comp);
+}
+
+/* Schrittmotor 28BYJ-48 mit Treiberplatine ULN2003: IN1–IN4, Versorgung – und + */
+function renderStepper(comp, st) {
+  const ang = st && typeof st.angle === 'number' ? st.angle : 0;
+  const coil = st && st.coils ? st.coils : [0, 0, 0, 0];
+  let s = '';
+  // Motor oben
+  s += `<path d="M30 -96 C30 -88 40 -88 40 -80" stroke="#e53935" stroke-width="2" fill="none"/><path d="M26 -96 C26 -86 34 -86 34 -80" stroke="#f2c200" stroke-width="2" fill="none"/><path d="M22 -96 C22 -86 28 -86 28 -80" stroke="#ef6c00" stroke-width="2" fill="none"/><path d="M18 -96 C18 -86 22 -86 22 -80" stroke="#e91e63" stroke-width="2" fill="none"/><path d="M14 -96 C14 -86 16 -86 16 -80" stroke="#1e63c5" stroke-width="2" fill="none"/>`;
+  s += `<rect class="body" x="-30" y="-130" width="12" height="8" rx="2" fill="#c9cdd1" stroke="#8b9399"/><rect class="body" x="72" y="-130" width="12" height="8" rx="2" fill="#c9cdd1" stroke="#8b9399"/>`;
+  s += `<circle class="body" cx="27" cy="-126" r="40" fill="#c9cdd1" stroke="#8b9399"/><circle cx="27" cy="-126" r="34" fill="#d9dde0"/>`;
+  s += `<rect class="body" x="8" y="-100" width="38" height="10" rx="2" fill="#1e63c5" stroke="#0f3f85"/>`;
+  s += `<circle cx="27" cy="-140" r="10" fill="#b5bbc0" stroke="#8b9399"/>`;
+  s += `<g transform="rotate(${ang.toFixed(1)} 27 -140)"><rect x="24.5" y="-152" width="5" height="24" rx="2" fill="#e8b23a" stroke="#9c7d23"/><circle cx="27" cy="-148" r="1.6" fill="#7a5c12"/></g>`;
+  s += `<text x="27" y="-112" class="tiny" text-anchor="middle" fill="#555">28BYJ-48</text>`;
+  // Treiberplatine
+  s += `<rect class="body" x="-10" y="-80" width="84" height="74" rx="3" fill="#1f7a3a" stroke="#155a2a"/>`;
+  s += `<rect x="6" y="-76" width="42" height="12" rx="1" fill="#f5f2e8" stroke="#bdb8a8"/>`;
+  s += `<rect x="-2" y="-58" width="24" height="34" rx="1" fill="#1b1b1b"/><text x="10" y="-38" class="tiny" text-anchor="middle" fill="#ccc" transform="rotate(-90 10 -40)">ULN2003</text>`;
+  ['A', 'B', 'C', 'D'].forEach((t, i) => {
+    const y = -58 + i * 9, lit = coil[i];
+    s += `<rect x="34" y="${y}" width="7" height="5" rx="1" fill="${lit ? '#ff3b30' : '#6b2a2a'}"/><text x="46" y="${y + 4.5}" class="tiny" fill="#fff">${t}</text>`;
+    if (lit) s += `<circle cx="37.5" cy="${y + 2.5}" r="5.5" fill="#ff3b30" opacity=".35"/>`;
+  });
+  s += `<text x="55" y="-12" class="tiny" text-anchor="middle" fill="#fff">5–12V</text>`;
+  s += headerLegs(comp, ['IN1', 'IN2', 'IN3', 'IN4', '–', '+'], -6);
+  return s + pinsOf(comp);
+}
+
 function renderSoil(comp) {
   const wet = Math.max(0, Math.min(100, Number(comp.props.wet) || 0)) / 100;
   const sponge = mix('#f2d36b', '#c79a2a', wet);
@@ -698,6 +757,8 @@ const COMPONENTS = {
     pins: [L('VCC', 0), L('OUT', 10), L('GND', 20)], props: {}, pressable: true },
   ultrasonic: { name: 'Ultraschallsensor', label: 'Ultraschall\u00adsensor',  category: 'Sensoren', render: renderUltrasonic, bbox: [-35, -54, 65, 4],
     pins: [L('VCC', 0), L('TRIG', 10, 'Trig'), L('ECHO', 20, 'Echo'), L('GND', 30)], props: { dist: 50 } },
+  dht: { name: 'Temperatur- und Feuchtesensor DHT', label: 'Temperatur- und Feuchte­sensor DHT', category: 'Sensoren', render: renderDHT, bbox: [-8, -76, 28, 4],
+    pins: [L('VCC', 0, '+ (VCC)'), L('DATA', 10, 'out (Daten)'), L('GND', 20, '– (GND)')], props: { model: '11', temp: 22, hum: 45 } },
 
   piezo: { name: 'Piezo-Summer', category: 'Aktoren', render: renderPiezo, bbox: [-7, -42, 27, 4],
     pins: [L('P', 0, 'Plus (+)'), L('N', 20, 'Minus (–)')], props: {} },
@@ -707,6 +768,8 @@ const COMPONENTS = {
     pins: [S('P', 0, 0, 'Plus (rot)'), S('N', 10, 0, 'Minus (schwarz)')], props: {} },
   gearmotor: { name: 'Getriebemotor', category: 'Aktoren', render: renderGearMotor, bbox: [-30, -74, 118, 12],
     pins: [S('P', 0, 0, 'Plus (rot)'), S('N', 10, 0, 'Minus (schwarz)')], props: {} },
+  stepper: { name: 'Schrittmotor 28BYJ-48 mit ULN2003', label: 'Schrittmotor 28BYJ-48 mit Treiber ULN2003', category: 'Aktoren', render: renderStepper, bbox: [-30, -166, 84, 4],
+    pins: [L('IN1', 0), L('IN2', 10), L('IN3', 20), L('IN4', 30), L('GND', 50, '– (GND)'), L('VCC', 60, '+ (5 V)')], props: {} },
   strip: { name: 'NeoPixel-Streifen (8)', ext: 'neopixel',  category: 'Aktoren', render: renderStrip, bbox: [-8, -30, 114, 13], count: 8,
     pins: [L('VCC', 0, '5V'), L('DIN', 10, 'DIN'), L('GND', 20)], props: {} },
   ring: { name: 'NeoPixel-Ring (12)', ext: 'neopixel',  category: 'Aktoren', render: renderRing, bbox: [-30, -90, 50, 13], count: 12,
@@ -731,6 +794,9 @@ const COMPONENTS = {
       S('VS', -40, -5, '+12V (Motorspannung, z. B. Batterie)'), S('GND', -30, -5, 'GND'), S('V5', -20, -5, '+5V'),
       S('OUT1', -59, -81, 'OUT1 (Motor A)'), S('OUT2', -59, -67, 'OUT2 (Motor A)'), S('OUT3', 75, -81, 'OUT3 (Motor B)'), S('OUT4', 75, -67, 'OUT4 (Motor B)')],
     props: { ena: '1', enb: '1' } },
+  relay: { name: 'Relais-Modul', category: 'Module', render: renderRelay, bbox: [-10, -110, 72, 4],
+    pins: [L('VCC', 0), L('GND', 10), L('IN', 20, 'IN (Steuereingang)'), S('NO', 2, -91, 'NO (Schließer: verbunden, wenn das Relais angezogen ist)'), S('COM', 16, -91, 'COM (gemeinsamer Anschluss)'), S('NC', 30, -91, 'NC (Öffner: verbunden, wenn das Relais abgefallen ist)')],
+    props: { trig: 'H' } },
   ina219: { name: 'Strommesser INA219', ext: 'multimeter',  category: 'Module', render: renderINA, bbox: [-8, -62, 58, 4],
     pins: [L('VCC', 0), L('GND', 10), L('SCL', 20), L('SDA', 30), L('VINM', 40, 'VIN–'), L('VINP', 50, 'VIN+')], props: { address: 64 } },
 };

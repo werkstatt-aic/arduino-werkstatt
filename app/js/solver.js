@@ -92,7 +92,7 @@ function moduleSupply(nl, c, vccPin, gndPin, n5, n33, g) {
    io: { outputs: {D3:{v:5}}, pressed:Set(compId), keys: Map(compId->key), broken:Set(key) } */
 function solveCircuit(project, nl, io) {
   const uno = project.components.find(c => c.def.mcu);
-  const res = { V: new Array(nl.count).fill(NaN), floating: new Set(), led: {}, pinI: {}, ground: -1, v5: -1, short: false, ok: !!uno, shuntI: {} };
+  const res = { V: new Array(nl.count).fill(NaN), floating: new Set(), led: {}, pinI: {}, ground: -1, v5: -1, short: false, ok: !!uno, shuntI: {}, relay: {} };
   if (!uno) return res;
   const M = uno.def.mcu;
   const g = nl.net(uno.id, M.gnd);
@@ -184,6 +184,17 @@ function solveCircuit(project, nl, io) {
         }
         break;
       }
+      case 'relay': {
+        // Relais zieht an, wenn es versorgt ist und IN den Auslösepegel hat (Modul mit HIGH- oder LOW-Auslösung)
+        const o = outByNet.get(n('IN'));
+        const hi = o ? (o.v > M.logic / 2 && (o.duty == null || o.duty > 0.5)) : null;
+        const on = !!sup() && (String(c.props.trig) === 'L' ? hi === false : hi === true);
+        res.relay[c.id] = on;
+        if (on) R(n('VCC'), n('GND'), 70); // Spule: etwa 70 mA
+        R(n('COM'), n(on ? 'NO' : 'NC'), 0.05);
+        break;
+      }
+      case 'dht': if (sup()) R(n('VCC'), n('GND'), 5000); break;
       case 'mdriver': {
         // L9110S: Ausgang 1 folgt IA, Ausgang 2 folgt IB (mittlere Spannung bei PWM)
         const v = sup();

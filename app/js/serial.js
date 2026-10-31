@@ -19,6 +19,7 @@ const SerialLink = {
     btn.onclick = () => (this.connected && this.mode === 'usb' ? this.disconnect() : this.connect(true));
     bt.onclick = () => (this.connected && this.mode === 'bt' ? this.disconnect() : this.connectBt());
     document.querySelector('#serialClr').onclick = () => app.serialClear();
+    document.querySelector('#serialCsv').onclick = () => app.serialCsv();
     if (this.available) navigator.serial.addEventListener('disconnect', e => { if (e.target === this.port && this.connected && this.mode === 'usb') { this.closeQuietly(); app.toast('Mikrocontroller wurde abgezogen.'); } });
     this.setUi();
   },

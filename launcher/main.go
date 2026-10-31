@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-const version = "0.9.9"
+const version = "0.10.0"
 
 var (
 	baseDir    string
@@ -70,6 +70,7 @@ func main() {
 	mux.HandleFunc("/api/rename", apiRename)
 	mux.HandleFunc("/api/backups", apiBackups)
 	mux.HandleFunc("/api/backup", apiBackup)
+	initTasks(mux)
 	mux.HandleFunc("/api/last", func(w http.ResponseWriter, r *http.Request) {
 		b, _ := os.ReadFile(filepath.Join(projectDir, ".zuletzt"))
 		w.Write(b)

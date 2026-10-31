@@ -25,6 +25,7 @@ const App = {
       trashcan: true, move: { scrollbars: true, drag: true, wheel: false },
       grid: { spacing: 24, length: 2, colour: '#e3e5e2', snap: false },
     });
+    registerListCategory(this.workspace);
     this.workspace.addChangeListener(Blockly.Events.disableOrphans);
     this.workspace.addChangeListener(e => {
       if (e.type === Blockly.Events.BLOCK_CREATE && !this.loading) (e.ids || []).forEach(id => { const b = this.workspace.getBlockById(id); if (b && /^kp_init/.test(b.type) && b.getFieldValue('R0') === '0') initKeypadDefaults(b); });
@@ -53,6 +54,7 @@ const App = {
   /* Startbildschirm: neues Projekt, zuletzt bearbeitet, anderes öffnen, ggf. Notfall-Rettung */
   async loadInitial() {
     this.loadProject(this.blankProject());
+    TaskStore.load(this).then(() => TaskUi.render());
     let list = [], last = '';
     if (this.launcher) {
       try { list = await (await this.api('list')).json(); } catch (e) { list = []; }
@@ -143,7 +145,7 @@ const App = {
       </div>`;
     if (lastItem) h += `<div class="start-sec">Zuletzt bearbeitet</div><button class="start-item main" type="button" data-file="${esc(lastItem.file)}"><span>${name(lastItem.file)}</span><span class="d">${fmt(lastItem.modified)}</span></button>`;
     if (recent.length) h += `<div class="start-sec">Weitere Projekte</div>` + recent.map(p => `<button class="start-item" type="button" data-file="${esc(p.file)}"><span>${name(p.file)}</span><span class="d">${fmt(p.modified)}</span></button>`).join('');
-    h += `<div class="start-links"><button class="btn ghost small" type="button" data-act="open">${this.launcher ? 'Anderes Projekt öffnen …' : 'Projektdatei öffnen …'}</button><button class="btn ghost small" type="button" data-act="examples">Beispiel öffnen …</button>`;
+    h += `<div class="start-links"><button class="btn ghost small" type="button" data-act="open">${this.launcher ? 'Anderes Projekt öffnen …' : 'Projektdatei öffnen …'}</button><button class="btn ghost small" type="button" data-act="tasks">Aufgabe wählen …</button><button class="btn ghost small" type="button" data-act="examples">Beispiel öffnen …</button>`;
     if (rescue) h += `<button class="btn ghost small" type="button" data-act="rescue" title="Sicherheitskopie aus diesem Browser">Entwurf wiederherstellen: ${esc(rescue.name || 'ohne Namen')}</button>`;
     h += `</div>`;
     const d = $('#dlg');
@@ -160,12 +162,14 @@ const App = {
     f.addEventListener('click', async e => {
       const it = e.target.closest('[data-file]');
       const act = e.target.closest('[data-act]');
+      if (it || act) d.classList.remove('start'); // der nächste Dialog hat seine eigene Breite
       if (it) {
         d.close('cancel');
         try { const data = await (await this.api('load?file=' + encodeURIComponent(it.dataset.file))).json(); this.loadProject(data); this.fileName = it.dataset.file; }
         catch (err) { this.toast('Öffnen fehlgeschlagen: ' + err.message); }
       } else if (act && act.dataset.act === 'open') { d.close('cancel'); this.fileAction('open'); }
       else if (act && act.dataset.act === 'examples') { d.close('cancel'); this.examplesDialog(); }
+      else if (act && act.dataset.act === 'tasks') { d.close('cancel'); TaskUi.dialog(); }
       else if (act && act.dataset.act === 'rescue') { d.close('cancel'); this.loadProject(rescue); this.save(); this.toast('Entwurf wiederhergestellt und gespeichert.'); }
     });
   },
@@ -183,6 +187,8 @@ const App = {
     const np = this.nameParts(data.name), tr = s => String(s || '').replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').replace(/Ä/g, 'Ae').replace(/Ö/g, 'Oe').replace(/Ü/g, 'Ue');
     BT_OPT = Object.assign({ on: false, name: btName(np.tisch ? `ESP-${np.tisch}-${tr(np.nach)}` : 'ESP-Werkstatt') }, data.bt || {});
     this.setExtensions(data.extensions || [], true);
+    this.task = data.task || null;
+    if (TaskUi.panel) TaskUi.render();
     this.circuit.select(null);
     this.circuit.load(data.circuit || {});
     Blockly.Events.disable();
@@ -209,7 +215,15 @@ const App = {
     return {
       format: FORMAT, version: 1, name: $('#projName').value.trim() || 'Neues Projekt', board: BOARD,
       extensions: this.extensions.slice(), bt: Object.assign({}, BT_OPT), circuit: this.circuit.toJSON(), blocks: Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(this.workspace)), saved: new Date().toISOString(),
+      ...this.taskData(),
     };
+  },
+  /* Aufgabe im Projekt (ein Testlauf des Aufgaben-Editors wird nicht gespeichert) */
+  taskData() {
+    const t = this.task && this.task.preview ? TaskUi.savedTask : this.task;
+    if (!t) return {};
+    const c = Object.assign({}, t); delete c.results; delete c.preview;
+    return { task: c };
   },
   snapshotData() { return this.circuit.toJSON(); },
 
@@ -331,13 +345,70 @@ const App = {
     badge.className = 'badge' + (worst === 'warn' ? ' warn' : worst === 'info' ? ' info' : '');
     if (worst === 'error' || worst === 'warn') { this.showBottom('msgs'); }
   },
-  serialClear() { $('#serial').textContent = ''; this.serialLen = 0; },
+  serialClear() { $('#serial').textContent = ''; this.serialLen = 0; this.serialLog = []; this.serialPart = ''; },
   serialWrite(t) {
+    // Vollständige Zeilen mit Uhrzeit merken (für „Messwerte speichern“, auch wenn die Anzeige gekürzt wird)
+    if (!this.serialLog) this.serialLog = [];
+    const parts = ((this.serialPart || '') + t).split('\n');
+    this.serialPart = parts.pop();
+    const now = Date.now();
+    for (const line of parts) if (line.trim() && !/^\[.*\]$/.test(line.trim())) this.serialLog.push([now, line]);
+    if (this.serialLog.length > 200000) this.serialLog.splice(0, 50000);
     const el = $('#serial');
     el.textContent += t;
     if (el.textContent.length > 20000) el.textContent = el.textContent.slice(-15000);
     if (!$('#serialWrap').hidden) el.scrollTop = el.scrollHeight;
     if (!this.serialShown) { this.serialShown = true; this.showBottom('serial'); }
+  },
+  /* Messwerte aus dem seriellen Monitor als Tabelle (CSV, für Excel mit Semikolon und Dezimalkomma) */
+  serialCsv() {
+    // Jede Zeile in Zahlen und Beschriftungen zerlegen: „Spannung: 0.52 V  Strom: 3 mA“ → Spannung (V), Strom (mA)
+    const parse = line => {
+      const re = /-?\d+(?:\.\d+)?|\bnan\b/gi, cells = [];
+      let m, last = 0;
+      while ((m = re.exec(line))) {
+        let label = line.slice(last, m.index).replace(/[:=|;,]+\s*$/, '').replace(/^[\s|;,]+/, '').trim();
+        // Einheit des vorigen Werts steht vorne in der Beschriftung („V Strom“)
+        const sp = /^(\S{1,3})\s+(.+)$/.exec(label);
+        if (cells.length && sp && !/\d/.test(sp[1])) { cells[cells.length - 1].unit = sp[1]; label = sp[2]; }
+        cells.push({ label, value: m[0].toLowerCase() === 'nan' ? '' : m[0].replace('.', ','), unit: '' });
+        last = m.index + m[0].length;
+      }
+      const tail = line.slice(last).trim();
+      if (cells.length && /^\S{1,3}$/.test(tail)) cells[cells.length - 1].unit = tail;
+      return cells;
+    };
+    let rows = (this.serialLog || []).map(([t, line]) => ({ t, cells: parse(line), sig: line.replace(/-?\d+(?:\.\d+)?|\bnan\b/gi, '#').trim() })).filter(r => r.cells.length);
+    if (!rows.length) { this.toast('Im seriellen Monitor stehen noch keine Zahlen. Gib Messwerte mit „auf seriellem Monitor drucken“ aus.'); return; }
+    // Einmalige Zeilen (z. B. Überschrift „Messung 1 startet“) weglassen, wenn es sonst genug Messzeilen gibt
+    const count = {};
+    rows.forEach(r => { count[r.sig] = (count[r.sig] || 0) + 1; });
+    if (rows.length >= 5) rows = rows.filter(r => count[r.sig] > 1);
+    // Spalten nach Beschriftung zusammenführen
+    const cols = [], idx = new Map();
+    const rowVals = rows.map(r => {
+      const vals = {}, seen = {};
+      r.cells.forEach((c, i) => {
+        let key = c.label ? 'L:' + c.label : 'S:' + r.sig + ':' + i;
+        seen[key] = (seen[key] || 0) + 1;
+        if (seen[key] > 1) key += '#' + seen[key];
+        if (!idx.has(key)) { idx.set(key, cols.length); cols.push({ name: c.label || `Wert ${i + 1}`, unit: c.unit }); }
+        vals[idx.get(key)] = c.value;
+      });
+      return vals;
+    });
+    const q = v => /[";\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+    const pad = n => String(n).padStart(2, '0');
+    const t0 = rows[0].t;
+    const lines = [['Datum', 'Uhrzeit', 'Zeit in s', ...cols.map(c => c.unit ? `${c.name} in ${c.unit}` : c.name)].map(q).join(';')];
+    rows.forEach((r, k) => {
+      const d = new Date(r.t);
+      lines.push([`${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`, `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`,
+        ((r.t - t0) / 1000).toFixed(1).replace('.', ','), ...cols.map((_, i) => rowVals[k][i] || '')].join(';'));
+    });
+    const name = ($('#projName').value.trim() || 'Messwerte') + ' – Messwerte.csv';
+    Export.download(new Blob(['\ufeff' + lines.join('\r\n') + '\r\n'], { type: 'text/csv;charset=utf-8' }), name);
+    this.toast(`${rows.length} Messzeilen gespeichert („${name}“ im Ordner „Downloads“). Öffnen mit Excel oder LibreOffice.`);
   },
   showBottom(tab) {
     $('#bottom').classList.remove('collapsed');
@@ -400,7 +471,13 @@ const App = {
     });
   },
 
-  updateEmpty() { $('#emptyHint').hidden = this.project.components.length > 0; },
+  updateEmpty() {
+    const e = $('#emptyHint');
+    e.hidden = this.project.components.length > 0;
+    if (!e.hidden) e.querySelector('p').innerHTML = BOARD === 'esp32'
+      ? 'Ziehe den <b>ESP32</b> aus der Bauteilleiste rechts hierher. Mit der Vorlage <b>ESP32 + Steckplatine</b> ist beides schon verbunden.'
+      : 'Ziehe den <b>Arduino Uno</b> aus der Bauteilleiste rechts hierher. Mit der Vorlage <b>Arduino + Steckplatine</b> ist beides schon verbunden.';
+  },
 
   /* ---------- Eigenschaften ---------- */
   onSelect(sel) {
@@ -435,6 +512,17 @@ const App = {
         case 'ntc': case 'tmp36': h += slider('temp', 'Temperatur', -10, 60, '°C'); break;
         case 'moisture': case 'soil': h += slider('wet', 'Feuchtigkeit', 0, 100, '%'); break;
         case 'ultrasonic': h += slider('dist', 'Abstand', 2, 300, 'cm'); break;
+        case 'dht':
+          h += `<label>Bauart</label><select data-prop="model" ${dis}><option value="11" ${String(c.props.model) !== '22' ? 'selected' : ''}>DHT11 (blau, 0–50 °C, ganze Zahlen)</option><option value="22" ${String(c.props.model) === '22' ? 'selected' : ''}>DHT22 (weiß, −40–80 °C, genauer)</option></select>`;
+          h += slider('temp', 'Temperatur', -10, 50, '°C', 0.5) + slider('hum', 'Luftfeuchtigkeit', 0, 100, '%');
+          break;
+        case 'relay':
+          h += `<label>Schaltet bei</label><select data-prop="trig" ${dis}><option value="H" ${String(c.props.trig) !== 'L' ? 'selected' : ''}>HOCH an IN (High-Level-Trigger)</option><option value="L" ${String(c.props.trig) === 'L' ? 'selected' : ''}>NIEDRIG an IN (Low-Level-Trigger)</option></select>`;
+          h += '<div class="note">Das Relais ist ein Schalter, den der Mikrocontroller betätigt: COM ist mit NO verbunden, solange es angezogen ist, sonst mit NC. Damit kann man einen eigenen Stromkreis schalten (z. B. Pumpe oder Lampe mit eigener Spannungsquelle).</div>';
+          break;
+        case 'stepper':
+          h += '<div class="note">Treiber ULN2003: IN1 bis IN4 an vier digitale Anschlüsse, – an GND und + an 5V. Die LEDs A bis D zeigen, welche Spule gerade Strom bekommt.</div>';
+          break;
         case 'poti':
           h += slider('position', 'Drehung', 0, 100, '%');
           h += `<label>Gesamtwiderstand</label><select data-prop="ohm" ${dis}>${[1000, 10000, 100000].map(v => `<option value="${v}" ${c.props.ohm === v ? 'selected' : ''}>${formatOhm(v)}</option>`).join('')}</select>`;
@@ -498,7 +586,7 @@ const App = {
       const t = e.target;
       if (t.dataset.live) {
         this.circuit.setProp(sel.id, t.dataset.live, Number(t.value), true);
-        const out = box.querySelector('[data-out]'); if (out) out.textContent = String(t.value).replace('.', ',') + ' ' + out.dataset.unit;
+        const out = t.previousElementSibling && t.previousElementSibling.querySelector('[data-out]'); if (out) out.textContent = String(t.value).replace('.', ',') + ' ' + out.dataset.unit;
       }
     });
   },
@@ -550,6 +638,7 @@ const App = {
     const changed = b !== BOARD;
     BOARD = b;
     $('#boardSel').value = b;
+    if (this.project) this.updateEmpty();
     if (!changed) return;
     if (!silent && this.workspace) {
       const xml = Blockly.Xml.workspaceToDom(this.workspace);
@@ -633,6 +722,12 @@ const App = {
       <h3>Simulation</h3><table>
       ${row('Taster, Tastenfeld', 'mit der Maus gedrückt halten')}
       ${row('Sensoren', 'Bauteil anklicken und Wert im Eigenschaftsfeld verstellen')}
+      ${row('Messwerte speichern', 'im seriellen Monitor: alle Zahlen als Tabelle für Excel (CSV)')}
+      </table>
+      <h3>Aufgaben</h3><table>
+      ${row('Datei › Aufgaben', 'Aufgabe wählen, sie wird als neues Projekt angelegt')}
+      ${row('Tipp anzeigen', 'deckt die Tipps nacheinander auf')}
+      ${row('Aufgabe prüfen', 'die Simulation testet die Lösung automatisch, gelöste Aufgaben bekommen einen Haken')}
       </table></div><div class="dlg-btns"><button class="btn primary" value="ok">Schließen</button></div>`);
   },
 
@@ -741,6 +836,7 @@ const App = {
     else if (act === 'image') Export.saveImage();
     else if (act === 'print') Export.print();
     else if (act === 'examples') this.examplesDialog();
+    else if (act === 'tasks') TaskUi.dialog();
     else if (act === 'backups') this.backupsDialog();
   },
 
@@ -764,6 +860,7 @@ const App = {
     $('#tabComm').onclick = () => this.showBottom('comm');
     CommPanel.init(this);
     SerialLink.init(this);
+    TaskUi.init(this);
     $('#bottomToggle').onclick = () => { $('#bottom').classList.toggle('collapsed'); $('#bottomToggle').textContent = $('#bottom').classList.contains('collapsed') ? '▴' : '▾'; this.resizeBlockly(); };
     $('#boardSel').addEventListener('change', e => { if (this.sim.running) this.stopSim(); this.setBoard(e.target.value); });
     $('#projName').addEventListener('focus', e => { this.nameBefore = e.target.value; });
