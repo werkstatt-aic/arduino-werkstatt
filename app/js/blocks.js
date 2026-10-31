@@ -266,7 +266,7 @@ function defineBlocks() {
     B({ type: 'com_web_show', message0: 'auf der Webseite %1 anzeigen: %2', args0: [{ type: 'field_input', name: 'N', text: 'Temperatur' }, { type: 'input_value', name: 'V' }], inputsInline: true, tooltip: 'Zeigt einen Wert mit Beschriftung auf der Webseite an (wird jede Sekunde aktualisiert).' }, COL.comw),
     { type: 'com_web_button', message0: 'Knopf %1 auf der Webseite gedrückt?', args0: [{ type: 'field_input', name: 'N', text: 'Licht an' }], output: 'Boolean', colour: COL.comw, tooltip: 'Zeigt einen Knopf auf der Webseite. Wahr (einmal), wenn er seit der letzten Abfrage gedrückt wurde.' },
     { type: 'com_web_slider', message0: 'Schieberegler %1 auf der Webseite (0 bis 100)', args0: [{ type: 'field_input', name: 'N', text: 'Helligkeit' }], output: 'Number', colour: COL.comw, tooltip: 'Zeigt einen Schieberegler auf der Webseite und liefert seinen Wert von 0 bis 100.' },
-    B({ type: 'com_radio_init', message0: 'Funk für Gruppe %1 einrichten', args0: [{ type: 'field_number', name: 'G', value: 1, min: 1, max: 19, precision: 1 }], tooltip: 'Funk zwischen ESP32 ohne WLAN-Router (ESP-NOW). Alle ESP32 mit derselben Gruppe empfangen die Nachrichten der anderen. Muss einmal in „beim Start“ stehen.' }, COL.comf),
+    B({ type: 'com_radio_init', message0: 'Funk für Gruppe %1 einrichten', args0: [{ type: 'field_number', name: 'G', value: 1, min: 1, max: 19, precision: 1 }], tooltip: 'Funk zwischen ESP32 ohne WLAN-Router (ESP-NOW). Alle ESP32 mit derselben Gruppe empfangen die Nachrichten der anderen. Muss einmal in „beim Start“ stehen. Am zuverlässigsten ohne WLAN-Verbindung – sonst müssen alle ESP32 im selben WLAN sein.' }, COL.comf),
     B({ type: 'com_radio_send', message0: 'Funk-Nachricht %1 senden', args0: [{ type: 'input_value', name: 'V' }], inputsInline: true, tooltip: 'Sendet einen Text oder eine Zahl an alle ESP32 derselben Gruppe.' }, COL.comf),
     { type: 'com_radio_avail', message0: 'Funk-Nachricht empfangen?', output: 'Boolean', colour: COL.comf, tooltip: 'Prüft, ob eine neue Funk-Nachricht angekommen ist. Danach steht sie in „empfangene Funk-Nachricht“.' },
     { type: 'com_radio_text', message0: 'empfangene Funk-Nachricht', output: 'String', colour: COL.comf, tooltip: 'Die zuletzt empfangene Funk-Nachricht als Text.' },
@@ -545,7 +545,10 @@ function setupSimGenerator() {
 
 function generateSimCode(ws) {
   let code = Blockly.JavaScript.workspaceToCode(ws);
-  code = code.replace(/^var (.+);$/m, (m, names) => 'var ' + names.split(', ').map(n => n + ' = 0').join(', ') + ';');
+  // Startwerte wie im C++-Code: Text-Variablen leer, alle anderen 0
+  const types = inferVarTypes(ws), textNames = new Set();
+  for (const m of ws.getAllVariables()) if (types[m.getId()] === 'String') textNames.add(Blockly.JavaScript.nameDB_.getName(m.getId(), Blockly.VARIABLE_CATEGORY_NAME));
+  code = code.replace(/^var (.+);$/m, (m, names) => 'var ' + names.split(', ').map(n => n + (textNames.has(n) ? " = ''" : ' = 0')).join(', ') + ';');
   return code + '\nreturn { setup: typeof __setup === "function" ? __setup : null, loop: typeof __loop === "function" ? __loop : null };';
 }
 
@@ -1038,6 +1041,14 @@ bool funkEmpfangen()
   A['com_radio_avail'] = () => { radio(); return ['funkEmpfangen()', A.ORDER_ATOMIC]; };
   A['com_radio_text'] = () => { radio(); return ['funkText', A.ORDER_ATOMIC]; };
   A['com_radio_num'] = () => { radio(); return ['funkText.toFloat()', A.ORDER_ATOMIC]; };
+  // Kommunikationsblöcke gibt es nur für den ESP32: beim Arduino Uno nichts erzeugen (sonst Übersetzungsfehler)
+  for (const k of Object.keys(A).filter(k => /^com_/.test(k))) {
+    const gen = A[k];
+    A[k] = b => {
+      if (BOARD === 'esp32') return gen(b);
+      return b.outputConnection ? ['0', A.ORDER_ATOMIC] : '// (Block nur mit dem ESP32 möglich)\n';
+    };
+  }
 
   A['controls_if'] = b => {
     let code = '', n = 0;
@@ -1063,6 +1074,12 @@ bool funkEmpfangen()
   A['logic_compare'] = b => {
     const op = { EQ: '==', NEQ: '!=', LT: '<', LTE: '<=', GT: '>', GTE: '>=' }[b.getFieldValue('OP')];
     const ord = (op === '==' || op === '!=') ? A.ORDER_EQ : A.ORDER_REL;
+    // Text mit Zahl vergleichen (z. B. gedrückte Taste = 5): Zahl als Text vergleichen, sonst Übersetzungsfehler
+    const ta = valueType(b.getInputTargetBlock('A')), tb = valueType(b.getInputTargetBlock('B'));
+    if ((ta === 'String') !== (tb === 'String')) {
+      const s = n => (valueType(b.getInputTargetBlock(n)) === 'String' ? v(b, n, ord) : `String(${v(b, n, A.ORDER_NONE)})`);
+      return [`${s('A')} ${op} ${s('B')}`, ord];
+    }
     return [`${v(b, 'A', ord)} ${op} ${v(b, 'B', ord)}`, ord];
   };
   A['logic_operation'] = b => {
@@ -1083,7 +1100,12 @@ bool funkEmpfangen()
   A['math_random_int'] = b => [`random(${v(b, 'FROM')}, ${v(b, 'TO', A.ORDER_ADD)} + 1)`, A.ORDER_ATOMIC];
   A['text'] = b => [A.quote_(b.getFieldValue('TEXT')), A.ORDER_ATOMIC];
   A['variables_get'] = b => [varName(b.getFieldValue('VAR')), A.ORDER_ATOMIC];
-  A['variables_set'] = b => `${varName(b.getFieldValue('VAR'))} = ${v(b, 'VALUE', A.ORDER_NONE, '0')};\n`;
+  A['variables_set'] = b => {
+    const val = v(b, 'VALUE', A.ORDER_NONE, '0');
+    // Text-Variable bekommt eine Zahl: in Text umwandeln
+    const wrap = A.varTypes_[b.getFieldValue('VAR')] === 'String' && valueType(b.getInputTargetBlock('VALUE')) !== 'String';
+    return `${varName(b.getFieldValue('VAR'))} = ${wrap ? `String(${val})` : val};\n`;
+  };
   A['math_change'] = b => `${varName(b.getFieldValue('VAR'))} += ${v(b, 'DELTA')};\n`;
 
   const procName = b => A.nameDB_.getName(b.getFieldValue('NAME'), Blockly.PROCEDURE_CATEGORY_NAME);

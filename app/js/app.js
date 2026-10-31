@@ -193,6 +193,7 @@ const App = {
     } catch (e) { console.error(e); this.toast('Die Blöcke konnten nicht geladen werden.'); }
     Blockly.Events.enable();
     this.workspace.clearUndo();
+    this.markBoardBlocks();
     this.needCenter = true;
     this.undoStack = []; this.redoStack = [];
     this.loading = false;
@@ -554,6 +555,7 @@ const App = {
       try { this.workspace.clear(); Blockly.Xml.domToWorkspace(xml, this.workspace); } finally { Blockly.Events.enable(); }
       this.workspace.updateToolbox(buildToolbox(this.extensions));
       this.updateCommTab();
+      this.markBoardBlocks();
       this.buildPartList();
       this.filterParts();
       this.updateCodeText();
@@ -602,6 +604,15 @@ const App = {
         this.toast(`Fassung vom ${label(li.dataset.v)} wiederhergestellt.`);
       } catch (err) { this.toast('Wiederherstellen fehlgeschlagen: ' + err.message); }
     });
+  },
+
+  /* Kommunikationsblöcke im Uno-Projekt mit Hinweis kennzeichnen */
+  markBoardBlocks() {
+    if (!this.workspace) return;
+    for (const b of this.workspace.getAllBlocks(false)) {
+      if (!/^com_/.test(b.type)) continue;
+      b.setWarningText(BOARD === 'esp32' ? null : 'Dieser Block geht nur mit dem ESP32. Beim Arduino Uno wird er übersprungen.');
+    }
   },
 
   /* „WLAN & Funk“ nur mit ESP32 und eingeschalteter Kommunikation */

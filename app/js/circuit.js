@@ -162,7 +162,7 @@ class CircuitEditor {
       this.renderComp(c, g);
     }
     // Arduino nach unten, damit Kleinteile darüber liegen
-    for (const g of [...this.L.comp.querySelectorAll('.comp-uno')]) this.L.comp.prepend(g);
+    for (const g of [...this.L.comp.querySelectorAll('.comp-uno, .comp-esp32, .comp-esp32exp')]) this.L.comp.prepend(g);
     this.renderWires();
     this.renderSelection();
     this.markInsertions();
@@ -346,7 +346,9 @@ class CircuitEditor {
         for (const [k, h] of ins) if (h.comp.id === c.id) set.add(k.split(':')[0]);
         carry = this.project.components.filter(o => set.has(o.id)).map(o => ({ o, x: o.x, y: o.y }));
       }
-      this.drag = { kind: 'comp', c, sx: x, sy: y, ox: c.x, oy: c.y, carry, moved: false, snap: JSON.stringify(this.app.snapshotData()) };
+      const moving = new Set([c.id, ...carry.map(k => k.o.id)]);
+      const wires = this.project.wires.filter(w => w.pts.length && moving.has(w.a.c) && moving.has(w.b.c)).map(w => ({ w, pts: w.pts.map(p => p.slice()) }));
+      this.drag = { kind: 'comp', c, sx: x, sy: y, ox: c.x, oy: c.y, carry, wires, moved: false, snap: JSON.stringify(this.app.snapshotData()) };
       svg_capture(this.svg, e);
       return;
     }
@@ -375,6 +377,7 @@ class CircuitEditor {
         const dx = nx - d.ox, dy = ny - d.oy;
         d.c.x = nx; d.c.y = ny; d.moved = true;
         for (const k of d.carry) { k.o.x = k.x + dx; k.o.y = k.y + dy; this.renderComp(k.o); }
+        for (const k of d.wires) k.w.pts = k.pts.map(p => [p[0] + dx, p[1] + dy]);
         this.renderComp(d.c);
         this.renderWires();
         this.renderSelection();

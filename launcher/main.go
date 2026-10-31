@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-const version = "0.9.6"
+const version = "0.9.7"
 
 var (
 	baseDir    string
@@ -36,6 +36,18 @@ func main() {
 		baseDir = os.Args[2]
 	}
 	cleanupAfterUpdate()
+	// Läuft die Werkstatt aus diesem Ordner schon? Dann nur ein weiteres Fenster öffnen,
+	// statt ein zweites Startprogramm zu starten (sonst überschreiben sich die Speicherstände).
+	afterUpdate := false
+	for _, a := range os.Args[1:] {
+		afterUpdate = afterUpdate || a == "--nach-update"
+	}
+	if afterUpdate {
+		time.Sleep(1500 * time.Millisecond) // die alte Version beendet sich gerade
+	} else if url := runningInstance(); url != "" {
+		openBrowser(url)
+		return
+	}
 	appDir := filepath.Join(baseDir, "app")
 	projectDir = filepath.Join(baseDir, "Projekte")
 	_ = os.MkdirAll(projectDir, 0o755)
@@ -50,7 +62,7 @@ func main() {
 	mux.Handle("/", noCache(http.FileServer(http.Dir(appDir))))
 	mux.HandleFunc("/api/ping", func(w http.ResponseWriter, r *http.Request) {
 		touch()
-		fmt.Fprintf(w, `{"ok":true,"version":%q}`, version)
+		fmt.Fprintf(w, `{"ok":true,"version":%q,"folder":%q}`, version, baseDir)
 	})
 	mux.HandleFunc("/api/list", apiList)
 	mux.HandleFunc("/api/load", apiLoad)
@@ -80,6 +92,24 @@ func main() {
 	}()
 	go openBrowser(url)
 	_ = http.Serve(ln, guard(ln.Addr().(*net.TCPAddr).Port, mux))
+}
+
+func runningInstance() string {
+	c := &http.Client{Timeout: 400 * time.Millisecond}
+	for port := 8642; port < 8650; port++ {
+		url := fmt.Sprintf("http://127.0.0.1:%d/", port)
+		resp, err := c.Get(url + "api/ping")
+		if err != nil {
+			continue
+		}
+		var info struct{ Folder string }
+		json.NewDecoder(io.LimitReader(resp.Body, 4096)).Decode(&info)
+		resp.Body.Close()
+		if info.Folder != "" && strings.EqualFold(filepath.Clean(info.Folder), filepath.Clean(baseDir)) {
+			return url
+		}
+	}
+	return ""
 }
 
 func listen() (net.Listener, error) {

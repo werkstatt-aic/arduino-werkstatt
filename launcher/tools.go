@@ -166,16 +166,8 @@ func (s *stream) line(format string, a ...any) {
 	touch()
 }
 
-func lock(s *stream) bool {
-	toolsMu.Lock()
-	defer toolsMu.Unlock()
-	if toolsBusy {
-		s.line("##FEHLER Es läuft bereits ein Vorgang. Bitte warten.")
-		return false
-	}
-	toolsBusy, toolsKind = true, ""
-	return true
-}
+// Sperre für arduino-cli-Vorgänge. Ein laufendes Vorübersetzen im Hintergrund wird abgewartet.
+func lock(s *stream) bool { return lockWait(s, false) }
 
 func unlock() { toolsMu.Lock(); toolsBusy = false; toolsMu.Unlock() }
 
