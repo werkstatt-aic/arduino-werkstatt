@@ -366,7 +366,7 @@ const EXAMPLES = [
 445
 ]
 ],
-"color": "gruen"
+"color": "blau"
 },
 {
 "id": "w17",
@@ -388,7 +388,7 @@ const EXAMPLES = [
 430
 ]
 ],
-"color": "gruen"
+"color": "blau"
 },
 {
 "id": "w18",
@@ -410,7 +410,7 @@ const EXAMPLES = [
 425
 ]
 ],
-"color": "gruen"
+"color": "blau"
 }
 ]
 },
@@ -601,7 +601,7 @@ const EXAMPLES = [
 430
 ]
 ],
-"color": "gruen"
+"color": "blau"
 }
 ]
 },
@@ -813,7 +813,7 @@ const EXAMPLES = [
 715
 ]
 ],
-"color": "gruen"
+"color": "orange"
 },
 {
 "id": "w13",
@@ -848,7 +848,7 @@ const EXAMPLES = [
 430
 ]
 ],
-"color": "gruen"
+"color": "blau"
 }
 ]
 },
@@ -1135,7 +1135,7 @@ const EXAMPLES = [
 715
 ]
 ],
-"color": "gruen"
+"color": "orange"
 }
 ]
 },
@@ -1335,7 +1335,7 @@ const EXAMPLES = [
 715
 ]
 ],
-"color": "gruen"
+"color": "orange"
 },
 {
 "id": "w12",
@@ -1401,7 +1401,7 @@ const EXAMPLES = [
 445
 ]
 ],
-"color": "gruen"
+"color": "orange"
 }
 ]
 },
@@ -1609,7 +1609,7 @@ const EXAMPLES = [
 715
 ]
 ],
-"color": "gruen"
+"color": "orange"
 },
 {
 "id": "w12",
@@ -1657,7 +1657,7 @@ const EXAMPLES = [
 440
 ]
 ],
-"color": "gruen"
+"color": "blau"
 },
 {
 "id": "w15",
@@ -1679,7 +1679,7 @@ const EXAMPLES = [
 430
 ]
 ],
-"color": "gruen"
+"color": "blau"
 },
 {
 "id": "w17",
@@ -1924,7 +1924,7 @@ const EXAMPLES = [
 412
 ]
 ],
-"color": "gruen"
+"color": "blau"
 }
 ]
 },
@@ -2128,7 +2128,7 @@ const EXAMPLES = [
 412
 ]
 ],
-"color": "gruen"
+"color": "blau"
 }
 ]
 },

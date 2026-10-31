@@ -32,13 +32,13 @@
       M: p => ({ c: mcu.id, p }),
       rail: (kind, c) => ({ c: bb.id, p: `${kind}-${c}` }),
       // Vom Anschluss oben am Mikrocontroller senkrecht hoch, waagrecht im Kanal y, senkrecht in das Loch (Zeile j)
-      up(pin, col, y, color) { const a = k.pos(k.M(pin)), h = k.hole(col, 'j'); k.wire(k.M(pin), k.H(col, 'j'), color || 'gruen', [[a[0], y], [h.x, y]]); },
+      up(pin, col, y, color) { const a = k.pos(k.M(pin)), h = k.hole(col, 'j'); k.wire(k.M(pin), k.H(col, 'j'), color || 'blau', [[a[0], y], [h.x, y]]); },
       // Vom Loch (Zeile j) senkrecht hinunter auf die Stromschiene (bm = Minus, bp = Plus)
       down(col, kind) { k.wire(k.H(col, 'j'), k.rail(kind, col), kind === 'bm' ? 'schwarz' : 'rot'); },
       // Vom Loch nach unten, links um den Arduino herum zu A0 (unten)
       toA0(col) {
         const h = k.hole(col, 'j'), a = k.pos(k.M('A0'));
-        k.wire(k.H(col, 'j'), k.M('A0'), 'gruen', [[h.x, bb.y + 215], [bb.x - 40, bb.y + 215], [bb.x - 40, mcu.y + 255], [a[0], mcu.y + 255]]);
+        k.wire(k.H(col, 'j'), k.M('A0'), 'orange', [[h.x, bb.y + 215], [bb.x - 40, bb.y + 215], [bb.x - 40, mcu.y + 255], [a[0], mcu.y + 255]]);
       },
       done() { C.renderAll(); return C.toJSON(); },
     };
@@ -107,7 +107,7 @@
     const hg = k.hole(26, 'j'), hv = k.hole(27, 'j');
     k.wire({ c: sv.id, p: 'GND' }, k.rail('bm', 26), 'schwarz', [[g[0], k.bb.y + 215], [hg.x, k.bb.y + 215]]);
     k.wire({ c: sv.id, p: 'VCC' }, k.rail('bp', 27), 'rot', [[v[0], k.bb.y + 222], [hv.x, k.bb.y + 222]]);
-    k.wire({ c: sv.id, p: 'SIG' }, k.M('D3'), 'gruen', [[s[0], k.bb.y + 245], [d3[0], k.bb.y + 245]]);
+    k.wire({ c: sv.id, p: 'SIG' }, k.M('D3'), 'orange', [[s[0], k.bb.y + 245], [d3[0], k.bb.y + 245]]);
     ex.push({ id: 'servo', title: 'Servo mit Potentiometer', board: 'uno', desc: 'Der Servo folgt der Stellung des Potentiometers (0 bis 180 Grad).', circuit: k.done(),
       blocks: prog([], [`<block type="ard_servo"><field name="PIN">3</field><value name="DEG">${mapA0(180)}</value></block>`, `<block type="ard_wait"><field name="UNIT">MS</field><value name="N">${N(50)}</value></block>`]) }); }
 
