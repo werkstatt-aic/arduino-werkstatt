@@ -22,10 +22,10 @@ with sync_playwright() as p:
     print('neues Projekt →', repr(pg.evaluate("()=>App.extensions.join(',')")))
     # Beispiel und Aufgabe
     pg.evaluate("()=>TaskUi.start(TaskStore.get('m3'))"); pg.wait_for_timeout(200)
-    pg.evaluate("()=>{const f=document.querySelector('#dlgForm');f.tisch.value='03';f.nach.value='Test'}"); pg.click('#dlgForm button[value=ok]'); pg.wait_for_timeout(500)
+    pg.evaluate("()=>{const f=document.querySelector('#dlgForm');f.tisch.value='03';f.vor.value='Test'}"); pg.click('#dlgForm button[value=ok]'); pg.wait_for_timeout(500)
     print('Aufgabe Schrittmotor →', pg.evaluate("()=>App.extensions.join(',')"), '| Bauteil sichtbar:', pg.evaluate("()=>!!document.querySelector('.part[data-type=stepper]').offsetParent"))
     pg.evaluate("()=>TaskUi.start(TaskStore.get('m4'))"); pg.wait_for_timeout(200)
-    pg.evaluate("()=>{const f=document.querySelector('#dlgForm');f.tisch.value='03';f.nach.value='Test'}"); pg.click('#dlgForm button[value=ok]'); pg.wait_for_timeout(500)
+    pg.evaluate("()=>{const f=document.querySelector('#dlgForm');f.tisch.value='03';f.vor.value='Test'}"); pg.click('#dlgForm button[value=ok]'); pg.wait_for_timeout(500)
     print('Aufgabe Relais →', repr(pg.evaluate("()=>App.extensions.join(',')")))
     pg.screenshot(path='me1.png')
     print('Fehler:', errs)

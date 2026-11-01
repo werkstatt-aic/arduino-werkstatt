@@ -27,7 +27,7 @@ with sync_playwright() as p:
     errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.add_init_script(MOCK)
     pg.goto('http://127.0.0.1:8642/'); pg.wait_for_timeout(900)
-    pg.evaluate("n=>{const f=document.querySelector('#dlgForm');const p=n.split(/\s+[-–]\s+/);f.tisch.value=p[0].padStart(2,'0');f.nach.value=p[1];f.proj.value=p.slice(2).join(' – ')}", '08 – Bluetooth – Aichler'); pg.click('button[value=new]'); pg.wait_for_timeout(400)
+    pg.evaluate("n=>{const f=document.querySelector('#dlgForm');const p=n.split(/\s+[-–]\s+/);f.tisch.value=p[0].padStart(2,'0');f.vor.value=p[1];f.proj.value=p.slice(2).join(' – ')}", '08 – Bluetooth – Aichler'); pg.click('button[value=new]'); pg.wait_for_timeout(400)
     pg.select_option('#boardSel', 'esp32'); pg.wait_for_timeout(300)
     pg.click('#uploadBtn'); pg.wait_for_timeout(400); pg.click('#upGo'); pg.wait_for_timeout(5000)   # ESP32-Einrichtung
     pg.click('#upGo'); pg.wait_for_timeout(800)

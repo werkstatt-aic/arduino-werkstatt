@@ -43,7 +43,7 @@ with sync_playwright() as p:
     print('Panel nach Speichern:', pg.is_visible('#taskPanel'))
     # als Schüler beginnen
     pg.click('[data-task^=eigen]'); pg.wait_for_timeout(200)
-    pg.evaluate("()=>{const f=document.querySelector('#dlgForm');f.tisch.value='05';f.nach.value='Schueler'}"); pg.click('#dlgForm button[value=ok]'); pg.wait_for_timeout(800)
+    pg.evaluate("()=>{const f=document.querySelector('#dlgForm');f.tisch.value='05';f.vor.value='Schueler'}"); pg.click('#dlgForm button[value=ok]'); pg.wait_for_timeout(800)
     print('Start:', pg.input_value('#projName'), '| Bauteile:', pg.evaluate("()=>App.project.components.length"), '| Blöcke:', pg.evaluate("()=>App.workspace.getAllBlocks(false).map(b=>b.type).join(',')"))
     # Programm aus der Lösung einsetzen, dann prüfen
     pg.evaluate("""()=>{const e=EXAMPLES.find(x=>x.id==='ampel'); App.workspace.clear(); Blockly.Xml.domToWorkspace(Blockly.Xml.textToDom(e.blocks), App.workspace);}""")

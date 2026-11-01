@@ -58,7 +58,7 @@ Umgebungsvariablen nur für Tests: `WERKSTATT_CLI_URL`, `WERKSTATT_UPDATE_API`, 
   Dienst-UUIDs `8e4f000x-6a1b-4c5e-9d2a-7765726b7374`.
 - **Sicherheit:** Das Startprogramm nimmt nur Anfragen von der eigenen Seite an (Host-/Origin-Prüfung),
   damit fremde Webseiten im selben Browser nichts auslösen können.
-- **Projektnamen:** „Tisch-Nr – Nachname – Projekt“ (Tisch 01–18); vorhandene Projekte werden nie überschrieben.
+- **Projektnamen:** „Tisch-Nr – Vorname – Projekt“ (Tisch 01–18); vorhandene Projekte werden nie überschrieben.
 - **Sicherungen:** `Projekte/.sicherungen/<Projekt>/`, höchstens alle 5 Minuten, die letzten 15.
 - **Kommunikation:** WLAN/Webseite/ESP-NOW-Funk/Bluetooth (BLE-UART) nur für ESP32. Nutzt ein Programm WLAN, Webseite
   oder Funk, werden `WiFi.h`, `WebServer.h`, `esp_now.h` gemeinsam eingebunden (eigener Zwischenordner `-net`);

@@ -20,7 +20,7 @@ with sync_playwright() as p:
     errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.add_init_script(MOCK)
     pg.goto('http://127.0.0.1:8642/'); pg.wait_for_timeout(900)
-    pg.evaluate("()=>{const f=document.querySelector('#dlgForm');f.tisch.value='07';f.nach.value='Blue';f.proj.value='Zahn'}"); pg.click('button[value=new]'); pg.wait_for_timeout(500)
+    pg.evaluate("()=>{const f=document.querySelector('#dlgForm');f.tisch.value='07';f.vor.value='Blue';f.proj.value='Zahn'}"); pg.click('button[value=new]'); pg.wait_for_timeout(500)
     pg.select_option('#boardSel','esp32'); pg.wait_for_timeout(300)
     pg.evaluate("()=>{App.setExtensions(['comm']); App.circuit.addTemplate(365,430,false);}")
     pg.evaluate('(x)=>{App.workspace.clear(); Blockly.Xml.domToWorkspace(Blockly.Xml.textToDom(x), App.workspace);}', XML)

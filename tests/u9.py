@@ -9,7 +9,7 @@ with sync_playwright() as p:
     pg.reload(); pg.wait_for_timeout(900); pg.screenshot(path='u9a.png')
     print('A rescue offered:', pg.locator('[data-act=rescue]').count(), 'items:', pg.locator('.start-item').count())
     # neues Projekt anlegen
-    pg.evaluate("n=>{const f=document.querySelector('#dlgForm');const p=n.split(/\s+[-–]\s+/);f.tisch.value=p[0].padStart(2,'0');f.nach.value=p[1];f.proj.value=p.slice(2).join(' – ')}", '01 – LED – Aichler'); pg.keyboard.press('Enter'); pg.wait_for_timeout(1200)
+    pg.evaluate("n=>{const f=document.querySelector('#dlgForm');const p=n.split(/\s+[-–]\s+/);f.tisch.value=p[0].padStart(2,'0');f.vor.value=p[1];f.proj.value=p.slice(2).join(' – ')}", '01 – LED – Aichler'); pg.keyboard.press('Enter'); pg.wait_for_timeout(1200)
     print('B name:', pg.input_value('#projName'), sorted(os.listdir('/tmp/claude-0/stick/Projekte')))
     pg.evaluate("()=>{ App.circuit.addComponent('uno',300,300); }"); pg.wait_for_timeout(1200)
     pg.reload(); pg.wait_for_timeout(900); pg.screenshot(path='u9b.png')

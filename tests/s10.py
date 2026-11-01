@@ -4,7 +4,7 @@ with sync_playwright() as p:
     b = p.chromium.launch(); pg = b.new_page(viewport={'width':1400,'height':900})
     errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.goto('http://127.0.0.1:8642/'); pg.wait_for_timeout(900)
-    pg.evaluate("n=>{const f=document.querySelector('#dlgForm');const p=n.split(/\s+[-–]\s+/);f.tisch.value=p[0].padStart(2,'0');f.nach.value=p[1];f.proj.value=p.slice(2).join(' – ')}", '09 – Einstellungen – Aichler'); pg.click('button[value=new]'); pg.wait_for_timeout(400)
+    pg.evaluate("n=>{const f=document.querySelector('#dlgForm');const p=n.split(/\s+[-–]\s+/);f.tisch.value=p[0].padStart(2,'0');f.vor.value=p[1];f.proj.value=p.slice(2).join(' – ')}", '09 – Einstellungen – Aichler'); pg.click('button[value=new]'); pg.wait_for_timeout(400)
     pg.click('#setBtn'); pg.wait_for_timeout(600)
     print('Zeile:', pg.inner_text('.set-sec .set-line'))
     pg.screenshot(path='s10a.png')

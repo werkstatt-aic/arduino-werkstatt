@@ -8,6 +8,6 @@ XML=f'''<xml xmlns="https://developers.google.com/blockly/xml"><variables><varia
 with sync_playwright() as p:
     b=p.chromium.launch(); pg=b.new_page()
     pg.goto('http://127.0.0.1:8642/'); pg.wait_for_timeout(900)
-    pg.evaluate("()=>{const f=document.querySelector('#dlgForm');f.tisch.value='18';f.nach.value='Typ';f.proj.value='Test'}"); pg.click('button[value=new]'); pg.wait_for_timeout(400)
+    pg.evaluate("()=>{const f=document.querySelector('#dlgForm');f.tisch.value='18';f.vor.value='Typ';f.proj.value='Test'}"); pg.click('button[value=new]'); pg.wait_for_timeout(400)
     code=pg.evaluate('(x)=>{App.workspace.clear(); Blockly.Xml.domToWorkspace(Blockly.Xml.textToDom(x), App.workspace); return generateArduinoCode(App.workspace);}', XML)
     open('/tmp/claude-0/cpp/out/typ.cpp','w').write(code); print(code[code.index('void loop'):])

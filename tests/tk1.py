@@ -17,7 +17,7 @@ with sync_playwright() as p:
     pg.click('#dlgForm [data-act=tasks]'); pg.wait_for_timeout(500)
     print('Dialog:', pg.inner_text('#dlg h2'), '| Karten:', pg.locator('.tcard').count(), '| Stufen:', pg.locator('#dlg .start-sec').all_inner_texts())
     pg.click('[data-task=g3]'); pg.wait_for_timeout(200)
-    pg.evaluate("()=>{const f=document.querySelector('#dlgForm');f.tisch.value='04';f.nach.value='Test'}"); pg.click('#dlgForm button[value=ok]'); pg.wait_for_timeout(800)
+    pg.evaluate("()=>{const f=document.querySelector('#dlgForm');f.tisch.value='04';f.vor.value='Test'}"); pg.click('#dlgForm button[value=ok]'); pg.wait_for_timeout(800)
     print('Projekt:', pg.input_value('#projName'), '| Bauteile:', pg.evaluate("()=>App.project.components.map(c=>c.type).join(',')"), '| Panel:', pg.inner_text('#taskPanel').split('\n')[:2])
     pg.click('#taskPanel [data-act=tip]'); pg.wait_for_timeout(100); pg.click('#taskPanel [data-act=tip]'); pg.wait_for_timeout(100)
     print('Tipps sichtbar:', pg.locator('#taskPanel .tp-tips li').count())

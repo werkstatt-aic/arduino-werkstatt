@@ -28,7 +28,7 @@ with sync_playwright() as p:
     b = p.chromium.launch(); ctx = b.new_context(viewport={'width': 1400, 'height': 900}, accept_downloads=True); pg = ctx.new_page()
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.goto('http://127.0.0.1:8642/'); pg.wait_for_timeout(900)
-    pg.evaluate("()=>{const f=document.querySelector('#dlgForm');f.tisch.value='05';f.nach.value='Neu';f.proj.value='Inhalte'}"); pg.click('button[value=new]'); pg.wait_for_timeout(500)
+    pg.evaluate("()=>{const f=document.querySelector('#dlgForm');f.tisch.value='05';f.vor.value='Neu';f.proj.value='Inhalte'}"); pg.click('button[value=new]'); pg.wait_for_timeout(500)
     pg.evaluate('(b)=>App.setBoard(b)', BRD); pg.wait_for_timeout(300)
     pg.evaluate("""(P)=>{const C=App.circuit,Pr=C.project; Pr.components=[]; Pr.wires=[];
       const u=makeComp(P.mcu,300,320,0,{},C.newId('c')); const d=makeComp('dht',120,200,0,{model:'22',temp:23.4,hum:51},C.newId('c'));

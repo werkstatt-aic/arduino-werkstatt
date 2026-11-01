@@ -20,7 +20,7 @@ with sync_playwright() as p:
     errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.add_init_script(MOCK)
     pg.goto('http://127.0.0.1:8642/'); pg.wait_for_timeout(900)
-    pg.select_option('#dlgForm select[name=tisch]','13'); pg.fill('#dlgForm input[name=nach]','Aichler'); pg.fill('#dlgForm input[name=proj]','Seriell'); pg.click('button[value=new]'); pg.wait_for_timeout(500)
+    pg.select_option('#dlgForm select[name=tisch]','13'); pg.fill('#dlgForm input[name=vor]','Aichler'); pg.fill('#dlgForm input[name=proj]','Seriell'); pg.click('button[value=new]'); pg.wait_for_timeout(500)
     pg.select_option('#boardSel','esp32'); pg.wait_for_timeout(300)
     pg.click('#tabSerial'); pg.click('#serialConn'); pg.wait_for_timeout(800)
     print('Monitor:', pg.inner_text('#serial').replace('\n',' | '), '| Knopf:', pg.inner_text('#serialConn'), '| Baud:', pg.evaluate('FakeSer.baud'))

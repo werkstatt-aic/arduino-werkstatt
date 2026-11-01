@@ -68,7 +68,7 @@ const App = {
     this.startScreen(list, last, rescue);
   },
 
-  /* Projektname muss „Nr – Thema – Nachname“ enthalten */
+  /* Projektname muss „Nr – Vorname – Projekt“ enthalten */
   checkName(v) {
     const parts = String(v).trim().replace(/^(\d+)\s*[-–—]\s*/, '$1 – ').split(/\s+[-–—]\s+/);
     if (parts.length < 3 || !/^\d{1,2}$/.test(parts[0])) return null;
@@ -76,16 +76,16 @@ const App = {
     if (!/\p{L}/u.test(parts[1]) || !/\p{L}/u.test(rest)) return null;
     return `${parts[0].padStart(2, '0')} – ${parts[1]} – ${rest}`;
   },
-  /* Eingabe für neue Projekte: Tisch-Nr., Nachname, Projektname → „11 – Müller – Ampelschaltung“ */
+  /* Eingabe für neue Projekte: Tisch-Nr., Vorname, Projektname → „11 – Lena – Ampelschaltung“ */
   nameFields(pre) {
     pre = pre || {};
     let last = {};
     try { last = JSON.parse(localStorage.getItem('werkstatt.schueler') || '{}'); } catch (e) { last = {}; }
-    const tisch = pre.tisch || last.tisch || '', nach = pre.nach != null ? pre.nach : (last.nach || '');
+    const tisch = pre.tisch || last.tisch || '', vor = pre.vor != null ? pre.vor : (last.vor || '');
     const opts = '<option value="">–</option>' + Array.from({ length: 18 }, (_, i) => String(i + 1).padStart(2, '0')).map(n => `<option ${n === tisch ? 'selected' : ''}>${n}</option>`).join('');
     return `<div class="name3">
         <label>Tisch-Nr.<select name="tisch">${opts}</select></label>
-        <label>Nachname<input type="text" name="nach" value="${esc(nach)}" spellcheck="false" autocomplete="off"></label>
+        <label>Vorname<input type="text" name="vor" value="${esc(vor)}" spellcheck="false" autocomplete="off"></label>
         <label class="wide">Projekt<input type="text" name="proj" value="${esc(pre.proj || '')}" spellcheck="false" autocomplete="off" placeholder="z. B. Ampelschaltung"></label>
         <input type="hidden" name="n">
       </div>`;
@@ -95,7 +95,7 @@ const App = {
     const err = document.createElement('div');
     err.className = 'field-err'; err.hidden = true;
     box.insertAdjacentElement('afterend', err);
-    const els = ['tisch', 'nach', 'proj'].map(n => form.elements[n]);
+    const els = ['tisch', 'vor', 'proj'].map(n => form.elements[n]);
     els.forEach(el => el.addEventListener('input', () => { err.hidden = true; el.classList.remove('bad'); }));
     // Enter in einem Feld = Anlegen/Speichern (nicht „Abbrechen“)
     form.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.closest('.name3')) { e.preventDefault(); const b = form.querySelector('button.primary[value]'); if (b) b.click(); } });
@@ -108,19 +108,19 @@ const App = {
       const [t, n, p] = [els[0].value, clean(els[1].value), clean(els[2].value)];
       const bad = (el, msg) => { e.preventDefault(); err.textContent = msg; err.hidden = false; el.classList.add('bad'); el.focus(); };
       if (!t) return bad(els[0], 'Wähle deine Tisch-Nummer.');
-      if (!/\p{L}/u.test(n)) return bad(els[1], 'Gib deinen Nachnamen ein.');
+      if (!/\p{L}/u.test(n)) return bad(els[1], 'Gib deinen Vornamen ein.');
       if (!/\p{L}/u.test(p)) return bad(els[2], 'Gib deinem Projekt einen Namen, z. B. Ampelschaltung.');
       const name = `${t} – ${n} – ${p}`;
       if (this.nameTaken(name, true)) return bad(els[2], `Das Projekt „${name}“ gibt es schon. Wähle einen anderen Projektnamen oder öffne das vorhandene Projekt.`);
       form.elements.n.value = name;
-      try { localStorage.setItem('werkstatt.schueler', JSON.stringify({ tisch: t, nach: n })); } catch (er) { /* ohne Speicher */ }
+      try { localStorage.setItem('werkstatt.schueler', JSON.stringify({ tisch: t, vor: n })); } catch (er) { /* ohne Speicher */ }
     });
   },
   nameParts(name) {
     const m = this.checkName(name || '');
     if (!m) return {};
     const p = m.split(' – ');
-    return { tisch: p[0], nach: p[1], proj: p.slice(2).join(' – ') };
+    return { tisch: p[0], vor: p[1], proj: p.slice(2).join(' – ') };
   },
   /* Gibt es schon ein (anderes) Projekt mit diesem Namen? Dann würde es überschrieben. */
   nameTaken(name, strict) {
@@ -183,14 +183,15 @@ const App = {
     this.loading = true;
     $('#projName').value = data.name || 'Neues Projekt';
     this.setBoard(data.board === 'esp32' ? 'esp32' : 'uno', true);
-    // Bluetooth-Übertragung: Standardname aus dem Nachnamen im Projektnamen, z. B. „ESP-Mueller“
+    // Bluetooth-Übertragung: Standardname aus Tisch-Nr. und Vorname im Projektnamen, z. B. „ESP-11-Lena“
     const np = this.nameParts(data.name), tr = s => String(s || '').replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').replace(/Ä/g, 'Ae').replace(/Ö/g, 'Oe').replace(/Ü/g, 'Ue');
-    BT_OPT = Object.assign({ on: false, name: btName(np.tisch ? `ESP-${np.tisch}-${tr(np.nach)}` : 'ESP-Werkstatt') }, data.bt || {});
+    BT_OPT = Object.assign({ on: false, name: btName(np.tisch ? `ESP-${np.tisch}-${tr(np.vor)}` : 'ESP-Werkstatt') }, data.bt || {});
     this.setExtensions(data.extensions || [], true);
     this.task = data.task || null;
     if (TaskUi.panel) TaskUi.render();
     this.circuit.select(null);
     this.circuit.load(data.circuit || {});
+    this.ensureExtensions(true);
     Blockly.Events.disable();
     try {
       this.workspace.clear();
@@ -233,7 +234,7 @@ const App = {
   },
 
   /* ---------- Speichern ---------- */
-  changed() { this.updateEmpty(); this.scheduleSave(); this.updateCodeText(); },
+  changed() { this.ensureExtensions(); this.updateEmpty(); this.scheduleSave(); this.updateCodeText(); },
   changedSilently() { this.scheduleSave(); if (this.sim.running) this.sim.update(); },
   scheduleSave() {
     if (this.loading) return;
@@ -770,11 +771,39 @@ const App = {
     if (!silent) this.scheduleSave();
   },
 
+  /* Erweiterungen, deren Bauteile in der Schaltung stecken */
+  extensionsInCircuit() {
+    return [...new Set(this.project.components.map(c => c.def.ext).filter(x => x && EXTENSIONS[x]))];
+  },
+  /* Steckt ein Bauteil einer ausgeschalteten Erweiterung in der Schaltung (z. B. geladen oder eingefügt),
+     wird die Erweiterung eingeschaltet – sonst fehlen Bauteil in der Leiste und Blöcke im Werkzeugkasten. */
+  ensureExtensions(quiet) {
+    const missing = this.extensionsInCircuit().filter(x => !this.extensions.includes(x));
+    if (!missing.length) return;
+    this.setExtensions(this.extensions.concat(missing), this.loading);
+    if (!quiet) this.toast(`Erweiterung ${missing.map(x => '„' + EXTENSIONS[x].name + '“').join(', ')} eingeschaltet – passend zu den Bauteilen in der Schaltung.`);
+  },
+
   extensionDialog() {
     const off = e => e.esp && BOARD !== 'esp32';
-    const items = Object.entries(EXTENSIONS).map(([k, e]) => `<label class="${off(e) ? 'off' : ''}"><input type="checkbox" name="${k}" ${this.extensions.includes(k) ? 'checked' : ''} ${off(e) ? 'disabled' : ''}><span><b>${esc(e.name)}${off(e) ? ' (nur mit ESP32)' : ''}</b><small>${esc(e.desc)}</small></span></label>`).join('');
-    this.dialog(`<h2>Erweiterungen</h2><p>Zusätzliche Block-Kategorien für dieses Projekt:</p><div class="extlist">${items}</div><div class="dlg-btns"><button class="btn" value="cancel">Abbrechen</button><button class="btn primary" value="ok">Übernehmen</button></div>`,
-      (rv, f) => { if (rv === 'ok') this.setExtensions(Object.keys(EXTENSIONS).filter(k => f.elements[k].checked || (f.elements[k].disabled && this.extensions.includes(k)))); });
+    const used = this.extensionsInCircuit();
+    const parts = k => Object.values(COMPONENTS).filter(c => c.ext === k).map(c => c.name);
+    const items = Object.entries(EXTENSIONS).map(([k, e]) => {
+      const p = parts(k);
+      return `<label class="${off(e) ? 'off' : ''}"><input type="checkbox" name="${k}" ${this.extensions.includes(k) ? 'checked' : ''} ${off(e) ? 'disabled' : ''}><span><b>${esc(e.name)}${off(e) ? ' (nur mit ESP32)' : ''}</b><small>${esc(e.desc)}${p.length ? `<br>Bauteile: ${esc(p.join(', '))}` : ''}</small></span></label>`;
+    }).join('');
+    this.dialog(`<h2>Erweiterungen</h2><p>Zusätzliche Bauteile und Blöcke für dieses Projekt:</p><div class="extlist">${items}</div><div class="dlg-btns"><button class="btn" value="cancel">Abbrechen</button><button class="btn primary" value="ok">Übernehmen</button></div>`,
+      (rv, f) => {
+        if (rv !== 'ok') return;
+        let list = Object.keys(EXTENSIONS).filter(k => f.elements[k].checked || (f.elements[k].disabled && this.extensions.includes(k)));
+        // Erweiterungen, deren Bauteile noch in der Schaltung stecken, bleiben an
+        const kept = used.filter(k => !list.includes(k));
+        if (kept.length) {
+          list = list.concat(kept);
+          this.toast(`${kept.map(k => '„' + EXTENSIONS[k].name + '“').join(', ')} bleibt eingeschaltet, solange das Bauteil in der Schaltung steckt.`);
+        }
+        this.setExtensions(list);
+      });
   },
 
   resizeBlockly() {
@@ -831,7 +860,7 @@ const App = {
     } else if (act === 'duplicate') {
       await this.refreshFiles();
       const cur = this.nameParts($('#projName').value);
-      this.dialog(`<h2>Kopie speichern unter</h2>${this.nameFields({ tisch: cur.tisch, nach: cur.nach, proj: cur.proj ? cur.proj + ' (Kopie)' : '' })}<div class="dlg-btns"><button class="btn" value="cancel">Abbrechen</button><button class="btn primary" value="ok">Speichern</button></div>`,
+      this.dialog(`<h2>Kopie speichern unter</h2>${this.nameFields({ tisch: cur.tisch, vor: cur.vor, proj: cur.proj ? cur.proj + ' (Kopie)' : '' })}<div class="dlg-btns"><button class="btn" value="cancel">Abbrechen</button><button class="btn primary" value="ok">Speichern</button></div>`,
         (rv, f) => { if (rv === 'ok' && f.n.value) { $('#projName').value = f.n.value; this.fileName = null; this.save(); } });
       this.guardNameFields($('#dlgForm'));
     } else if (act === 'export') {
@@ -864,6 +893,7 @@ const App = {
     $('#tabBoth').onclick = () => this.setCodeView('both');
     $('#tabText').onclick = () => this.setCodeView('text');
     $('#extBtn').onclick = () => this.extensionDialog();
+    $('#extBtnParts').onclick = () => this.extensionDialog();
     $('#copyCode').onclick = () => { navigator.clipboard.writeText($('#textcode').textContent).then(() => this.toast('Code kopiert.')); };
     $('#tabMsgs').onclick = () => this.showBottom('msgs');
     $('#tabSerial').onclick = () => this.showBottom('serial');
@@ -876,7 +906,7 @@ const App = {
     $('#projName').addEventListener('focus', e => { this.nameBefore = e.target.value; });
     $('#projName').addEventListener('change', async e => {
       const ok = this.checkName(e.target.value);
-      if (!ok) { e.target.value = this.nameBefore || e.target.value; this.toast('Der Name braucht Tisch-Nr., Nachname und Projekt, z. B. 11 – Müller – Ampelschaltung.'); return; }
+      if (!ok) { e.target.value = this.nameBefore || e.target.value; this.toast('Der Name braucht Tisch-Nr., Vorname und Projekt, z. B. 11 – Lena – Ampelschaltung.'); return; }
       await this.refreshFiles();
       if (this.nameTaken(ok)) { e.target.value = this.nameBefore || e.target.value; this.toast(`Ein Projekt „${ok}“ gibt es schon. Bitte einen anderen Namen wählen.`); return; }
       e.target.value = ok;

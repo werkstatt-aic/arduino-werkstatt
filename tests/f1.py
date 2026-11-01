@@ -8,7 +8,7 @@ with sync_playwright() as p:
     errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.goto('http://127.0.0.1:8642/'); pg.wait_for_timeout(900)
     print('Tische:', pg.evaluate("()=>[...document.querySelectorAll('#dlgForm select[name=tisch] option')].map(o=>o.value).slice(-2)"))
-    pg.evaluate("()=>{const f=document.querySelector('#dlgForm');f.tisch.value='18';f.nach.value='Neu';f.proj.value='Funktionen'}"); pg.click('button[value=new]'); pg.wait_for_timeout(500)
+    pg.evaluate("()=>{const f=document.querySelector('#dlgForm');f.tisch.value='18';f.vor.value='Neu';f.proj.value='Funktionen'}"); pg.click('button[value=new]'); pg.wait_for_timeout(500)
     # Vorlage + Taster
     pg.evaluate("()=>{App.circuit.addTemplate(365,430,false); const bb=App.project.components.find(c=>c.type==='breadboard'); App.circuit.addComponent('led', bb.x+100, bb.y+60);}"); pg.wait_for_timeout(300)
     # Strg+D
