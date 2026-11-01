@@ -111,18 +111,23 @@
     ex.push({ id: 'servo', title: 'Servo mit Potentiometer', board: 'uno', desc: 'Der Servo folgt der Stellung des Potentiometers (0 bis 180 Grad).', circuit: k.done(),
       blocks: prog([], [`<block type="ard_servo"><field name="PIN">3</field><value name="DEG">${mapA0(180)}</value></block>`, `<block type="ard_wait"><field name="UNIT">MS</field><value name="N">${N(50)}</value></block>`]) }); }
 
-  /* 7 Motor mit Motortreiber L9110S */
+  /* 7 Motor mit Motortreiber L298N (IN1 an D6, IN2 an D5), Motorspannung aus einer Batterie */
   { const k = base('uno');
     poti(k, 3);
-    const d = k.add('mdriver', 14, 'h');
-    k.down(16, 'bm'); k.down(17, 'bp');
-    k.up('D6', 18, k.bb.y + 240); k.up('D5', 19, k.bb.y + 230);
-    const m = k.addAt('gearmotor', k.bb.x - 90, k.bb.y - 40);
-    const ma1 = k.pos({ c: d.id, p: 'MA1' }), ma2 = k.pos({ c: d.id, p: 'MA2' }), mp = k.pos({ c: m.id, p: 'P' }), mn = k.pos({ c: m.id, p: 'N' });
-    // über der Steckplatine entlang, dann links neben dem Treiber hinunter zu den Klemmen
-    k.wire({ c: m.id, p: 'N' }, { c: d.id, p: 'MA1' }, 'schwarz', [[mn[0], k.bb.y - 15], [ma1[0] - 16, k.bb.y - 15], [ma1[0] - 16, ma1[1]]]);
-    k.wire({ c: m.id, p: 'P' }, { c: d.id, p: 'MA2' }, 'rot', [[mp[0], k.bb.y - 5], [ma2[0] - 26, k.bb.y - 5], [ma2[0] - 26, ma2[1]]]);
-    ex.push({ id: 'motor', title: 'Motor mit Motortreiber', board: 'uno', ext: ['motoren'], desc: 'Ein Getriebemotor am Motortreiber L9110S (A-IA an D6, A-IB an D5). Das Potentiometer stellt die Geschwindigkeit ein.', circuit: k.done(),
+    const bb = k.bb, dx = bb.x + 470, dy = bb.y - 20;
+    const d = k.addAt('l298n', dx, dy, { ena: '1', enb: '1' });
+    const m = k.addAt('gearmotor', dx - 100, dy - 140);
+    const D = p => ({ c: d.id, p });
+    k.wire({ c: m.id, p: 'P' }, D('OUT1'), 'rot', [[dx - 100, dy - 81]]);
+    k.wire({ c: m.id, p: 'N' }, D('OUT2'), 'schwarz', [[dx - 90, dy - 67]]);
+    [['GND_T', 'GND', -30], ['D6', 'IN1', 10], ['D5', 'IN2', 20]].forEach(([mp, dp, ox], i) => {
+      const a = k.pos(k.M(mp)), yc = bb.y + 222 + 8 * i, xv = dx + 60 + 8 * i, yb = dy + 34 - 7 * i;
+      k.wire(k.M(mp), D(dp), i ? 'blau' : 'schwarz', [[a[0], yc], [xv, yc], [xv, yb], [dx + ox, yb]]);
+    });
+    const sx = dx - 120, sy = dy + 110, bat = k.addAt('source', sx, sy, { volt: 9, ri: 1 });
+    k.wire({ c: bat.id, p: 'P' }, D('VS'), 'rot', [[sx, sy + 12], [sx - 20, sy + 12], [sx - 20, dy + 20], [dx - 40, dy + 20]]);
+    k.wire({ c: bat.id, p: 'N' }, D('GND'), 'schwarz', [[sx + 20, sy + 24], [dx - 30, sy + 24]]);
+    ex.push({ id: 'motor', title: 'Motor mit Motortreiber', board: 'uno', ext: ['motoren'], desc: 'Ein Getriebemotor am Motortreiber L298N (IN1 an D6, IN2 an D5, Jumper auf ENA gesteckt), Motorspannung aus einer 9-V-Batterie. Das Potentiometer stellt die Geschwindigkeit ein.', circuit: k.done(),
       blocks: prog([], [`<block type="ard_motor"><field name="IA">6</field><field name="IB">5</field><field name="DIR">1</field><value name="SPEED">${mapA0(100)}</value></block>`]) }); }
 
   /* 8 Webseite schaltet LED (ESP32, LED an D4) */
@@ -160,6 +165,31 @@
         [`<block type="controls_if"><value name="IF0"><block type="com_bt_avail"></block></value><statement name="DO0">${chain([
           `<block type="controls_if"><value name="IF0">${is('an')}</value><statement name="DO0">${chain([dw(4, 'HIGH'), send('LED ist an')])}</statement></block>`,
           `<block type="controls_if"><value name="IF0">${is('aus')}</value><statement name="DO0">${chain([dw(4, 'LOW'), send('LED ist aus')])}</statement></block>`])}</statement></block>`]) }); }
+
+  /* 11 Fahrzeug: zwei Getriebemotoren am L298N, eigene Batterie für die Motoren */
+  { const k = base('uno');
+    const bb = k.bb, dx = bb.x + 520, dy = bb.y - 20;
+    const d = k.addAt('l298n', dx, dy, { ena: '1', enb: '1' });
+    const mL = k.addAt('gearmotor', dx - 100, dy - 140), mR = k.addAt('gearmotor', dx + 100, dy - 140);
+    const D = p => ({ c: d.id, p });
+    // Motoren: links spiegelbildlich (wie am echten Fahrzeug), rechts direkt
+    k.wire({ c: mL.id, p: 'P' }, D('OUT2'), 'rot', [[dx - 100, dy - 67]]);
+    k.wire({ c: mL.id, p: 'N' }, D('OUT1'), 'schwarz', [[dx - 90, dy - 81]]);
+    k.wire({ c: mR.id, p: 'P' }, D('OUT3'), 'rot', [[dx + 100, dy - 81]]);
+    k.wire({ c: mR.id, p: 'N' }, D('OUT4'), 'schwarz', [[dx + 110, dy - 67]]);
+    // Steuerleitungen: hoch in den Kanal, rechts an der Steckplatine vorbei, von unten an die Stiftleiste
+    [['GND_T', 'GND', -30], ['D11', 'IN1', 10], ['D6', 'IN2', 20], ['D5', 'IN3', 30], ['D3', 'IN4', 40]].forEach(([mp, dp, ox], i) => {
+      const a = k.pos(k.M(mp)), yc = bb.y + 212 + 8 * i, xv = dx + 60 + 8 * i, yb = dy + 48 - 7 * i;
+      k.wire(k.M(mp), D(dp), i ? 'blau' : 'schwarz', [[a[0], yc], [xv, yc], [xv, yb], [dx + ox, yb]]);
+    });
+    // Batterie 9 V für die Motoren (Plus an 12V, Minus an GND)
+    const sx = dx - 120, sy = dy + 110, bat = k.addAt('source', sx, sy, { volt: 9, ri: 1 });
+    k.wire({ c: bat.id, p: 'P' }, D('VS'), 'rot', [[sx, sy + 12], [sx - 20, sy + 12], [sx - 20, dy + 30], [dx - 40, dy + 30]]);
+    k.wire({ c: bat.id, p: 'N' }, D('GND'), 'schwarz', [[sx + 20, sy + 24], [dx - 30, sy + 24]]);
+    const drive = (dir, s) => `<block type="car_drive"><field name="DIR">${dir}</field><value name="SPEED">${N(s)}</value></block>`;
+    ex.push({ id: 'fahrzeug', title: 'Fahrzeug fährt ein Quadrat', board: 'uno', ext: ['motoren'], desc: 'Zwei Getriebemotoren am Motortreiber L298N (IN1 D11, IN2 D6, IN3 D5, IN4 D3) mit eigener Batterie. Das Fahrzeug fährt 2 s geradeaus und dreht sich dann nach rechts. Der linke Motor ist spiegelbildlich angeschlossen – wie am echten Fahrzeug.', circuit: k.done(),
+      blocks: prog([`<block type="car_init"><field name="LA">11</field><field name="LB">6</field><field name="RA">5</field><field name="RB">3</field></block>`],
+        [drive('FWD', 80), wait(2), drive('TR', 80), wait(0.6)]) }); }
 
   BOARD = 'uno';
   return ex;

@@ -1414,7 +1414,7 @@ const EXAMPLES = [
 "ext": [
 "motoren"
 ],
-"desc": "Ein Getriebemotor am Motortreiber L9110S (A-IA an D6, A-IB an D5). Das Potentiometer stellt die Geschwindigkeit ein.",
+"desc": "Ein Getriebemotor am Motortreiber L298N (IN1 an D6, IN2 an D5, Jumper auf ENA gesteckt), Motorspannung aus einer 9-V-Batterie. Das Potentiometer stellt die Geschwindigkeit ein.",
 "circuit": {
 "components": [
 {
@@ -1446,19 +1446,33 @@ const EXAMPLES = [
 },
 {
 "id": "c11",
-"type": "mdriver",
-"x": 350,
-"y": 330,
+"type": "l298n",
+"x": 670,
+"y": 180,
+"rot": 0,
+"props": {
+"ena": "1",
+"enb": "1"
+}
+},
+{
+"id": "c12",
+"type": "gearmotor",
+"x": 570,
+"y": 40,
 "rot": 0,
 "props": {}
 },
 {
-"id": "c16",
-"type": "gearmotor",
-"x": 110,
-"y": 160,
+"id": "c18",
+"type": "source",
+"x": 550,
+"y": 290,
 "rot": 0,
-"props": {}
+"props": {
+"volt": 9,
+"ri": 1
+}
 }
 ],
 "wires": [
@@ -1615,71 +1629,97 @@ const EXAMPLES = [
 "color": "orange"
 },
 {
-"id": "w12",
-"a": {
-"c": "c1",
-"p": "16j"
-},
-"b": {
-"c": "c1",
-"p": "bm-16"
-},
-"pts": [],
-"color": "schwarz"
-},
-{
 "id": "w13",
 "a": {
-"c": "c1",
-"p": "17j"
+"c": "c12",
+"p": "P"
 },
 "b": {
-"c": "c1",
-"p": "bp-17"
+"c": "c11",
+"p": "OUT1"
 },
-"pts": [],
+"pts": [
+[
+570,
+99
+]
+],
 "color": "rot"
 },
 {
 "id": "w14",
 "a": {
-"c": "c2",
-"p": "D6"
+"c": "c12",
+"p": "N"
 },
 "b": {
-"c": "c1",
-"p": "18j"
+"c": "c11",
+"p": "OUT2"
 },
 "pts": [
 [
-430,
-440
-],
-[
-390,
-440
+580,
+113
 ]
 ],
-"color": "blau"
+"color": "schwarz"
 },
 {
 "id": "w15",
 "a": {
 "c": "c2",
-"p": "D5"
+"p": "GND_T"
 },
 "b": {
-"c": "c1",
-"p": "19j"
+"c": "c11",
+"p": "GND"
 },
 "pts": [
 [
-440,
+340,
+422
+],
+[
+730,
+422
+],
+[
+730,
+214
+],
+[
+640,
+214
+]
+],
+"color": "schwarz"
+},
+{
+"id": "w16",
+"a": {
+"c": "c2",
+"p": "D6"
+},
+"b": {
+"c": "c11",
+"p": "IN1"
+},
+"pts": [
+[
+430,
 430
 ],
 [
-400,
+738,
 430
+],
+[
+738,
+207
+],
+[
+680,
+207
 ]
 ],
 "color": "blau"
@@ -1687,54 +1727,84 @@ const EXAMPLES = [
 {
 "id": "w17",
 "a": {
-"c": "c16",
-"p": "N"
+"c": "c2",
+"p": "D5"
 },
 "b": {
 "c": "c11",
-"p": "MA1"
+"p": "IN2"
 },
 "pts": [
 [
-120,
-185
+440,
+438
 ],
 [
-315,
-185
+746,
+438
 ],
 [
-315,
-277
+746,
+200
+],
+[
+690,
+200
 ]
 ],
-"color": "schwarz"
+"color": "blau"
 },
 {
-"id": "w18",
+"id": "w19",
 "a": {
-"c": "c16",
+"c": "c18",
 "p": "P"
 },
 "b": {
 "c": "c11",
-"p": "MA2"
+"p": "VS"
 },
 "pts": [
 [
-110,
-195
+550,
+302
 ],
 [
-305,
-195
+530,
+302
 ],
 [
-305,
-291
+530,
+200
+],
+[
+630,
+200
 ]
 ],
 "color": "rot"
+},
+{
+"id": "w20",
+"a": {
+"c": "c18",
+"p": "N"
+},
+"b": {
+"c": "c11",
+"p": "GND"
+},
+"pts": [
+[
+570,
+314
+],
+[
+640,
+314
+]
+],
+"color": "schwarz"
 }
 ]
 },
@@ -2329,5 +2399,445 @@ const EXAMPLES = [
 ]
 },
 "blocks": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"ard_setup\" x=\"30\" y=\"30\"><statement name=\"DO\"><block type=\"com_bt_init\"><value name=\"N\"><shadow type=\"text\"><field name=\"TEXT\">ESP-Werkstatt</field></shadow></value></block></statement></block><block type=\"ard_loop\" x=\"30\" y=\"170\"><statement name=\"DO\"><block type=\"controls_if\"><value name=\"IF0\"><block type=\"com_bt_avail\"></block></value><statement name=\"DO0\"><block type=\"controls_if\"><value name=\"IF0\"><block type=\"logic_compare\"><field name=\"OP\">EQ</field><value name=\"A\"><block type=\"com_bt_text\"></block></value><value name=\"B\"><shadow type=\"text\"><field name=\"TEXT\">an</field></shadow></value></block></value><statement name=\"DO0\"><block type=\"ard_digital_write\"><field name=\"PIN\">4</field><field name=\"V\">HIGH</field><next><block type=\"com_bt_send\"><value name=\"V\"><shadow type=\"text\"><field name=\"TEXT\">LED ist an</field></shadow></value></block></next></block></statement><next><block type=\"controls_if\"><value name=\"IF0\"><block type=\"logic_compare\"><field name=\"OP\">EQ</field><value name=\"A\"><block type=\"com_bt_text\"></block></value><value name=\"B\"><shadow type=\"text\"><field name=\"TEXT\">aus</field></shadow></value></block></value><statement name=\"DO0\"><block type=\"ard_digital_write\"><field name=\"PIN\">4</field><field name=\"V\">LOW</field><next><block type=\"com_bt_send\"><value name=\"V\"><shadow type=\"text\"><field name=\"TEXT\">LED ist aus</field></shadow></value></block></next></block></statement></block></next></block></statement></block></statement></block></xml>"
+},
+{
+"id": "fahrzeug",
+"title": "Fahrzeug fährt ein Quadrat",
+"board": "uno",
+"ext": [
+"motoren"
+],
+"desc": "Zwei Getriebemotoren am Motortreiber L298N (IN1 D11, IN2 D6, IN3 D5, IN4 D3) mit eigener Batterie. Das Fahrzeug fährt 2 s geradeaus und dreht sich dann nach rechts. Der linke Motor ist spiegelbildlich angeschlossen – wie am echten Fahrzeug.",
+"circuit": {
+"components": [
+{
+"id": "c1",
+"type": "breadboard",
+"x": 200,
+"y": 200,
+"rot": 0,
+"props": {}
+},
+{
+"id": "c2",
+"type": "uno",
+"x": 210,
+"y": 460,
+"rot": 0,
+"props": {}
+},
+{
+"id": "c7",
+"type": "l298n",
+"x": 720,
+"y": 180,
+"rot": 0,
+"props": {
+"ena": "1",
+"enb": "1"
+}
+},
+{
+"id": "c8",
+"type": "gearmotor",
+"x": 620,
+"y": 40,
+"rot": 0,
+"props": {}
+},
+{
+"id": "c9",
+"type": "gearmotor",
+"x": 820,
+"y": 40,
+"rot": 0,
+"props": {}
+},
+{
+"id": "c19",
+"type": "source",
+"x": 600,
+"y": 290,
+"rot": 0,
+"props": {
+"volt": 9,
+"ri": 1
+}
+}
+],
+"wires": [
+{
+"id": "w3",
+"a": {
+"c": "c2",
+"p": "5V"
+},
+"b": {
+"c": "c1",
+"p": "bp-1"
+},
+"pts": [
+[
+370,
+690
+],
+[
+180,
+690
+],
+[
+180,
+390
+]
+],
+"color": "rot"
+},
+{
+"id": "w4",
+"a": {
+"c": "c2",
+"p": "GND_1"
+},
+"b": {
+"c": "c1",
+"p": "bm-2"
+},
+"pts": [
+[
+380,
+700
+],
+[
+170,
+700
+],
+[
+170,
+380
+]
+],
+"color": "schwarz"
+},
+{
+"id": "w5",
+"a": {
+"c": "c1",
+"p": "bp-29"
+},
+"b": {
+"c": "c1",
+"p": "tp-29"
+},
+"pts": [
+[
+550,
+390
+],
+[
+550,
+220
+]
+],
+"color": "rot"
+},
+{
+"id": "w6",
+"a": {
+"c": "c1",
+"p": "bm-28"
+},
+"b": {
+"c": "c1",
+"p": "tm-28"
+},
+"pts": [
+[
+540,
+380
+],
+[
+540,
+210
+]
+],
+"color": "schwarz"
+},
+{
+"id": "w10",
+"a": {
+"c": "c8",
+"p": "P"
+},
+"b": {
+"c": "c7",
+"p": "OUT2"
+},
+"pts": [
+[
+620,
+113
+]
+],
+"color": "rot"
+},
+{
+"id": "w11",
+"a": {
+"c": "c8",
+"p": "N"
+},
+"b": {
+"c": "c7",
+"p": "OUT1"
+},
+"pts": [
+[
+630,
+99
+]
+],
+"color": "schwarz"
+},
+{
+"id": "w12",
+"a": {
+"c": "c9",
+"p": "P"
+},
+"b": {
+"c": "c7",
+"p": "OUT3"
+},
+"pts": [
+[
+820,
+99
+]
+],
+"color": "rot"
+},
+{
+"id": "w13",
+"a": {
+"c": "c9",
+"p": "N"
+},
+"b": {
+"c": "c7",
+"p": "OUT4"
+},
+"pts": [
+[
+830,
+113
+]
+],
+"color": "schwarz"
+},
+{
+"id": "w14",
+"a": {
+"c": "c2",
+"p": "GND_T"
+},
+"b": {
+"c": "c7",
+"p": "GND"
+},
+"pts": [
+[
+340,
+412
+],
+[
+780,
+412
+],
+[
+780,
+228
+],
+[
+690,
+228
+]
+],
+"color": "schwarz"
+},
+{
+"id": "w15",
+"a": {
+"c": "c2",
+"p": "D11"
+},
+"b": {
+"c": "c7",
+"p": "IN1"
+},
+"pts": [
+[
+370,
+420
+],
+[
+788,
+420
+],
+[
+788,
+221
+],
+[
+730,
+221
+]
+],
+"color": "blau"
+},
+{
+"id": "w16",
+"a": {
+"c": "c2",
+"p": "D6"
+},
+"b": {
+"c": "c7",
+"p": "IN2"
+},
+"pts": [
+[
+430,
+428
+],
+[
+796,
+428
+],
+[
+796,
+214
+],
+[
+740,
+214
+]
+],
+"color": "blau"
+},
+{
+"id": "w17",
+"a": {
+"c": "c2",
+"p": "D5"
+},
+"b": {
+"c": "c7",
+"p": "IN3"
+},
+"pts": [
+[
+440,
+436
+],
+[
+804,
+436
+],
+[
+804,
+207
+],
+[
+750,
+207
+]
+],
+"color": "blau"
+},
+{
+"id": "w18",
+"a": {
+"c": "c2",
+"p": "D3"
+},
+"b": {
+"c": "c7",
+"p": "IN4"
+},
+"pts": [
+[
+460,
+444
+],
+[
+812,
+444
+],
+[
+812,
+200
+],
+[
+760,
+200
+]
+],
+"color": "blau"
+},
+{
+"id": "w20",
+"a": {
+"c": "c19",
+"p": "P"
+},
+"b": {
+"c": "c7",
+"p": "VS"
+},
+"pts": [
+[
+600,
+302
+],
+[
+580,
+302
+],
+[
+580,
+210
+],
+[
+680,
+210
+]
+],
+"color": "rot"
+},
+{
+"id": "w21",
+"a": {
+"c": "c19",
+"p": "N"
+},
+"b": {
+"c": "c7",
+"p": "GND"
+},
+"pts": [
+[
+620,
+314
+],
+[
+690,
+314
+]
+],
+"color": "schwarz"
+}
+]
+},
+"blocks": "<xml xmlns=\"https://developers.google.com/blockly/xml\"><block type=\"ard_setup\" x=\"30\" y=\"30\"><statement name=\"DO\"><block type=\"car_init\"><field name=\"LA\">11</field><field name=\"LB\">6</field><field name=\"RA\">5</field><field name=\"RB\">3</field></block></statement></block><block type=\"ard_loop\" x=\"30\" y=\"170\"><statement name=\"DO\"><block type=\"car_drive\"><field name=\"DIR\">FWD</field><value name=\"SPEED\"><shadow type=\"math_number\"><field name=\"NUM\">80</field></shadow></value><next><block type=\"ard_wait\"><field name=\"UNIT\">S</field><value name=\"N\"><shadow type=\"math_number\"><field name=\"NUM\">2</field></shadow></value><next><block type=\"car_drive\"><field name=\"DIR\">TR</field><value name=\"SPEED\"><shadow type=\"math_number\"><field name=\"NUM\">80</field></shadow></value><next><block type=\"ard_wait\"><field name=\"UNIT\">S</field><value name=\"N\"><shadow type=\"math_number\"><field name=\"NUM\">0.6</field></shadow></value></block></next></block></next></block></next></block></statement></block></xml>"
 }
 ];

@@ -3,7 +3,7 @@
 
 const COL = {
   ctrl: '#ffab19', loop: '#e08e0b', logic: '#4aa7c2', math: '#59c059', vars: '#ff8c1a', func: '#d65cd6',
-  out: '#4c97ff', inp: '#9966ff', show: '#0fa39a', neo: '#7a5cd6', kp: '#cf4f8f', mm: '#3a9a5b', mmi: '#6cc48a', mmc: '#c8742a', com: '#1e88a8', comu: '#6b7c8c', comw: '#3b6fb6', comf: '#c0563f', comb: '#2d5fa8', oled: '#3a64b0', list: '#e8603c', mot: '#5b7fa6',
+  out: '#4c97ff', inp: '#9966ff', show: '#0fa39a', neo: '#7a5cd6', kp: '#cf4f8f', mm: '#3a9a5b', mmi: '#6cc48a', mmc: '#c8742a', com: '#1e88a8', comu: '#6b7c8c', comw: '#3b6fb6', comf: '#c0563f', comb: '#2d5fa8', oled: '#3a64b0', list: '#e8603c', mot: '#5b7fa6', step: '#4a6c92',
 };
 /* Gewählter Mikrocontroller: 'uno' oder 'esp32' */
 let BOARD = 'uno';
@@ -53,7 +53,7 @@ const EXTENSIONS = {
   keypad: { name: 'Tastenfeld', desc: 'Folientastatur 3 × 4 oder 4 × 4 abfragen.' },
   multimeter: { name: 'Multimeter', desc: 'Spannung (ADS1115) und Strom (INA219) über I²C messen.' },
   oled: { name: 'OLED-Anzeige', desc: 'Grafikdisplay SSD1306, 128 × 64 Pixel, I²C.' },
-  motoren: { name: 'Motoren und Relais', desc: 'Motortreiber L9110S und L298N mit Getriebemotor, Fahrzeug mit zwei Motoren, Schrittmotor 28BYJ-48 mit Treiber ULN2003, Relais-Modul.' },
+  motoren: { name: 'Motoren und Relais', desc: 'Motortreiber L298N mit Getriebemotor, Fahrzeug mit zwei Motoren, Schrittmotor 28BYJ-48 mit Treiber ULN2003, Relais-Modul.' },
   comm: { name: 'Kommunikation', desc: 'USB (senden und empfangen), WLAN, eigene Webseite, Funk zwischen ESP32 und Bluetooth (Handy-App). Nur mit dem ESP32.', esp: true },
 };
 
@@ -141,20 +141,20 @@ function defineBlocks() {
       { type: 'field_dropdown', name: 'ACC', options: ACCS }, { type: 'field_dropdown', name: 'OCT', options: OCTS }, { type: 'input_value', name: 'DUR', check: 'Number' }],
     inputsInline: true, tooltip: 'Note, Vorzeichen (# oder b) und Oktave. A 4 = Kammerton 440 Hz. Das Programm läuft währenddessen weiter.' }, COL.out),
     B({ type: 'ard_tone_freq', message0: 'Auf Lautsprecher an Anschluss %1 Ton mit %2 Hz für %3 Sekunden spielen', args0: [{ type: 'field_dropdown', name: 'PIN', options: PIN.out }, { type: 'input_value', name: 'FREQ', check: 'Number' }, { type: 'input_value', name: 'DUR', check: 'Number' }], inputsInline: true }, COL.out),
-    B({ type: 'ard_motor', message0: 'Motor am Motortreiber %1 IA an %2 IB an %3 %4 mit %5 %% Geschwindigkeit', args0: [{ type: 'input_dummy' },
+    B({ type: 'ard_motor', message0: 'Motor am Motortreiber %1 IN1 an %2 IN2 an %3 %4 mit %5 %% Geschwindigkeit', args0: [{ type: 'input_dummy' },
       { type: 'field_dropdown', name: 'IA', options: PIN.pwm }, { type: 'field_dropdown', name: 'IB', options: PIN.pwm },
       { type: 'field_dropdown', name: 'DIR', options: [['vorwärts', '1'], ['rückwärts', '-1'], ['anhalten', '0']] }, { type: 'input_value', name: 'SPEED', check: 'Number' }],
-    inputsInline: true, tooltip: 'Für Motortreiber wie L9110S (A-IA/A-IB) oder L298N (IN1/IN2 bzw. IN3/IN4, Jumper auf ENA/ENB gesteckt): die beiden Steuereingänge eines Motors. Geschwindigkeit 0 bis 100 %.' }, COL.mot),
+    inputsInline: true, tooltip: 'Für den Motortreiber L298N (Motor A: IN1/IN2, Motor B: IN3/IN4; Jumper auf ENA/ENB gesteckt lassen): die beiden Steuereingänge eines Motors. Geschwindigkeit 0 bis 100 %.' }, COL.mot),
     B({ type: 'ard_stepper', message0: 'Schrittmotor IN1 %1 IN2 %2 IN3 %3 IN4 %4 %5 um %6 %7 %8 drehen mit %9 U/min', args0: [
       { type: 'field_dropdown', name: 'P1', options: PIN.out }, { type: 'field_dropdown', name: 'P2', options: PIN.out }, { type: 'field_dropdown', name: 'P3', options: PIN.out }, { type: 'field_dropdown', name: 'P4', options: PIN.out }, { type: 'input_dummy' },
       { type: 'input_value', name: 'N', check: 'Number' }, { type: 'field_dropdown', name: 'UNIT', options: [['Grad', 'DEG'], ['Umdrehungen', 'REV'], ['Schritte', 'STEP']] },
       { type: 'field_dropdown', name: 'DIR', options: [['im Uhrzeigersinn', 'CW'], ['gegen den Uhrzeigersinn', 'CCW']] }, { type: 'input_value', name: 'RPM', check: 'Number' }],
-    inputsInline: true, tooltip: 'Für den Schrittmotor 28BYJ-48 mit Treiberplatine ULN2003 (2048 Schritte = 1 Umdrehung). Geschwindigkeit 1 bis 15 Umdrehungen pro Minute. Das Programm wartet, bis der Motor angekommen ist.' }, COL.mot),
+    inputsInline: true, tooltip: 'Für den Schrittmotor 28BYJ-48 mit Treiberplatine ULN2003 (2048 Schritte = 1 Umdrehung). Geschwindigkeit 1 bis 15 Umdrehungen pro Minute. Das Programm wartet, bis der Motor angekommen ist.' }, COL.step),
     /* Fahrzeug mit zwei Motoren (Erweiterung „Motoren und Relais“) */
-    B({ type: 'car_init', message0: 'Fahrzeug einrichten %1 linker Motor: IA %2 IB %3 %4 rechter Motor: IA %5 IB %6', args0: [{ type: 'input_dummy' },
+    B({ type: 'car_init', message0: 'Fahrzeug einrichten (L298N) %1 linker Motor: IN1 %2 IN2 %3 %4 rechter Motor: IN3 %5 IN4 %6', args0: [{ type: 'input_dummy' },
       { type: 'field_dropdown', name: 'LA', options: PIN.pwm }, { type: 'field_dropdown', name: 'LB', options: PIN.pwm }, { type: 'input_dummy' },
       { type: 'field_dropdown', name: 'RA', options: PIN.pwm }, { type: 'field_dropdown', name: 'RB', options: PIN.pwm }],
-    tooltip: 'Gehört in „beim Start“. Zwei Motoren am Motortreiber: L9110S (A-IA/A-IB und B-IA/B-IB) oder L298N (IN1/IN2 und IN3/IN4, Jumper auf ENA/ENB gesteckt). Dreht ein Rad falsch herum, die beiden Kabel dieses Motors am Treiber tauschen. Arduino Uno: nur Anschlüsse mit ~ regeln die Geschwindigkeit; mit einem Servo im Programm gehen D9/D10 nicht, mit Tönen gehen D3/D11 nicht.' }, COL.mot),
+    tooltip: 'Gehört in „beim Start“. Zwei Motoren am Motortreiber L298N: linker Motor an OUT1/OUT2 (gesteuert über IN1/IN2), rechter Motor an OUT3/OUT4 (IN3/IN4); Jumper auf ENA/ENB gesteckt lassen. Dreht ein Rad falsch herum, die beiden Kabel dieses Motors am Treiber tauschen. Arduino Uno: nur Anschlüsse mit ~ regeln die Geschwindigkeit; mit einem Servo im Programm gehen D9/D10 nicht, mit Tönen gehen D3/D11 nicht.' }, COL.mot),
     B({ type: 'car_drive', message0: 'Fahrzeug %1 mit %2 %% Geschwindigkeit', args0: [
       { type: 'field_dropdown', name: 'DIR', options: [['vorwärts fahren', 'FWD'], ['rückwärts fahren', 'BWD'], ['Linkskurve fahren', 'CL'], ['Rechtskurve fahren', 'CR'], ['auf der Stelle nach links drehen', 'TL'], ['auf der Stelle nach rechts drehen', 'TR']] },
       { type: 'input_value', name: 'SPEED', check: 'Number' }],

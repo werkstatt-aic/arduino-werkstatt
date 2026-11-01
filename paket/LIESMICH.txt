@@ -23,10 +23,11 @@ SPEICHERN UND SICHERUNGEN
   Zurückholen: Datei > Ältere Fassung wiederherstellen.
 
 AUFGABEN (Menü "Datei > Aufgaben")
-  - 17 Aufgaben in vier Stufen: Grundlagen (LED, Blinklicht, Ampel, Taster,
+  - 18 Aufgaben in vier Stufen: Grundlagen (LED, Blinklicht, Ampel, Taster,
     Lauflicht, PWM), Sensoren (Nachtlicht, Thermometer, Abstandswarner,
     Messreihe), Motoren (Servo-Schranke, Lüfter, Schrittmotor, Bewässerung mit
-    Relais) und Kommunikation (ESP32: Bluetooth, USB-Befehle, Webseite).
+    Relais, Fahrzeug fährt ein Quadrat) und Kommunikation (ESP32: Bluetooth,
+    USB-Befehle, Webseite).
   - Eine Aufgabe wird als neues Projekt angelegt. Links erscheint die
     Aufgabenkarte mit Ziel, benötigten Bauteilen und Tipps, die man
     nacheinander aufdecken kann.
@@ -49,7 +50,8 @@ AUFGABEN (Menü "Datei > Aufgaben")
 
 BEISPIELE, BILD UND DRUCKEN (Menü "Datei")
   - Beispiel öffnen: fertige Projekte (Blinken, Ampel, Taster, Dimmer,
-    Thermometer, Servo, Motor, Webseite, Funk-Klingel, Bluetooth) als neues Projekt.
+    Thermometer, Servo, Motor, Fahrzeug, Webseite, Funk-Klingel, Bluetooth) als
+    neues Projekt.
   - Schaltung als Bild speichern: PNG-Datei im Ordner "Downloads".
   - Drucken: Schaltung, Blöcke und C++-Code auf Papier oder als PDF.
 
@@ -89,15 +91,16 @@ BEDIENUNG IN KÜRZE
     (schaltet einen eigenen Stromkreis über COM/NO/NC), Schrittmotor 28BYJ-48
     mit Treiber ULN2003 (Relais und Schrittmotor: Erweiterung "Motoren und
     Relais").
-  - Erweiterung "Motoren und Relais": Motortreiber L9110S und L298N,
-    Getriebemotor, Relais-Modul und Schrittmotor 28BYJ-48 mit ULN2003 sowie
-    die Kategorie "Motoren" mit den Blöcken "Motor am Motortreiber" (vorwärts,
+  - Erweiterung "Motoren und Relais": Motortreiber L298N, Getriebemotor,
+    Relais-Modul und Schrittmotor 28BYJ-48 mit ULN2003 sowie die Kategorie
+    "Motoren" mit den Blöcken "Motor am Motortreiber" (vorwärts,
     rückwärts, anhalten, Tempo in %) und "Schrittmotor ... drehen". Ältere
     Projekte mit Motoren schalten die Erweiterung beim Öffnen automatisch ein.
     Servo und Lüfter gibt es ohne Erweiterung; den Lüfter kann man direkt an
     einem digitalen Ausgang einschalten ("Anschluss ... auf HOCH").
   - Fahrzeug mit zwei Motoren (ebenfalls Kategorie "Motoren"): "Fahrzeug
-    einrichten" (in "beim Start": IA/IB des linken und des rechten Motors),
+    einrichten" (in "beim Start": IN1/IN2 für den linken, IN3/IN4 für den
+    rechten Motor),
     dann "Fahrzeug vorwärts/rückwärts fahren", "Linkskurve/Rechtskurve fahren"
     (inneres Rad mit einem Drittel), "auf der Stelle nach links/rechts drehen",
     "Fahrzeug anhalten" und "linker Motor ... % rechter Motor ... %" (-100 bis

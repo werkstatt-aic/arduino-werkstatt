@@ -428,7 +428,7 @@ const App = {
   buildPartList() {
     const cats = { Vorlagen: ['template', 'template-lcd'] };
     for (const c of CATEGORY_ORDER) cats[c] = [];
-    for (const t in COMPONENTS) cats[COMPONENTS[t].category].push(t);
+    for (const t in COMPONENTS) if (!COMPONENTS[t].hidden) cats[COMPONENTS[t].category].push(t); // hidden: nur noch für ältere Projekte
     const WIDE = new Set();
     const stack = (types, h) => `<div class="template-ico" style="flex-direction:column">${types.map(t => componentIcon(t, `height:${h}px;width:auto`)).join('')}</div>`;
     let h = '';
@@ -787,7 +787,7 @@ const App = {
   extensionDialog() {
     const off = e => e.esp && BOARD !== 'esp32';
     const used = this.extensionsInCircuit();
-    const parts = k => Object.values(COMPONENTS).filter(c => c.ext === k).map(c => c.name);
+    const parts = k => Object.values(COMPONENTS).filter(c => c.ext === k && !c.hidden).map(c => c.name);
     const items = Object.entries(EXTENSIONS).map(([k, e]) => {
       const p = parts(k);
       return `<label class="${off(e) ? 'off' : ''}"><input type="checkbox" name="${k}" ${this.extensions.includes(k) ? 'checked' : ''} ${off(e) ? 'disabled' : ''}><span><b>${esc(e.name)}${off(e) ? ' (nur mit ESP32)' : ''}</b><small>${esc(e.desc)}${p.length ? `<br>Bauteile: ${esc(p.join(', '))}` : ''}</small></span></label>`;

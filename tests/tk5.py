@@ -2,7 +2,7 @@
 import json
 from playwright.sync_api import sync_playwright
 JS = open('tk5.js').read()
-EXMAP = {'g3': 'ampel', 'g6': 'dimmer', 'm2': 'motor', 'k1': 'bluetooth'}
+EXMAP = {'g3': 'ampel', 'g6': 'dimmer', 'm2': 'motor', 'm5': 'fahrzeug', 'k1': 'bluetooth'}
 with sync_playwright() as p:
     b = p.chromium.launch(); pg = b.new_page(viewport={'width': 1400, 'height': 900})
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))

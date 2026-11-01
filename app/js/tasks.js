@@ -113,6 +113,19 @@ const TASK_CHECKS = {
     label: () => 'Ein Motor dreht sich.',
     run(ctx) { return ctx.rec.motorRan ? { ok: true } : { ok: false, hint: 'Kein Motor hat sich gedreht. Prüfe Treiber, Versorgung und die Anschlüsse im Block.' }; },
   },
+  drive: {
+    title: 'Fahrzeug fährt und dreht', kind: 'passive', long: true,
+    params: [],
+    label: () => 'Das Fahrzeug fährt geradeaus und dreht sich (zwei Motoren).',
+    run(ctx) {
+      const r = ctx.rec;
+      if (r.motorCount < 2) return { ok: false, hint: 'Dafür braucht es zwei Motoren am Motortreiber.' };
+      if (!r.straight) return { ok: false, hint: 'Das Fahrzeug fährt nie geradeaus (beide Räder gleich schnell).' };
+      if (!r.turn) return { ok: false, hint: 'Das Fahrzeug dreht sich nie (die Räder laufen immer gleich).' };
+      return { ok: true };
+    },
+    done: rec => rec.straight && rec.turn && rec.t > 1500,
+  },
   tone: {
     title: 'Summer ertönt', kind: 'passive',
     params: [],
@@ -272,7 +285,7 @@ const BUILTIN_TASKS = [
     checks: [{ k: 'part', type: 'servo', n: 1 }, { k: 'part', type: 'button', n: 1 }, { k: 'button', watch: 'out' }, { k: 'noerror' }] },
   { id: 'm2', level: 'Motoren', board: 'uno', start: 'vorlage', ext: ['motoren'], title: 'Lüfter mit Motortreiber',
     goal: 'Ein Lüfter soll über einen Motortreiber laufen: 3 Sekunden an, 2 Sekunden aus, immer wieder.',
-    tips: ['Ein Motor braucht zu viel Strom für den Arduino-Anschluss. Darum kommt ein Motortreiber (L9110S oder L298N) dazwischen.', 'Der Treiber bekommt die Versorgung, der Arduino gibt nur die Steuersignale.', 'Block „Motor … drehen“ mit der Geschwindigkeit in %.'],
+    tips: ['Ein Motor braucht zu viel Strom für den Arduino-Anschluss. Darum kommt der Motortreiber L298N dazwischen.', 'Der Treiber bekommt die Versorgung, der Arduino gibt nur die Steuersignale.', 'Block „Motor am Motortreiber“ mit der Geschwindigkeit in %. Beim L298N bleiben die Jumper auf ENA und ENB gesteckt.'],
     checks: [{ k: 'part', type: 'motor', n: 1 }, { k: 'part', type: 'driver', n: 1 }, { k: 'motor' }, { k: 'noerror' }] },
   { id: 'm3', level: 'Motoren', board: 'uno', start: 'vorlage', ext: ['motoren'], title: 'Schrittmotor-Zeiger',
     goal: 'Ein Schrittmotor dreht einen Zeiger um 90° vor, wartet 1 Sekunde und dreht wieder zurück.',
@@ -282,6 +295,10 @@ const BUILTIN_TASKS = [
     goal: 'Ist die Erde zu trocken, schaltet ein Relais die Pumpe ein. Ist sie feucht genug, schaltet es wieder aus.',
     tips: ['Der Feuchtesensor liefert einen analogen Wert (A0).', 'Das Relais wird wie eine LED geschaltet: IN an einen digitalen Anschluss.', 'Den Pumpenstromkreis (eigene Spannungsquelle) schaltet das Relais über COM und NO.'],
     checks: [{ k: 'part', type: 'relay', n: 1 }, { k: 'part', type: 'moist', n: 1 }, { k: 'sensor', type: 'moisture', a: 5, b: 90, watch: 'out' }, { k: 'noerror' }] },
+  { id: 'm5', level: 'Motoren', board: 'uno', start: 'vorlage', ext: ['motoren'], title: 'Fahrzeug fährt ein Quadrat',
+    goal: 'Baue ein Fahrzeug mit zwei Getriebemotoren am Motortreiber L298N. Es soll ein Quadrat fahren: geradeaus, nach rechts drehen, wieder geradeaus …',
+    tips: ['Linker Motor an OUT1/OUT2, rechter Motor an OUT3/OUT4. Die Motoren bekommen eine eigene Batterie (an 12V und GND), und GND des Treibers muss auch mit GND des Arduino verbunden sein.', 'In „beim Start“: „Fahrzeug einrichten“ mit den vier Anschlüssen IN1 bis IN4 (Anschlüsse mit ~).', 'Im Dauerlauf: „vorwärts fahren“, warten, „auf der Stelle nach rechts drehen“, kurz warten. Wie lange für 90° gedreht werden muss, probiert man am echten Fahrzeug aus.'],
+    checks: [{ k: 'part', type: 'gearmotor', n: 2 }, { k: 'part', type: 'l298n', n: 1 }, { k: 'block', type: 'car_drive', label: 'Fahrzeug … fahren' }, { k: 'drive' }, { k: 'noerror' }] },
   { id: 'k1', level: 'Kommunikation', board: 'esp32', start: 'vorlage', title: 'Handy schaltet LED (Bluetooth)',
     goal: 'Schicke vom Handy „an“ oder „aus“ per Bluetooth an den ESP32. Die LED geht entsprechend an oder aus.',
     tips: ['In „beim Start“: „Bluetooth einrichten“.', 'In „wiederhole fortlaufend“: „wenn Bluetooth-Nachricht empfangen“, dann den empfangenen Text vergleichen.', 'In der Simulation schickst du Nachrichten im Reiter „WLAN, Funk & Bluetooth“.'],
@@ -429,7 +446,7 @@ const TaskChecker = {
 
   /* Beobachtet die Simulation, bis alle beobachtenden Prüfungen erfüllt sind (höchstens maxMs) */
   async record(app, ctx, passive, maxMs) {
-    const rec = { t: 0, samples: [], ledMax: {}, maxTogether: 0, dimmed: false, servoMin: {}, servoMax: {}, servoRange: 0, motorRan: false, stepper0: {}, tone: false, lcdTexts: [] };
+    const rec = { t: 0, motorCount: 0, straight: false, turn: false, wheelPat: null, samples: [], ledMax: {}, maxTogether: 0, dimmed: false, servoMin: {}, servoMax: {}, servoRange: 0, motorRan: false, stepper0: {}, tone: false, lcdTexts: [] };
     const t0 = performance.now();
     while (app.sim.running) {
       rec.t = performance.now() - t0;
@@ -452,6 +469,16 @@ const TaskChecker = {
         else if (c.type === 'lcd') { const l = x.lines.join('\n'); if (!rec.lcdTexts.includes(l)) rec.lcdTexts.push(l); }
       }
       rec.maxTogether = Math.max(rec.maxTogether, together);
+      // Fahrzeug: Muster der ersten beiden Motoren (Drehrichtung egal, weil die Motoren oft spiegelbildlich angeschlossen sind)
+      const ms = app.project.components.filter(c => c.type === 'gearmotor' || c.type === 'motor').slice(0, 2).map(c => st[c.id]);
+      rec.motorCount = ms.length;
+      if (ms.length === 2 && ms[0] && ms[1] && (ms[0].running || ms[1].running)) {
+        const v = m => m.running ? m.dir * m.speed : 0, a = v(ms[0]), b = v(ms[1]);
+        const same = Math.abs(Math.abs(a) - Math.abs(b)) < 0.12 && a !== 0 && b !== 0;
+        const pat = Math.sign(a) * Math.sign(b);
+        if (same) { if (rec.wheelPat === null) rec.wheelPat = pat; else if (pat !== rec.wheelPat) rec.turn = true; rec.straight = true; }
+        else rec.turn = true;
+      }
       rec.samples.push(s);
       if (rec.t > maxMs) break;
       // früher fertig, wenn alles erfüllt ist
@@ -694,7 +721,7 @@ const TaskEditor = {
       const v = c[p.key] != null ? c[p.key] : '';
       const sel = (opts) => `<select data-i="${i}" data-key="${p.key}">${opts.map(([k, t]) => `<option value="${esc(k)}" ${String(k) === String(v) ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>`;
       let inp;
-      if (p.type === 'part') inp = sel(Object.keys(PART_GROUPS).map(k => [k, PART_GROUPS[k].name + ' (beliebig)']).concat(Object.keys(COMPONENTS).filter(k => !COMPONENTS[k].isBreadboard && !COMPONENTS[k].mcu).map(k => [k, COMPONENTS[k].name])));
+      if (p.type === 'part') inp = sel(Object.keys(PART_GROUPS).map(k => [k, PART_GROUPS[k].name + ' (beliebig)']).concat(Object.keys(COMPONENTS).filter(k => !COMPONENTS[k].isBreadboard && !COMPONENTS[k].mcu && !COMPONENTS[k].hidden).map(k => [k, COMPONENTS[k].name])));
       else if (p.type === 'sensor') inp = sel(Object.keys(TASK_SENSORS).map(k => [k, `${COMPONENTS[k] ? COMPONENTS[k].name : k} (${TASK_SENSORS[k].name.replace(/^\S+ /, '')})`]));
       else if (p.type === 'watch') inp = sel(Object.entries(WATCH_NAMES));
       else if (p.type === 'channel') inp = sel(Object.entries(CHANNEL_NAMES));
