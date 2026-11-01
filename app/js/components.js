@@ -764,7 +764,7 @@ const COMPONENTS = {
     pins: [L('P', 0, 'Plus (+)'), L('N', 20, 'Minus (–)')], props: {} },
   servo: { name: 'Servo SG90', category: 'Aktoren', render: renderServo, bbox: [-5, -66, 124, 18],
     pins: [S('GND', 0, 0, 'GND (braun)'), S('VCC', 10, 0, '5V (rot)'), S('SIG', 20, 0, 'Signal (orange)')], props: {} },
-  motor: { name: 'Lüfter', ext: 'motoren', category: 'Aktoren', render: renderMotor, bbox: [-4, -80, 60, 12],
+  motor: { name: 'Lüfter', category: 'Aktoren', render: renderMotor, bbox: [-4, -80, 60, 12],
     pins: [S('P', 0, 0, 'Plus (rot)'), S('N', 10, 0, 'Minus (schwarz)')], props: {} },
   gearmotor: { name: 'Getriebemotor', ext: 'motoren', category: 'Aktoren', render: renderGearMotor, bbox: [-30, -74, 118, 12],
     pins: [S('P', 0, 0, 'Plus (rot)'), S('N', 10, 0, 'Minus (schwarz)')], props: {} },

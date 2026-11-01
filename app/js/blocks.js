@@ -53,7 +53,7 @@ const EXTENSIONS = {
   keypad: { name: 'Tastenfeld', desc: 'Folientastatur 3 × 4 oder 4 × 4 abfragen.' },
   multimeter: { name: 'Multimeter', desc: 'Spannung (ADS1115) und Strom (INA219) über I²C messen.' },
   oled: { name: 'OLED-Anzeige', desc: 'Grafikdisplay SSD1306, 128 × 64 Pixel, I²C.' },
-  motoren: { name: 'Motoren', desc: 'Motortreiber L9110S und L298N mit Lüfter oder Getriebemotor, Schrittmotor 28BYJ-48 mit Treiber ULN2003.' },
+  motoren: { name: 'Motoren', desc: 'Motortreiber L9110S und L298N mit Getriebemotor, Schrittmotor 28BYJ-48 mit Treiber ULN2003.' },
   comm: { name: 'Kommunikation', desc: 'USB (senden und empfangen), WLAN, eigene Webseite, Funk zwischen ESP32 und Bluetooth (Handy-App). Nur mit dem ESP32.', esp: true },
 };
 

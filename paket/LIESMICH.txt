@@ -85,11 +85,13 @@ BEDIENUNG IN KÜRZE
   - Neue Bauteile: Temperatur- und Feuchtesensor DHT11/DHT22, Relais-Modul
     (schaltet einen eigenen Stromkreis über COM/NO/NC), Schrittmotor 28BYJ-48
     mit Treiber ULN2003 (Erweiterung "Motoren").
-  - Erweiterung "Motoren": Motortreiber L9110S und L298N, Lüfter, Getriebemotor
+  - Erweiterung "Motoren": Motortreiber L9110S und L298N, Getriebemotor
     und Schrittmotor 28BYJ-48 mit ULN2003 sowie die Kategorie "Motoren" mit den
     Blöcken "Motor am Motortreiber" (vorwärts, rückwärts, anhalten, Tempo in %)
     und "Schrittmotor ... drehen". Ältere Projekte mit Motoren schalten die
-    Erweiterung beim Öffnen automatisch ein. Der Servo bleibt ohne Erweiterung.
+    Erweiterung beim Öffnen automatisch ein. Servo und Lüfter gibt es ohne
+    Erweiterung; den Lüfter kann man direkt an einem digitalen Ausgang
+    einschalten ("Anschluss ... auf HOCH").
     L298N: IN1/IN2 (Motor A) bzw. IN3/IN4 (Motor B), Jumper auf ENA/ENB
     gesteckt lassen. Motorspannung an "12V" und GND (z. B. Spannungsquelle).
 
