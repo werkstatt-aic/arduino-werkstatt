@@ -2407,7 +2407,7 @@ const EXAMPLES = [
 "ext": [
 "motoren"
 ],
-"desc": "Zwei Getriebemotoren am Motortreiber L298N (IN1 D11, IN2 D6, IN3 D5, IN4 D3) mit eigener Batterie. Das Fahrzeug fährt 2 s geradeaus und dreht sich dann nach rechts. Der linke Motor ist spiegelbildlich angeschlossen – wie am echten Fahrzeug.",
+"desc": "Zwei Getriebemotoren mit Rad am Motortreiber L298N (IN1 D11, IN2 D6, IN3 D5, IN4 D3) mit eigener Batterie. Das Fahrzeug fährt 2 s geradeaus und dreht sich dann nach rechts. Wie im echten Fahrzeug ist der rechte Motor um 180° gedreht eingebaut; beide sind gleich gepolt angeschlossen, die Fahrzeug-Blöcke drehen den rechten Motor selbst um.",
 "circuit": {
 "components": [
 {
@@ -2439,17 +2439,17 @@ const EXAMPLES = [
 },
 {
 "id": "c8",
-"type": "gearmotor",
-"x": 620,
-"y": 40,
+"type": "wheelL",
+"x": 592,
+"y": 150,
 "rot": 0,
 "props": {}
 },
 {
 "id": "c9",
-"type": "gearmotor",
-"x": 820,
-"y": 40,
+"type": "wheelR",
+"x": 848,
+"y": 150,
 "rot": 0,
 "props": {}
 },
@@ -2570,12 +2570,20 @@ const EXAMPLES = [
 },
 "b": {
 "c": "c7",
-"p": "OUT2"
+"p": "OUT1"
 },
 "pts": [
 [
-620,
-113
+602,
+162
+],
+[
+640,
+162
+],
+[
+640,
+99
 ]
 ],
 "color": "rot"
@@ -2588,12 +2596,20 @@ const EXAMPLES = [
 },
 "b": {
 "c": "c7",
-"p": "OUT1"
+"p": "OUT2"
 },
 "pts": [
 [
-630,
-99
+592,
+170
+],
+[
+646,
+170
+],
+[
+646,
+113
 ]
 ],
 "color": "schwarz"
@@ -2609,6 +2625,14 @@ const EXAMPLES = [
 "p": "OUT3"
 },
 "pts": [
+[
+848,
+162
+],
+[
+820,
+162
+],
 [
 820,
 99
@@ -2628,7 +2652,15 @@ const EXAMPLES = [
 },
 "pts": [
 [
-830,
+858,
+170
+],
+[
+814,
+170
+],
+[
+814,
 113
 ]
 ],

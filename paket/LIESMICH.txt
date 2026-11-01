@@ -91,7 +91,8 @@ BEDIENUNG IN KÜRZE
     (schaltet einen eigenen Stromkreis über COM/NO/NC), Schrittmotor 28BYJ-48
     mit Treiber ULN2003 (Relais und Schrittmotor: Erweiterung "Motoren und
     Relais").
-  - Erweiterung "Motoren und Relais": Motortreiber L298N, Getriebemotor,
+  - Erweiterung "Motoren und Relais": Motortreiber L298N, Getriebemotor (auch
+    mit Rad links oder rechts, von oben gesehen wie im Fahrzeug),
     Relais-Modul und Schrittmotor 28BYJ-48 mit ULN2003 sowie die Kategorie
     "Motoren" mit den Blöcken "Motor am Motortreiber" (vorwärts,
     rückwärts, anhalten, Tempo in %) und "Schrittmotor ... drehen". Ältere
@@ -104,8 +105,13 @@ BEDIENUNG IN KÜRZE
     dann "Fahrzeug vorwärts/rückwärts fahren", "Linkskurve/Rechtskurve fahren"
     (inneres Rad mit einem Drittel), "auf der Stelle nach links/rechts drehen",
     "Fahrzeug anhalten" und "linker Motor ... % rechter Motor ... %" (-100 bis
-    100, z. B. für Linienfolger). Dreht ein Rad falsch herum: die beiden Kabel
-    dieses Motors am Treiber tauschen. Arduino Uno: mit einem Servo im
+    100, z. B. für Linienfolger). Der rechte Motor ist im Fahrzeug um 180°
+    gedreht eingebaut (Rad rechts statt links). Beide Motoren werden gleich
+    gepolt angeschlossen (Plus an OUT1 bzw. OUT3); die Fahrzeug-Blöcke drehen
+    den rechten Motor selbst um. Der grüne Pfeil am Rad zeigt in der
+    Simulation, wohin das Rad das Fahrzeug schiebt. Dreht ein Rad am echten
+    Fahrzeug trotzdem falsch herum: die beiden Kabel dieses Motors am Treiber
+    tauschen. Arduino Uno: mit einem Servo im
     Programm D9/D10 meiden, mit Tönen D3/D11 meiden.
     L298N: IN1/IN2 (Motor A) bzw. IN3/IN4 (Motor B), Jumper auf ENA/ENB
     gesteckt lassen. Motorspannung an "12V" und GND (z. B. Spannungsquelle).

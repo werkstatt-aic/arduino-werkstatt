@@ -121,7 +121,7 @@ class Simulator {
         check();
         if (!S.car) { S.msg('car', 'warn', 'Für die Fahrzeug-Blöcke fehlt „Fahrzeug einrichten“ (in „beim Start“).'); return; }
         const side = async (ia, ib, x) => { x = Math.max(-100, Math.min(100, Math.round(Number(x) || 0))); await this.motor(ia, ib, x > 0 ? 1 : x < 0 ? -1 : 0, Math.abs(x)); };
-        await side(S.car[0], S.car[1], l); await side(S.car[2], S.car[3], r);
+        await side(S.car[0], S.car[1], l); await side(S.car[2], S.car[3], -r); // rechter Motor ist um 180° gedreht eingebaut
       },
       async carDrive(kind, speed) {
         const s = Math.max(0, Math.min(100, Number(speed) || 0)), k = Math.round(s / 3);
@@ -567,7 +567,7 @@ class Simulator {
         case 'stepper': { const s = this.stepper[c.id]; states[c.id] = s ? { angle: s.angle, coils: s.coils } : null; break; }
         case 'relay': states[c.id] = { on: !!(res && res.relay[c.id]) }; break;
         case 'piezo': states[c.id] = { sounding: Object.values(this.tones).some(t => t.ids.includes(c.id)) }; break;
-        case 'motor': case 'gearmotor': {
+        case 'motor': case 'gearmotor': case 'wheelL': case 'wheelR': {
           const a = res ? res.V[this.nl.net(c.id, 'P')] : 0, b = res ? res.V[this.nl.net(c.id, 'N')] : 0;
           const d = (a || 0) - (b || 0);
           states[c.id] = { running: Math.abs(d) > 1, speed: Math.min(1, Math.abs(d) / 4.5), dir: d < 0 ? -1 : 1 };

@@ -8,7 +8,8 @@ const TASK_LEVELS = ['Grundlagen', 'Sensoren', 'Motoren', 'Kommunikation'];
 /* Bauteilgruppen: „ein Taster“ darf jeder Taster sein usw. */
 const PART_GROUPS = {
   button: { name: 'Taster', types: ['button', 'button2', 'pushbutton', 'touch'] },
-  motor: { name: 'Motor (Lüfter oder Getriebemotor)', types: ['motor', 'gearmotor'] },
+  motor: { name: 'Motor (Lüfter oder Getriebemotor)', types: ['motor', 'gearmotor', 'wheelL', 'wheelR'] },
+  gear: { name: 'Getriebemotor (mit oder ohne Rad)', types: ['gearmotor', 'wheelL', 'wheelR'] },
   driver: { name: 'Motortreiber', types: ['mdriver', 'l298n'] },
   moist: { name: 'Feuchtesensor', types: ['moisture', 'soil'] },
   temp: { name: 'Temperatursensor', types: ['dht', 'tmp36', 'ntc'] },
@@ -296,9 +297,9 @@ const BUILTIN_TASKS = [
     tips: ['Der Feuchtesensor liefert einen analogen Wert (A0).', 'Das Relais wird wie eine LED geschaltet: IN an einen digitalen Anschluss.', 'Den Pumpenstromkreis (eigene Spannungsquelle) schaltet das Relais über COM und NO.'],
     checks: [{ k: 'part', type: 'relay', n: 1 }, { k: 'part', type: 'moist', n: 1 }, { k: 'sensor', type: 'moisture', a: 5, b: 90, watch: 'out' }, { k: 'noerror' }] },
   { id: 'm5', level: 'Motoren', board: 'uno', start: 'vorlage', ext: ['motoren'], title: 'Fahrzeug fährt ein Quadrat',
-    goal: 'Baue ein Fahrzeug mit zwei Getriebemotoren am Motortreiber L298N. Es soll ein Quadrat fahren: geradeaus, nach rechts drehen, wieder geradeaus …',
-    tips: ['Linker Motor an OUT1/OUT2, rechter Motor an OUT3/OUT4. Die Motoren bekommen eine eigene Batterie (an 12V und GND), und GND des Treibers muss auch mit GND des Arduino verbunden sein.', 'In „beim Start“: „Fahrzeug einrichten“ mit den vier Anschlüssen IN1 bis IN4 (Anschlüsse mit ~).', 'Im Dauerlauf: „vorwärts fahren“, warten, „auf der Stelle nach rechts drehen“, kurz warten. Wie lange für 90° gedreht werden muss, probiert man am echten Fahrzeug aus.'],
-    checks: [{ k: 'part', type: 'gearmotor', n: 2 }, { k: 'part', type: 'l298n', n: 1 }, { k: 'block', type: 'car_drive', label: 'Fahrzeug … fahren' }, { k: 'drive' }, { k: 'noerror' }] },
+    goal: 'Baue ein Fahrzeug mit zwei Getriebemotoren mit Rad am Motortreiber L298N. Es soll ein Quadrat fahren: geradeaus, nach rechts drehen, wieder geradeaus …',
+    tips: ['„Getriebemotor mit Rad links“ an OUT1/OUT2, „… rechts“ an OUT3/OUT4, beide gleich gepolt (+ an OUT1 bzw. OUT3). Den rechten Motor dreht die Werkstatt im Programm selbst um, weil er im Fahrzeug um 180° gedreht eingebaut ist.', 'Die Motoren bekommen eine eigene Batterie (an 12V und GND), und GND des Treibers muss auch mit GND des Arduino verbunden sein.', 'In „beim Start“: „Fahrzeug einrichten“ mit den vier Anschlüssen IN1 bis IN4 (Anschlüsse mit ~).', 'Im Dauerlauf: „vorwärts fahren“, warten, „auf der Stelle nach rechts drehen“, kurz warten. Wie lange für 90° gedreht werden muss, probiert man am echten Fahrzeug aus.'],
+    checks: [{ k: 'part', type: 'gear', n: 2 }, { k: 'part', type: 'l298n', n: 1 }, { k: 'block', type: 'car_drive', label: 'Fahrzeug … fahren' }, { k: 'drive' }, { k: 'noerror' }] },
   { id: 'k1', level: 'Kommunikation', board: 'esp32', start: 'vorlage', title: 'Handy schaltet LED (Bluetooth)',
     goal: 'Schicke vom Handy „an“ oder „aus“ per Bluetooth an den ESP32. Die LED geht entsprechend an oder aus.',
     tips: ['In „beim Start“: „Bluetooth einrichten“.', 'In „wiederhole fortlaufend“: „wenn Bluetooth-Nachricht empfangen“, dann den empfangenen Text vergleichen.', 'In der Simulation schickst du Nachrichten im Reiter „WLAN, Funk & Bluetooth“.'],
@@ -378,7 +379,7 @@ const TaskChecker = {
         case 'uno': case 'esp32': case 'esp32exp': out.push(s.led ? 'L1' : 'L0'); break;
         case 'rgbled': out.push(s.rgb.map(q).join('')); break;
         case 'servo': out.push('s' + Math.round(s.angle / 15)); break;
-        case 'motor': case 'gearmotor': out.push(s.running ? 'm' + s.dir : 'm0'); break;
+        case 'motor': case 'gearmotor': case 'wheelL': case 'wheelR': out.push(s.running ? 'm' + s.dir : 'm0'); break;
         case 'stepper': out.push('st' + Math.round(s.angle / 20)); break;
         case 'piezo': out.push(s.sounding ? 'p1' : 'p0'); break;
         case 'relay': out.push(s.on ? 'r1' : 'r0'); break;
@@ -463,14 +464,14 @@ const TaskChecker = {
         } else if (c.type === 'servo') {
           rec.servoMin[c.id] = Math.min(rec.servoMin[c.id] ?? 0, x.angle); rec.servoMax[c.id] = Math.max(rec.servoMax[c.id] ?? 0, x.angle);
           rec.servoRange = Math.max(rec.servoRange, rec.servoMax[c.id] - rec.servoMin[c.id]);
-        } else if (c.type === 'motor' || c.type === 'gearmotor') { if (x.running) rec.motorRan = true; }
+        } else if (['motor', 'gearmotor', 'wheelL', 'wheelR'].includes(c.type)) { if (x.running) rec.motorRan = true; }
         else if (c.type === 'stepper') { if (!(c.id in rec.stepper0)) rec.stepper0[c.id] = x.angle; else if (Math.abs(x.angle - rec.stepper0[c.id]) > 5) rec.motorRan = true; }
         else if (c.type === 'piezo') { if (x.sounding) rec.tone = true; }
         else if (c.type === 'lcd') { const l = x.lines.join('\n'); if (!rec.lcdTexts.includes(l)) rec.lcdTexts.push(l); }
       }
       rec.maxTogether = Math.max(rec.maxTogether, together);
       // Fahrzeug: Muster der ersten beiden Motoren (Drehrichtung egal, weil die Motoren oft spiegelbildlich angeschlossen sind)
-      const ms = app.project.components.filter(c => c.type === 'gearmotor' || c.type === 'motor').slice(0, 2).map(c => st[c.id]);
+      const ms = app.project.components.filter(c => ['gearmotor', 'wheelL', 'wheelR', 'motor'].includes(c.type)).slice(0, 2).map(c => st[c.id]);
       rec.motorCount = ms.length;
       if (ms.length === 2 && ms[0] && ms[1] && (ms[0].running || ms[1].running)) {
         const v = m => m.running ? m.dir * m.speed : 0, a = v(ms[0]), b = v(ms[1]);

@@ -329,14 +329,43 @@ function renderGearMotor(comp, st) {
   const run = st && st.running;
   let s = `<path d="M0 0 C0 -14 92 -8 96 -30" stroke="#d32f2f" stroke-width="2.2" fill="none"/><path d="M10 0 C10 -10 100 -4 104 -30" stroke="#222" stroke-width="2.2" fill="none"/>`;
   s += `<rect x="-4" y="-4" width="18" height="8" rx="1" fill="#1b1b1b"/>`;
-  s += `<rect x="-26" y="-58" width="16" height="9" rx="2" fill="#f5f2e8" stroke="#bdb8a8"/>`;
+  // Doppelwelle: tritt oben und unten seitlich aus dem Getriebe aus
+  s += `<rect x="1" y="-86" width="9" height="14" rx="1.5" fill="#f5f2e8" stroke="#bdb8a8"/><rect x="1" y="-36" width="9" height="14" rx="1.5" fill="#f5f2e8" stroke="#bdb8a8"/>`;
   s += `<rect class="body" x="-12" y="-74" width="86" height="40" rx="4" fill="#ffd21f" stroke="#c9a200"/>`;
   s += `<rect x="-6" y="-70" width="74" height="10" rx="2" fill="#ffe25c" opacity=".7"/><circle cx="6" cy="-46" r="2.6" fill="#c9a200"/><circle cx="6" cy="-62" r="2.6" fill="#c9a200"/>`;
   s += `<rect class="body" x="72" y="-70" width="40" height="32" rx="7" fill="#c9cdd1" stroke="#8b9399"/><path d="M76 -66 H108" stroke="#eef0f2" stroke-width="2"/>`;
   s += `<rect x="72" y="-72" width="44" height="36" rx="8" fill="#ffffff" fill-opacity=".25" stroke="#d9dde0"/>`;
   s += `<rect x="112" y="-64" width="6" height="20" rx="1.5" fill="#2b2b2b"/><rect x="94" y="-36" width="4" height="7" fill="#d8b24a"/><rect x="102" y="-36" width="4" height="7" fill="#d8b24a"/>`;
-  if (run) s += `<g class="spin" style="${spinStyle(st, -30, -53.5)}"><path d="M-30 -66 A12.5 12.5 0 0 1 -18 -53.5" stroke="#ef6c00" stroke-width="1.8" fill="none"/><path d="M-30 -41 A12.5 12.5 0 0 1 -42 -53.5" stroke="#ef6c00" stroke-width="1.8" fill="none"/></g>`;
+  if (run) s += `<g class="spin" style="${spinStyle(st, 5.5, -79)}"><path d="M5.5 -91 A12 12 0 0 1 17.5 -79" stroke="#ef6c00" stroke-width="1.8" fill="none"/><path d="M5.5 -67 A12 12 0 0 1 -6.5 -79" stroke="#ef6c00" stroke-width="1.8" fill="none"/></g>`;
   s += `<text x="0" y="12" class="leglab" text-anchor="middle">+</text><text x="10" y="12" class="leglab" text-anchor="middle">–</text>`;
+  return s + pinsOf(comp);
+}
+
+/* Getriebemotor mit Rad, von oben gesehen wie im Fahrzeug (vorne = oben). Links: Rad links. Rechts: derselbe Motor
+   um 180° gedreht (Rad rechts) – darum schiebt er bei gleicher Polung rückwärts. Der Pfeil zeigt, wohin das Rad schiebt. */
+function renderWheelMotor(comp, st) {
+  const right = comp.def.wheel === 'R';
+  const run = st && st.running;
+  // Zeichnung für den linken Motor; der rechte wird gespiegelt (um x = 5, die Mitte zwischen den Anschlüssen)
+  // links: Minus (schwarz) bei x = 0, Plus (rot) bei x = 10; durch das Spiegeln landen die Farben beim rechten Motor richtig
+  let b = `<path d="M0 0 V-14" stroke="#222" stroke-width="2.2"/><path d="M10 0 V-14" stroke="#d32f2f" stroke-width="2.2"/>`;
+  b += `<rect class="body" x="-4" y="-50" width="26" height="36" rx="7" fill="#c9cdd1" stroke="#8b9399"/><path d="M0 -46 V-18" stroke="#eef0f2" stroke-width="2"/>`;
+  b += `<rect x="-1" y="-18" width="4" height="5" fill="#d8b24a"/><rect x="7" y="-18" width="4" height="5" fill="#d8b24a"/>`;
+  b += `<rect class="body" x="-8" y="-112" width="34" height="64" rx="4" fill="#ffd21f" stroke="#c9a200"/><rect x="-4" y="-108" width="10" height="56" rx="2" fill="#ffe25c" opacity=".7"/>`;
+  b += `<circle cx="18" cy="-60" r="2.4" fill="#c9a200"/><circle cx="18" cy="-104" r="2.4" fill="#c9a200"/>`;
+  b += `<rect x="26" y="-99" width="7" height="8" rx="1.5" fill="#f5f2e8" stroke="#bdb8a8"/><rect x="-16" y="-99" width="8" height="8" rx="1.5" fill="#f5f2e8" stroke="#bdb8a8"/>`;
+  // Rad (Reifen mit Profil, Felge)
+  b += `<rect class="body" x="-42" y="-126" width="26" height="62" rx="6" fill="#2b2b2b" stroke="#111"/>`;
+  for (let y = -120; y <= -72; y += 8) b += `<path d="M-40 ${y} H-18" stroke="#444" stroke-width="2"/>`;
+  b += `<rect x="-35" y="-104" width="12" height="18" rx="2" fill="#ffd21f" stroke="#c9a200"/>`;
+  let s = right ? `<g transform="matrix(-1 0 0 1 10 0)">${b}</g>` : b;
+  // Pfeil am Rad: wohin das Rad das Fahrzeug schiebt
+  if (run) {
+    const fwd = (st.dir > 0) !== right, x = right ? 39 : -29, y0 = fwd ? -76 : -114, y1 = fwd ? -114 : -76, h = fwd ? -8 : 8;
+    s += `<path d="M${x} ${y0} V${y1}" stroke="#4cd964" stroke-width="3" stroke-linecap="round"/><path d="M${x - 6} ${y1 - h} L${x} ${y1} L${x + 6} ${y1 - h}" stroke="#4cd964" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+  s += right ? `<text x="0" y="12" class="leglab" text-anchor="middle">+</text><text x="10" y="12" class="leglab" text-anchor="middle">–</text>`
+    : `<text x="0" y="12" class="leglab" text-anchor="middle">–</text><text x="10" y="12" class="leglab" text-anchor="middle">+</text>`;
   return s + pinsOf(comp);
 }
 
@@ -779,6 +808,10 @@ const COMPONENTS = {
   servo: { name: 'Servo SG90', category: 'Aktoren', render: renderServo, bbox: [-5, -66, 124, 18],
     pins: [S('GND', 0, 0, 'GND (braun)'), S('VCC', 10, 0, '5V (rot)'), S('SIG', 20, 0, 'Signal (orange)')], props: {} },
   motor: { name: 'Lüfter', category: 'Aktoren', render: renderMotor, bbox: [-4, -80, 60, 12],
+    pins: [S('P', 0, 0, 'Plus (rot)'), S('N', 10, 0, 'Minus (schwarz)')], props: {} },
+  wheelL: { name: 'Getriebemotor mit Rad links', label: 'Getriebe\u00admotor mit Rad links', ext: 'motoren', category: 'Aktoren', render: renderWheelMotor, wheel: 'L', bbox: [-42, -126, 33, 12],
+    pins: [S('N', 0, 0, 'Minus (schwarz)'), S('P', 10, 0, 'Plus (rot)')], props: {} },
+  wheelR: { name: 'Getriebemotor mit Rad rechts', label: 'Getriebe\u00admotor mit Rad rechts', ext: 'motoren', category: 'Aktoren', render: renderWheelMotor, wheel: 'R', bbox: [-23, -126, 52, 12],
     pins: [S('P', 0, 0, 'Plus (rot)'), S('N', 10, 0, 'Minus (schwarz)')], props: {} },
   gearmotor: { name: 'Getriebemotor', ext: 'motoren', category: 'Aktoren', render: renderGearMotor, bbox: [-30, -74, 118, 12],
     pins: [S('P', 0, 0, 'Plus (rot)'), S('N', 10, 0, 'Minus (schwarz)')], props: {} },

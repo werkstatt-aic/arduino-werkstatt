@@ -271,7 +271,8 @@ void fahrzeug(int links, int rechts)
   if (fahrzeugPins[0] < 0) return; // „Fahrzeug einrichten“ fehlt
   links = constrain(links, -100, 100); rechts = constrain(rechts, -100, 100);
   motor(fahrzeugPins[0], fahrzeugPins[1], links > 0 ? 1 : (links < 0 ? -1 : 0), abs(links));
-  motor(fahrzeugPins[2], fahrzeugPins[3], rechts > 0 ? 1 : (rechts < 0 ? -1 : 0), abs(rechts));
+  // der rechte Motor ist um 180° gedreht eingebaut: vorwärts heißt für ihn rückwärts
+  motor(fahrzeugPins[2], fahrzeugPins[3], rechts > 0 ? -1 : (rechts < 0 ? 1 : 0), abs(rechts));
 }
 // art: 0 vorwärts, 1 rückwärts, 2 Linkskurve, 3 Rechtskurve, 4 links drehen, 5 rechts drehen
 void fahrzeugFahre(int art, int tempo)

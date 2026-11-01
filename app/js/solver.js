@@ -142,7 +142,7 @@ function solveCircuit(project, nl, io) {
         R(n('W'), n('2'), Math.max(1, c.props.ohm * (1 - pos)));
         break;
       }
-      case 'motor': case 'gearmotor': R(n('P'), n('N'), 200); break;
+      case 'motor': case 'gearmotor': case 'wheelL': case 'wheelR': R(n('P'), n('N'), 200); break;
       case 'soil': R(n('1'), n('2'), 1e6 * Math.pow(1e-3, Math.max(0, Math.min(100, Number(c.props.wet))) / 100)); break;
       case 'oled': break;
       case 'piezo': R(n('P'), n('N'), 1e5); break;

@@ -170,13 +170,14 @@
   { const k = base('uno');
     const bb = k.bb, dx = bb.x + 520, dy = bb.y - 20;
     const d = k.addAt('l298n', dx, dy, { ena: '1', enb: '1' });
-    const mL = k.addAt('gearmotor', dx - 100, dy - 140), mR = k.addAt('gearmotor', dx + 100, dy - 140);
+    // wie im Fahrzeug von oben: links der Motor mit Rad links, rechts derselbe Motor um 180° gedreht (Rad rechts)
+    const mL = k.addAt('wheelL', dx - 128, dy - 30), mR = k.addAt('wheelR', dx + 128, dy - 30);
     const D = p => ({ c: d.id, p });
-    // Motoren: links spiegelbildlich (wie am echten Fahrzeug), rechts direkt
-    k.wire({ c: mL.id, p: 'P' }, D('OUT2'), 'rot', [[dx - 100, dy - 67]]);
-    k.wire({ c: mL.id, p: 'N' }, D('OUT1'), 'schwarz', [[dx - 90, dy - 81]]);
-    k.wire({ c: mR.id, p: 'P' }, D('OUT3'), 'rot', [[dx + 100, dy - 81]]);
-    k.wire({ c: mR.id, p: 'N' }, D('OUT4'), 'schwarz', [[dx + 110, dy - 67]]);
+    // beide gleich gepolt: Plus an OUT1 bzw. OUT3 (die Fahrzeug-Blöcke drehen den rechten Motor selbst um)
+    k.wire({ c: mL.id, p: 'P' }, D('OUT1'), 'rot', [[dx - 118, dy - 18], [dx - 80, dy - 18], [dx - 80, dy - 81]]);
+    k.wire({ c: mL.id, p: 'N' }, D('OUT2'), 'schwarz', [[dx - 128, dy - 10], [dx - 74, dy - 10], [dx - 74, dy - 67]]);
+    k.wire({ c: mR.id, p: 'P' }, D('OUT3'), 'rot', [[dx + 128, dy - 18], [dx + 100, dy - 18], [dx + 100, dy - 81]]);
+    k.wire({ c: mR.id, p: 'N' }, D('OUT4'), 'schwarz', [[dx + 138, dy - 10], [dx + 94, dy - 10], [dx + 94, dy - 67]]);
     // Steuerleitungen: hoch in den Kanal, rechts an der Steckplatine vorbei, von unten an die Stiftleiste
     [['GND_T', 'GND', -30], ['D11', 'IN1', 10], ['D6', 'IN2', 20], ['D5', 'IN3', 30], ['D3', 'IN4', 40]].forEach(([mp, dp, ox], i) => {
       const a = k.pos(k.M(mp)), yc = bb.y + 212 + 8 * i, xv = dx + 60 + 8 * i, yb = dy + 48 - 7 * i;
@@ -187,7 +188,7 @@
     k.wire({ c: bat.id, p: 'P' }, D('VS'), 'rot', [[sx, sy + 12], [sx - 20, sy + 12], [sx - 20, dy + 30], [dx - 40, dy + 30]]);
     k.wire({ c: bat.id, p: 'N' }, D('GND'), 'schwarz', [[sx + 20, sy + 24], [dx - 30, sy + 24]]);
     const drive = (dir, s) => `<block type="car_drive"><field name="DIR">${dir}</field><value name="SPEED">${N(s)}</value></block>`;
-    ex.push({ id: 'fahrzeug', title: 'Fahrzeug fährt ein Quadrat', board: 'uno', ext: ['motoren'], desc: 'Zwei Getriebemotoren am Motortreiber L298N (IN1 D11, IN2 D6, IN3 D5, IN4 D3) mit eigener Batterie. Das Fahrzeug fährt 2 s geradeaus und dreht sich dann nach rechts. Der linke Motor ist spiegelbildlich angeschlossen – wie am echten Fahrzeug.', circuit: k.done(),
+    ex.push({ id: 'fahrzeug', title: 'Fahrzeug fährt ein Quadrat', board: 'uno', ext: ['motoren'], desc: 'Zwei Getriebemotoren mit Rad am Motortreiber L298N (IN1 D11, IN2 D6, IN3 D5, IN4 D3) mit eigener Batterie. Das Fahrzeug fährt 2 s geradeaus und dreht sich dann nach rechts. Wie im echten Fahrzeug ist der rechte Motor um 180° gedreht eingebaut; beide sind gleich gepolt angeschlossen, die Fahrzeug-Blöcke drehen den rechten Motor selbst um.', circuit: k.done(),
       blocks: prog([`<block type="car_init"><field name="LA">11</field><field name="LB">6</field><field name="RA">5</field><field name="RB">3</field></block>`],
         [drive('FWD', 80), wait(2), drive('TR', 80), wait(0.6)]) }); }
 
