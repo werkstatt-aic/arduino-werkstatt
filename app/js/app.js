@@ -759,7 +759,7 @@ const App = {
   autoExtensions() {
     const need = new Set(this.extensions);
     for (const c of this.project.components) if (c.def.ext) need.add(c.def.ext);
-    if (this.workspace.getAllBlocks(false).some(b => b.type === 'ard_motor' || b.type === 'ard_stepper')) need.add('motoren');
+    if (this.workspace.getAllBlocks(false).some(b => b.type === 'ard_motor' || b.type === 'ard_stepper' || /^car_/.test(b.type))) need.add('motoren');
     if (need.size > this.extensions.length) this.setExtensions([...need], true);
   },
 

@@ -71,10 +71,11 @@ BEDIENUNG IN KÜRZE
     Eigenschaftsfeld verstellen (auch während der Simulation).
   - Code: Ansicht "Blöcke", "Blöcke + Text" oder "Text (C++)".
   - "Erweiterungen ..." schaltet NeoPixel, Tastenfeld, Multimeter, OLED-Anzeige,
-    Motoren und Kommunikation für das jeweilige Projekt zu. Den Knopf gibt es
-    beim Code und in der Bauteilleiste. Die passenden Bauteile erscheinen dann
-    in der Bauteilleiste, die Blöcke im Werkzeugkasten. Steckt ein solches
-    Bauteil in der Schaltung, bleibt seine Erweiterung eingeschaltet.
+    "Motoren und Relais" sowie Kommunikation für das jeweilige Projekt zu.
+    Den Knopf gibt es beim Code und in der Bauteilleiste. Die passenden
+    Bauteile erscheinen dann in der Bauteilleiste, die Blöcke im
+    Werkzeugkasten. Steckt ein solches Bauteil in der Schaltung, bleibt seine
+    Erweiterung eingeschaltet.
   - OLED-Grafikeditor: Im Block "OLED-Bild ... zeichnen" auf das Bild klicken.
   - Mathe: runden (auch auf/ab), Betrag, Quadratwurzel.
   - PWM-Blöcke (PWM-Ausgang, Servo, Motor): Alle Anschlüsse sind wählbar. Beim
@@ -86,14 +87,23 @@ BEDIENUNG IN KÜRZE
     (für Messreihen), Anzahl, Mittelwert, Summe, kleinster/größter Wert.
   - Neue Bauteile: Temperatur- und Feuchtesensor DHT11/DHT22, Relais-Modul
     (schaltet einen eigenen Stromkreis über COM/NO/NC), Schrittmotor 28BYJ-48
-    mit Treiber ULN2003 (Erweiterung "Motoren").
-  - Erweiterung "Motoren": Motortreiber L9110S und L298N, Getriebemotor
-    und Schrittmotor 28BYJ-48 mit ULN2003 sowie die Kategorie "Motoren" mit den
-    Blöcken "Motor am Motortreiber" (vorwärts, rückwärts, anhalten, Tempo in %)
-    und "Schrittmotor ... drehen". Ältere Projekte mit Motoren schalten die
-    Erweiterung beim Öffnen automatisch ein. Servo und Lüfter gibt es ohne
-    Erweiterung; den Lüfter kann man direkt an einem digitalen Ausgang
-    einschalten ("Anschluss ... auf HOCH").
+    mit Treiber ULN2003 (Relais und Schrittmotor: Erweiterung "Motoren und
+    Relais").
+  - Erweiterung "Motoren und Relais": Motortreiber L9110S und L298N,
+    Getriebemotor, Relais-Modul und Schrittmotor 28BYJ-48 mit ULN2003 sowie
+    die Kategorie "Motoren" mit den Blöcken "Motor am Motortreiber" (vorwärts,
+    rückwärts, anhalten, Tempo in %) und "Schrittmotor ... drehen". Ältere
+    Projekte mit Motoren schalten die Erweiterung beim Öffnen automatisch ein.
+    Servo und Lüfter gibt es ohne Erweiterung; den Lüfter kann man direkt an
+    einem digitalen Ausgang einschalten ("Anschluss ... auf HOCH").
+  - Fahrzeug mit zwei Motoren (ebenfalls Kategorie "Motoren"): "Fahrzeug
+    einrichten" (in "beim Start": IA/IB des linken und des rechten Motors),
+    dann "Fahrzeug vorwärts/rückwärts fahren", "Linkskurve/Rechtskurve fahren"
+    (inneres Rad mit einem Drittel), "auf der Stelle nach links/rechts drehen",
+    "Fahrzeug anhalten" und "linker Motor ... % rechter Motor ... %" (-100 bis
+    100, z. B. für Linienfolger). Dreht ein Rad falsch herum: die beiden Kabel
+    dieses Motors am Treiber tauschen. Arduino Uno: mit einem Servo im
+    Programm D9/D10 meiden, mit Tönen D3/D11 meiden.
     L298N: IN1/IN2 (Motor A) bzw. IN3/IN4 (Motor B), Jumper auf ENA/ENB
     gesteckt lassen. Motorspannung an "12V" und GND (z. B. Spannungsquelle).
 

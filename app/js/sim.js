@@ -33,6 +33,7 @@ class Simulator {
     this.ads = {}; this.ina = {};
     this.usbQ = []; this.usbVal = '';
     this.wifi = null; this.web = null; this.radio = null; this.radioQ = []; this.radioVal = ''; this.radioLog = [];
+    this.car = null;
     this.bt = null; this.btQ = []; this.btVal = ''; this.btLog = [];
     CommPanel.render(this);
     this.messages = new Map();
@@ -113,6 +114,19 @@ class Simulator {
         check();
         const v = Math.round(Math.max(0, Math.min(100, Number(pct) || 0)) * 255 / 100);
         await this.analogWrite(ia, dir > 0 ? v : 0); await this.analogWrite(ib, dir < 0 ? v : 0);
+      },
+      /* Fahrzeug mit zwei Motoren: -100 … 100 je Seite */
+      carInit(pins) { check(); S.car = pins; },
+      async car(l, r) {
+        check();
+        if (!S.car) { S.msg('car', 'warn', 'Für die Fahrzeug-Blöcke fehlt „Fahrzeug einrichten“ (in „beim Start“).'); return; }
+        const side = async (ia, ib, x) => { x = Math.max(-100, Math.min(100, Math.round(Number(x) || 0))); await this.motor(ia, ib, x > 0 ? 1 : x < 0 ? -1 : 0, Math.abs(x)); };
+        await side(S.car[0], S.car[1], l); await side(S.car[2], S.car[3], r);
+      },
+      async carDrive(kind, speed) {
+        const s = Math.max(0, Math.min(100, Number(speed) || 0)), k = Math.round(s / 3);
+        const m = { FWD: [s, s], BWD: [-s, -s], CL: [k, s], CR: [s, k], TL: [-s, s], TR: [s, -s] }[kind] || [0, 0];
+        await this.car(m[0], m[1]);
       },
       async servo(pin, deg) { check(); S.setServo(pin, Number(deg) || 0); },
       async dht(pin, model, what) { check(); return S.dhtRead(pin, model, what); },

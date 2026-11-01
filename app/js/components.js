@@ -794,7 +794,7 @@ const COMPONENTS = {
       S('VS', -40, -5, '+12V (Motorspannung, z. B. Batterie)'), S('GND', -30, -5, 'GND'), S('V5', -20, -5, '+5V'),
       S('OUT1', -59, -81, 'OUT1 (Motor A)'), S('OUT2', -59, -67, 'OUT2 (Motor A)'), S('OUT3', 75, -81, 'OUT3 (Motor B)'), S('OUT4', 75, -67, 'OUT4 (Motor B)')],
     props: { ena: '1', enb: '1' } },
-  relay: { name: 'Relais-Modul', category: 'Module', render: renderRelay, bbox: [-10, -110, 72, 4],
+  relay: { name: 'Relais-Modul', ext: 'motoren', category: 'Module', render: renderRelay, bbox: [-10, -110, 72, 4],
     pins: [L('VCC', 0), L('GND', 10), L('IN', 20, 'IN (Steuereingang)'), S('NO', 2, -91, 'NO (Schließer: verbunden, wenn das Relais angezogen ist)'), S('COM', 16, -91, 'COM (gemeinsamer Anschluss)'), S('NC', 30, -91, 'NC (Öffner: verbunden, wenn das Relais abgefallen ist)')],
     props: { trig: 'H' } },
   ina219: { name: 'Strommesser INA219', ext: 'multimeter',  category: 'Module', render: renderINA, bbox: [-8, -62, 58, 4],

@@ -145,7 +145,7 @@ const Arduino = new Blockly.Generator('Arduino');
 Arduino.ORDER_ATOMIC = 0; Arduino.ORDER_UNARY = 3; Arduino.ORDER_MULT = 5; Arduino.ORDER_ADD = 6;
 Arduino.ORDER_REL = 8; Arduino.ORDER_EQ = 9; Arduino.ORDER_AND = 13; Arduino.ORDER_OR = 14; Arduino.ORDER_NONE = 99;
 Arduino.INDENT = '  ';
-Arduino.addReservedWords('setup,loop,if,else,for,while,do,int,float,long,char,byte,void,return,break,continue,true,false,HIGH,LOW,INPUT,OUTPUT,String,Serial,delay,lcd,oled,pixels,tastenfeld,taste,millis,random,tone,noTone,pinMode,digitalWrite,digitalRead,analogWrite,analogRead,map,constrain,pow,min,max,abs,motor,ultraschallLaufzeit,schrittmotor,schrittPhase,listenStelle,listeMittelwert,listeSumme,listeMinimum,listeMaximum,lround,labs');
+Arduino.addReservedWords('setup,loop,if,else,for,while,do,int,float,long,char,byte,void,return,break,continue,true,false,HIGH,LOW,INPUT,OUTPUT,String,Serial,delay,lcd,oled,pixels,tastenfeld,taste,millis,random,tone,noTone,pinMode,digitalWrite,digitalRead,analogWrite,analogRead,map,constrain,pow,min,max,abs,motor,ultraschallLaufzeit,schrittmotor,fahrzeug,fahrzeugPins,fahrzeugEinrichten,fahrzeugFahre,schrittPhase,listenStelle,listeMittelwert,listeSumme,listeMinimum,listeMaximum,lround,labs');
 Arduino.init = function (ws) {
   this.includes_ = {}; this.globals_ = {}; this.setupPre_ = {}; this.helpers_ = {}; this.functions_ = {};
   this.setupBody_ = ''; this.loopBody_ = ''; this.params_ = new Set(); this.bitmaps_ = {};
@@ -256,6 +256,42 @@ Arduino.scrub_ = function (block, code, thisOnly) {
     A.helpers_.motor = '// Motortreiber (z. B. L9110S): richtung 1 = vorwärts, -1 = rückwärts, 0 = anhalten\nvoid motor(int ia, int ib, int richtung, int prozent)\n{\n  int pwm = constrain(prozent, 0, 100) * 255 / 100;\n  analogWrite(ia, richtung > 0 ? pwm : 0);\n  analogWrite(ib, richtung < 0 ? pwm : 0);\n}';
     return `motor(${ia}, ${ib}, ${b.getFieldValue('DIR')}, ${v(b, 'SPEED')});\n`;
   };
+  // Fahrzeug mit zwei Motoren am Motortreiber
+  const carHelper = () => {
+    A.helpers_.motor = '// Motortreiber (z. B. L9110S): richtung 1 = vorwärts, -1 = rückwärts, 0 = anhalten\nvoid motor(int ia, int ib, int richtung, int prozent)\n{\n  int pwm = constrain(prozent, 0, 100) * 255 / 100;\n  analogWrite(ia, richtung > 0 ? pwm : 0);\n  analogWrite(ib, richtung < 0 ? pwm : 0);\n}';
+    A.helpers_.zcar = `// Fahrzeug mit zwei Motoren: je Seite -100 (voll rückwärts) bis 100 (voll vorwärts)
+int fahrzeugPins[4] = {-1, -1, -1, -1};
+void fahrzeugEinrichten(int la, int lb, int ra, int rb)
+{
+  fahrzeugPins[0] = la; fahrzeugPins[1] = lb; fahrzeugPins[2] = ra; fahrzeugPins[3] = rb;
+  for (int i = 0; i < 4; i++) pinMode(fahrzeugPins[i], OUTPUT);
+}
+void fahrzeug(int links, int rechts)
+{
+  if (fahrzeugPins[0] < 0) return; // „Fahrzeug einrichten“ fehlt
+  links = constrain(links, -100, 100); rechts = constrain(rechts, -100, 100);
+  motor(fahrzeugPins[0], fahrzeugPins[1], links > 0 ? 1 : (links < 0 ? -1 : 0), abs(links));
+  motor(fahrzeugPins[2], fahrzeugPins[3], rechts > 0 ? 1 : (rechts < 0 ? -1 : 0), abs(rechts));
+}
+// art: 0 vorwärts, 1 rückwärts, 2 Linkskurve, 3 Rechtskurve, 4 links drehen, 5 rechts drehen
+void fahrzeugFahre(int art, int tempo)
+{
+  tempo = constrain(tempo, 0, 100);
+  int k = (tempo + 1) / 3; // inneres Rad in der Kurve
+  switch (art) {
+    case 0: fahrzeug(tempo, tempo); break;
+    case 1: fahrzeug(-tempo, -tempo); break;
+    case 2: fahrzeug(k, tempo); break;
+    case 3: fahrzeug(tempo, k); break;
+    case 4: fahrzeug(-tempo, tempo); break;
+    case 5: fahrzeug(tempo, -tempo); break;
+  }
+}`;
+  };
+  A['car_init'] = b => { carHelper(); return `fahrzeugEinrichten(${['LA', 'LB', 'RA', 'RB'].map(f => pinNum(b, f)).join(', ')});\n`; };
+  A['car_drive'] = b => { carHelper(); const art = { FWD: 0, BWD: 1, CL: 2, CR: 3, TL: 4, TR: 5 }[b.getFieldValue('DIR')]; return `fahrzeugFahre(${art}, ${v(b, 'SPEED')}); // ${b.getField('DIR').getText()}\n`; };
+  A['car_stop'] = () => { carHelper(); return 'fahrzeug(0, 0); // anhalten\n'; };
+  A['car_motors'] = b => { carHelper(); return `fahrzeug(${v(b, 'L')}, ${v(b, 'R')});\n`; };
   A['ard_stepper'] = b => {
     A.helpers_.stepper = `// Schrittmotor 28BYJ-48 mit Treiber ULN2003: 2048 Schritte = 1 Umdrehung, höchstens 15 U/min
 int schrittPhase[40];

@@ -28,8 +28,8 @@ const PIN = {
 };
 /* Startwerte im Werkzeugkasten je nach Mikrocontroller */
 const DEF = () => BOARD === 'esp32'
-  ? { dw: '4', dr: '4', pwm: '4', servo: '13', tone: '4', ana: 'D32', trig: '18', echo: '19', neo: '4', mA: '25', mB: '26', dht: '4', st: ['25', '26', '27', '14'], max: 4095, kpR: ['13', '14', '27', '26'], kpC: ['25', '33', '32', '23'] }
-  : { dw: '2', dr: '2', pwm: '3', servo: '3', tone: '8', ana: 'A0', trig: '7', echo: '8', neo: '6', mA: '5', mB: '6', dht: '2', st: ['8', '9', '10', '11'], max: 1023, kpR: ['9', '8', '7', '6'], kpC: ['5', '4', '3', '2'] };
+  ? { dw: '4', dr: '4', pwm: '4', servo: '13', tone: '4', ana: 'D32', trig: '18', echo: '19', neo: '4', mA: '25', mB: '26', car: ['25', '26', '27', '14'], dht: '4', st: ['25', '26', '27', '14'], max: 4095, kpR: ['13', '14', '27', '26'], kpC: ['25', '33', '32', '23'] }
+  : { dw: '2', dr: '2', pwm: '3', servo: '3', tone: '8', ana: 'A0', trig: '7', echo: '8', neo: '6', mA: '5', mB: '6', car: ['5', '6', '3', '11'], dht: '2', st: ['8', '9', '10', '11'], max: 1023, kpR: ['9', '8', '7', '6'], kpC: ['5', '4', '3', '2'] };
 const HIGHLOW = [['HOCH', 'HIGH'], ['NIEDRIG', 'LOW']];
 const NOTES = [['C', '0'], ['D', '2'], ['E', '4'], ['F', '5'], ['G', '7'], ['A', '9'], ['H', '11']];
 const ACCS = [['–', '0'], ['#', '1'], ['b', '-1']];
@@ -53,7 +53,7 @@ const EXTENSIONS = {
   keypad: { name: 'Tastenfeld', desc: 'Folientastatur 3 × 4 oder 4 × 4 abfragen.' },
   multimeter: { name: 'Multimeter', desc: 'Spannung (ADS1115) und Strom (INA219) über I²C messen.' },
   oled: { name: 'OLED-Anzeige', desc: 'Grafikdisplay SSD1306, 128 × 64 Pixel, I²C.' },
-  motoren: { name: 'Motoren', desc: 'Motortreiber L9110S und L298N mit Getriebemotor, Schrittmotor 28BYJ-48 mit Treiber ULN2003.' },
+  motoren: { name: 'Motoren und Relais', desc: 'Motortreiber L9110S und L298N mit Getriebemotor, Fahrzeug mit zwei Motoren, Schrittmotor 28BYJ-48 mit Treiber ULN2003, Relais-Modul.' },
   comm: { name: 'Kommunikation', desc: 'USB (senden und empfangen), WLAN, eigene Webseite, Funk zwischen ESP32 und Bluetooth (Handy-App). Nur mit dem ESP32.', esp: true },
 };
 
@@ -150,6 +150,18 @@ function defineBlocks() {
       { type: 'input_value', name: 'N', check: 'Number' }, { type: 'field_dropdown', name: 'UNIT', options: [['Grad', 'DEG'], ['Umdrehungen', 'REV'], ['Schritte', 'STEP']] },
       { type: 'field_dropdown', name: 'DIR', options: [['im Uhrzeigersinn', 'CW'], ['gegen den Uhrzeigersinn', 'CCW']] }, { type: 'input_value', name: 'RPM', check: 'Number' }],
     inputsInline: true, tooltip: 'Für den Schrittmotor 28BYJ-48 mit Treiberplatine ULN2003 (2048 Schritte = 1 Umdrehung). Geschwindigkeit 1 bis 15 Umdrehungen pro Minute. Das Programm wartet, bis der Motor angekommen ist.' }, COL.mot),
+    /* Fahrzeug mit zwei Motoren (Erweiterung „Motoren und Relais“) */
+    B({ type: 'car_init', message0: 'Fahrzeug einrichten %1 linker Motor: IA %2 IB %3 %4 rechter Motor: IA %5 IB %6', args0: [{ type: 'input_dummy' },
+      { type: 'field_dropdown', name: 'LA', options: PIN.pwm }, { type: 'field_dropdown', name: 'LB', options: PIN.pwm }, { type: 'input_dummy' },
+      { type: 'field_dropdown', name: 'RA', options: PIN.pwm }, { type: 'field_dropdown', name: 'RB', options: PIN.pwm }],
+    tooltip: 'Gehört in „beim Start“. Zwei Motoren am Motortreiber: L9110S (A-IA/A-IB und B-IA/B-IB) oder L298N (IN1/IN2 und IN3/IN4, Jumper auf ENA/ENB gesteckt). Dreht ein Rad falsch herum, die beiden Kabel dieses Motors am Treiber tauschen. Arduino Uno: nur Anschlüsse mit ~ regeln die Geschwindigkeit; mit einem Servo im Programm gehen D9/D10 nicht, mit Tönen gehen D3/D11 nicht.' }, COL.mot),
+    B({ type: 'car_drive', message0: 'Fahrzeug %1 mit %2 %% Geschwindigkeit', args0: [
+      { type: 'field_dropdown', name: 'DIR', options: [['vorwärts fahren', 'FWD'], ['rückwärts fahren', 'BWD'], ['Linkskurve fahren', 'CL'], ['Rechtskurve fahren', 'CR'], ['auf der Stelle nach links drehen', 'TL'], ['auf der Stelle nach rechts drehen', 'TR']] },
+      { type: 'input_value', name: 'SPEED', check: 'Number' }],
+    inputsInline: true, tooltip: 'Fährt, bis ein anderer Fahrzeug-Block kommt – mit „warten“ die Dauer festlegen. Kurve: das innere Rad läuft mit einem Drittel der Geschwindigkeit. Drehen auf der Stelle: die Räder laufen gegeneinander.' }, COL.mot),
+    B({ type: 'car_stop', message0: 'Fahrzeug anhalten', args0: [], tooltip: 'Beide Motoren aus.' }, COL.mot),
+    B({ type: 'car_motors', message0: 'Fahrzeug: linker Motor %1 %% rechter Motor %2 %%', args0: [{ type: 'input_value', name: 'L', check: 'Number' }, { type: 'input_value', name: 'R', check: 'Number' }],
+    inputsInline: true, tooltip: 'Jeden Motor einzeln einstellen: −100 (voll rückwärts) bis 100 (voll vorwärts), 0 = aus. Gut für Linienfolger und feine Kurven.' }, COL.mot),
     B({ type: 'ard_notone', message0: 'Lautsprecher an Anschluss %1 ausschalten', args0: [{ type: 'field_dropdown', name: 'PIN', options: PIN.out }] }, COL.out),
     /* Eingang */
     { type: 'ard_digital_read', message0: 'Digitalen Anschluss %1 lesen', args0: [{ type: 'field_dropdown', name: 'PIN', options: PIN.inp }], output: 'Number', colour: COL.inp },
@@ -323,6 +335,12 @@ function buildToolbox(ext) {
   if (ext.includes('motoren')) x += `
   <category name="Motoren" colour="${COL.mot}">
     <block type="ard_motor"><field name="IA">${D.mA}</field><field name="IB">${D.mB}</field><value name="SPEED">${num(100)}</value></block>
+    <sep gap="24"></sep>
+    <block type="car_init">${['LA', 'LB', 'RA', 'RB'].map((f, i) => `<field name="${f}">${D.car[i]}</field>`).join('')}</block>
+    <block type="car_drive"><value name="SPEED">${num(80)}</value></block>
+    <block type="car_stop"></block>
+    <block type="car_motors"><value name="L">${num(50)}</value><value name="R">${num(50)}</value></block>
+    <sep gap="24"></sep>
     <block type="ard_stepper">${D.st.map((p, i) => `<field name="P${i + 1}">${p}</field>`).join('')}<value name="N">${num(90)}</value><value name="RPM">${num(10)}</value></block>
   </category>`;
   if (ext.includes('neopixel')) x += `

@@ -29,6 +29,10 @@ function setupSimGenerator() {
   J['ard_servo'] = b => `await api.servo(${pin(b)}, ${v(b, 'DEG')});\n`;
   J['ard_tone'] = b => `await api.tone(${pin(b)}, ${noteFreq(b.getFieldValue('NOTE'), b.getFieldValue('ACC'), b.getFieldValue('OCT'))}, ${v(b, 'DUR')});\n`;
   J['ard_tone_freq'] = b => `await api.tone(${pin(b)}, ${v(b, 'FREQ')}, ${v(b, 'DUR')});\n`;
+  J['car_init'] = b => `api.carInit([${['LA', 'LB', 'RA', 'RB'].map(f => pin(b, f)).join(', ')}]);\n`;
+  J['car_drive'] = b => `await api.carDrive('${b.getFieldValue('DIR')}', ${v(b, 'SPEED')});\n`;
+  J['car_stop'] = () => `await api.car(0, 0);\n`;
+  J['car_motors'] = b => `await api.car(${v(b, 'L')}, ${v(b, 'R')});\n`;
   J['ard_motor'] = b => `await api.motor(${pin(b, 'IA')}, ${pin(b, 'IB')}, ${b.getFieldValue('DIR')}, ${v(b, 'SPEED')});\n`;
   J['ard_stepper'] = b => `await api.stepper([${[1, 2, 3, 4].map(i => pin(b, 'P' + i)).join(', ')}], ${v(b, 'N')}, '${b.getFieldValue('UNIT')}', '${b.getFieldValue('DIR')}', ${v(b, 'RPM', J.ORDER_NONE, '10')});\n`;
   J['ard_dht'] = b => [`(await api.dht(${pin(b)}, '${b.getFieldValue('MODEL')}', '${b.getFieldValue('WHAT')}'))`, J.ORDER_ATOMIC];
