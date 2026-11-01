@@ -470,9 +470,10 @@ function renderDHT(comp) {
    rote LED (Versorgung) und grüne LED (Relais angezogen); in der Mitte das Relais; oben die Schraubklemme NC, COM, NO */
 function renderRelay(comp, st) {
   const on = st && st.on, run = !!st;
-  let s = `<rect class="body" x="-20" y="-160" width="80" height="156" rx="3" fill="#2a6fb8" stroke="#174a85"/>`;
+  // Platine mittig über der Stiftleiste (VCC, GND, IN bei x = 0, 10, 20)
+  let s = `<rect class="body" x="-30" y="-160" width="80" height="156" rx="3" fill="#2a6fb8" stroke="#174a85"/>`;
   // Schraubklemme oben
-  s += `<rect class="body" x="-8" y="-146" width="56" height="28" rx="2" fill="#1e5fc8" stroke="#0f3f85"/>`;
+  s += `<rect class="body" x="-18" y="-146" width="56" height="28" rx="2" fill="#1e5fc8" stroke="#0f3f85"/>`;
   for (const p of comp.def.pins) if (p.kind === 'socket') {
     s += `<circle cx="${p.x}" cy="${p.y}" r="6.5" fill="#c9ced2" stroke="#7d868c"/>`;
     s += `<text x="${p.x}" y="-150" class="tiny" text-anchor="middle" fill="#fff">${p.id}</text>`;
@@ -481,20 +482,20 @@ function renderRelay(comp, st) {
   const com = comp.def.pins.find(p => p.id === 'COM'), to = comp.def.pins.find(p => p.id === (on ? 'NO' : 'NC'));
   s += `<path d="M${com.x} ${com.y + 10} L${to.x + (on ? -4 : 4)} ${to.y + 10}" stroke="#f2c200" stroke-width="2" stroke-linecap="round"/><circle cx="${com.x}" cy="${com.y + 10}" r="1.6" fill="#f2c200"/>`;
   // Relais
-  s += `<rect class="body" x="-8" y="-112" width="56" height="62" rx="3" fill="#2f63d6" stroke="#173f9a"/>`;
-  s += `<rect x="-5" y="-109" width="50" height="56" rx="2" fill="none" stroke="#5b86e6" stroke-width=".8"/>`;
-  s += `<text x="20" y="-94" class="tiny" text-anchor="middle" fill="#fff">5VDC</text><text x="20" y="-84" class="tiny" text-anchor="middle" fill="#e3ebff">10A 250VAC</text><text x="20" y="-74" class="tiny" text-anchor="middle" fill="#e3ebff">10A 30VDC</text>`;
-  s += `<text x="20" y="-59" class="tiny" text-anchor="middle" fill="#fff">${String(comp.props.trig) === 'L' ? 'LOW' : 'HIGH'}</text>`;
+  s += `<rect class="body" x="-18" y="-112" width="56" height="62" rx="3" fill="#2f63d6" stroke="#173f9a"/>`;
+  s += `<rect x="-15" y="-109" width="50" height="56" rx="2" fill="none" stroke="#5b86e6" stroke-width=".8"/>`;
+  s += `<text x="10" y="-94" class="tiny" text-anchor="middle" fill="#fff">5VDC</text><text x="10" y="-84" class="tiny" text-anchor="middle" fill="#e3ebff">10A 250VAC</text><text x="10" y="-74" class="tiny" text-anchor="middle" fill="#e3ebff">10A 30VDC</text>`;
+  s += `<text x="10" y="-59" class="tiny" text-anchor="middle" fill="#fff">${String(comp.props.trig) === 'L' ? 'LOW' : 'HIGH'}</text>`;
   // kleine Bauteile: Diode, drei Widerstände, Transistor
-  s += `<rect x="-6" y="-46" width="13" height="4" rx="1" fill="#ddd"/><rect x="3" y="-46" width="2" height="4" fill="#c62828"/>`;
-  [[11, -46], [24, -46], [11, -38]].forEach(([x, y]) => { s += `<rect x="${x}" y="${y}" width="11" height="5" rx=".8" fill="#222"/><rect x="${x}" y="${y}" width="2" height="5" fill="#bbb"/><rect x="${x + 9}" y="${y}" width="2" height="5" fill="#bbb"/>`; });
-  s += `<rect x="25" y="-38" width="7" height="5" rx=".5" fill="#111"/>`;
+  s += `<rect x="-16" y="-46" width="13" height="4" rx="1" fill="#ddd"/><rect x="-7" y="-46" width="2" height="4" fill="#c62828"/>`;
+  [[1, -46], [14, -46], [1, -38]].forEach(([x, y]) => { s += `<rect x="${x}" y="${y}" width="11" height="5" rx=".8" fill="#222"/><rect x="${x}" y="${y}" width="2" height="5" fill="#bbb"/><rect x="${x + 9}" y="${y}" width="2" height="5" fill="#bbb"/>`; });
+  s += `<rect x="15" y="-38" width="7" height="5" rx=".5" fill="#111"/>`;
   // LEDs links und rechts der Stiftleiste: grün links (Relais angezogen), rot rechts (Versorgung, PWR)
-  s += `<circle cx="-11" cy="-13" r="4" fill="${on ? '#4cd964' : '#2f6b37'}" stroke="#1d4a24" stroke-width=".6"/>`;
-  if (on) s += `<circle cx="-11" cy="-13" r="7" fill="#4cd964" opacity=".35"/>`;
-  s += `<circle cx="32" cy="-13" r="4" fill="${run ? '#ff3b30' : '#8a2a2a'}" stroke="#5a1515" stroke-width=".6"/>`;
-  if (run) s += `<circle cx="32" cy="-13" r="7" fill="#ff3b30" opacity=".3"/>`;
-  s += `<text x="47" y="-11" class="tiny" text-anchor="middle" fill="#dfe8ff">PWR</text>`;
+  s += `<circle cx="-14" cy="-13" r="4" fill="${on ? '#4cd964' : '#2f6b37'}" stroke="#1d4a24" stroke-width=".6"/>`;
+  if (on) s += `<circle cx="-14" cy="-13" r="7" fill="#4cd964" opacity=".35"/>`;
+  s += `<circle cx="34" cy="-13" r="4" fill="${run ? '#ff3b30' : '#8a2a2a'}" stroke="#5a1515" stroke-width=".6"/>`;
+  if (run) s += `<circle cx="34" cy="-13" r="7" fill="#ff3b30" opacity=".3"/>`;
+  s += `<text x="34" y="-21" class="tiny" text-anchor="middle" fill="#dfe8ff">PWR</text>`;
   s += headerLegs({ def: { pins: comp.def.pins.filter(p => p.kind === 'leg') } }, ['VCC', 'GND', 'IN'], -6);
   return s + pinsOf(comp);
 }
@@ -615,7 +616,9 @@ function renderDriver(comp) {
 /* Motortreiber L298N: Steuerleiste ENA, IN1–IN4, ENB; Schraubklemmen +12V, GND, +5V; Motor A (OUT1/2), Motor B (OUT3/4) */
 function renderL298(comp) {
   const p = comp.props;
-  let s = `<rect class="body" x="-50" y="-104" width="120" height="112" rx="4" fill="#c62828" stroke="#8e1b1b"/>`;
+  let s = `<rect class="body" x="-72" y="-104" width="164" height="112" rx="4" fill="#c62828" stroke="#8e1b1b"/>`;
+  // Befestigungslöcher in den Ecken
+  for (const [x, y] of [[-65, -97], [85, -97], [-65, 1], [85, 1]]) s += `<circle cx="${x}" cy="${y}" r="3" fill="#f4f5f3" stroke="#8e1b1b"/>`;
   // Kühlkörper
   s += `<rect x="-14" y="-100" width="48" height="40" rx="2" fill="#202020"/>`;
   for (let i = 0; i < 7; i++) s += `<rect x="${-11 + i * 6.5}" y="-98" width="3" height="36" fill="#3a3a3a"/>`;
@@ -836,13 +839,13 @@ const COMPONENTS = {
   mdriver: { name: 'Motortreiber L9110S', label: 'Motor\u00adtreiber L9110S', ext: 'motoren', hidden: true, category: 'Module', render: renderDriver, bbox: [-28, -70, 80, 4],
     pins: [L('BIA', 0, 'B-IA (Motor B)'), L('BIB', 10, 'B-IB (Motor B)'), L('GND', 20), L('VCC', 30, 'VCC (Motorspannung)'), L('AIA', 40, 'A-IA (Motor A)'), L('AIB', 50, 'A-IB (Motor A)'),
       S('MA1', -19, -53, 'Motor A Anschluss 1'), S('MA2', -19, -39, 'Motor A Anschluss 2'), S('MB1', 71, -53, 'Motor B Anschluss 1'), S('MB2', 71, -39, 'Motor B Anschluss 2')], props: {} },
-  l298n: { name: 'Motortreiber L298N', label: 'Motor\u00adtreiber L298N', ext: 'motoren', category: 'Module', render: renderL298, bbox: [-70, -106, 86, 20],
+  l298n: { name: 'Motortreiber L298N', label: 'Motor\u00adtreiber L298N', ext: 'motoren', category: 'Module', render: renderL298, bbox: [-72, -106, 92, 20],
     pins: [S('ENA', 0, 0, 'ENA (Freigabe Motor A)'), S('IN1', 10, 0, 'IN1 (Motor A)'), S('IN2', 20, 0, 'IN2 (Motor A)'), S('IN3', 30, 0, 'IN3 (Motor B)'), S('IN4', 40, 0, 'IN4 (Motor B)'), S('ENB', 50, 0, 'ENB (Freigabe Motor B)'),
       S('VS', -40, -5, '+12V (Motorspannung, z. B. Batterie)'), S('GND', -30, -5, 'GND'), S('V5', -20, -5, '+5V'),
       S('OUT1', -59, -81, 'OUT1 (Motor A)'), S('OUT2', -59, -67, 'OUT2 (Motor A)'), S('OUT3', 75, -81, 'OUT3 (Motor B)'), S('OUT4', 75, -67, 'OUT4 (Motor B)')],
     props: { ena: '1', enb: '1' } },
-  relay: { name: 'Relais-Modul', ext: 'motoren', category: 'Module', render: renderRelay, bbox: [-20, -160, 60, 4],
-    pins: [L('VCC', 0), L('GND', 10), L('IN', 20, 'IN (Steuereingang)'), S('NO', 38, -132, 'NO (Schließer: verbunden, wenn das Relais angezogen ist)'), S('COM', 20, -132, 'COM (gemeinsamer Anschluss)'), S('NC', 2, -132, 'NC (Öffner: verbunden, wenn das Relais abgefallen ist)')],
+  relay: { name: 'Relais-Modul', ext: 'motoren', category: 'Module', render: renderRelay, bbox: [-30, -160, 50, 4],
+    pins: [L('VCC', 0), L('GND', 10), L('IN', 20, 'IN (Steuereingang)'), S('NO', 28, -132, 'NO (Schließer: verbunden, wenn das Relais angezogen ist)'), S('COM', 10, -132, 'COM (gemeinsamer Anschluss)'), S('NC', -8, -132, 'NC (Öffner: verbunden, wenn das Relais abgefallen ist)')],
     props: { trig: 'H' } },
   ina219: { name: 'Strommesser INA219', ext: 'multimeter',  category: 'Module', render: renderINA, bbox: [-8, -62, 58, 4],
     pins: [L('VCC', 0), L('GND', 10), L('SCL', 20), L('SDA', 30), L('VINM', 40, 'VIN–'), L('VINP', 50, 'VIN+')], props: { address: 64 } },
