@@ -341,31 +341,31 @@ function renderGearMotor(comp, st) {
   return s + pinsOf(comp);
 }
 
-/* Getriebemotor mit Rad, von oben gesehen wie im Fahrzeug (vorne = oben). Links: Rad links. Rechts: derselbe Motor
-   um 180° gedreht (Rad rechts) – darum schiebt er bei gleicher Polung rückwärts. Der Pfeil zeigt, wohin das Rad schiebt. */
+/* Getriebemotor mit Rad, von oben gesehen wie im Fahrzeug (vorne = oben, die Anschlüsse zeigen nach vorne).
+   Links: Rad links. Rechts: derselbe Motor um 180° um die Längsachse gedreht (Rad rechts) – darum schiebt er bei
+   gleicher Polung rückwärts. Der grüne Pfeil zeigt, wohin das Rad das Fahrzeug schiebt. */
 function renderWheelMotor(comp, st) {
   const right = comp.def.wheel === 'R';
   const run = st && st.running;
-  // Zeichnung für den linken Motor; der rechte wird gespiegelt (um x = 5, die Mitte zwischen den Anschlüssen)
-  // links: Minus (schwarz) bei x = 0, Plus (rot) bei x = 10; durch das Spiegeln landen die Farben beim rechten Motor richtig
-  let b = `<path d="M0 0 V-14" stroke="#222" stroke-width="2.2"/><path d="M10 0 V-14" stroke="#d32f2f" stroke-width="2.2"/>`;
-  b += `<rect class="body" x="-4" y="-50" width="26" height="36" rx="7" fill="#c9cdd1" stroke="#8b9399"/><path d="M0 -46 V-18" stroke="#eef0f2" stroke-width="2"/>`;
-  b += `<rect x="-1" y="-18" width="4" height="5" fill="#d8b24a"/><rect x="7" y="-18" width="4" height="5" fill="#d8b24a"/>`;
-  b += `<rect class="body" x="-8" y="-112" width="34" height="64" rx="4" fill="#ffd21f" stroke="#c9a200"/><rect x="-4" y="-108" width="10" height="56" rx="2" fill="#ffe25c" opacity=".7"/>`;
-  b += `<circle cx="18" cy="-60" r="2.4" fill="#c9a200"/><circle cx="18" cy="-104" r="2.4" fill="#c9a200"/>`;
-  b += `<rect x="26" y="-99" width="7" height="8" rx="1.5" fill="#f5f2e8" stroke="#bdb8a8"/><rect x="-16" y="-99" width="8" height="8" rx="1.5" fill="#f5f2e8" stroke="#bdb8a8"/>`;
+  // Zeichnung für den linken Motor (Plus bei x = 0, Minus bei x = 10), unten Getriebe und Rad;
+  // der rechte wird um x = 5 gespiegelt, dadurch liegen Plus/Minus und die Kabelfarben dort richtig
+  let b = `<path d="M0 0 V14" stroke="#d32f2f" stroke-width="2.2"/><path d="M10 0 V14" stroke="#222" stroke-width="2.2"/>`;
+  b += `<rect class="body" x="-4" y="14" width="26" height="36" rx="7" fill="#c9cdd1" stroke="#8b9399"/><path d="M0 18 V46" stroke="#eef0f2" stroke-width="2"/>`;
+  b += `<rect x="-1" y="13" width="4" height="5" fill="#d8b24a"/><rect x="7" y="13" width="4" height="5" fill="#d8b24a"/>`;
+  b += `<rect class="body" x="-8" y="48" width="34" height="64" rx="4" fill="#ffd21f" stroke="#c9a200"/><rect x="-4" y="52" width="10" height="56" rx="2" fill="#ffe25c" opacity=".7"/>`;
+  b += `<circle cx="18" cy="60" r="2.4" fill="#c9a200"/><circle cx="18" cy="104" r="2.4" fill="#c9a200"/>`;
+  b += `<rect x="26" y="91" width="7" height="8" rx="1.5" fill="#f5f2e8" stroke="#bdb8a8"/><rect x="-16" y="91" width="8" height="8" rx="1.5" fill="#f5f2e8" stroke="#bdb8a8"/>`;
   // Rad (Reifen mit Profil, Felge)
-  b += `<rect class="body" x="-42" y="-126" width="26" height="62" rx="6" fill="#2b2b2b" stroke="#111"/>`;
-  for (let y = -120; y <= -72; y += 8) b += `<path d="M-40 ${y} H-18" stroke="#444" stroke-width="2"/>`;
-  b += `<rect x="-35" y="-104" width="12" height="18" rx="2" fill="#ffd21f" stroke="#c9a200"/>`;
+  b += `<rect class="body" x="-42" y="64" width="26" height="62" rx="6" fill="#2b2b2b" stroke="#111"/>`;
+  for (let y = 70; y <= 118; y += 8) b += `<path d="M-40 ${y} H-18" stroke="#444" stroke-width="2"/>`;
+  b += `<rect x="-35" y="86" width="12" height="18" rx="2" fill="#ffd21f" stroke="#c9a200"/>`;
   let s = right ? `<g transform="matrix(-1 0 0 1 10 0)">${b}</g>` : b;
-  // Pfeil am Rad: wohin das Rad das Fahrzeug schiebt
   if (run) {
-    const fwd = (st.dir > 0) !== right, x = right ? 39 : -29, y0 = fwd ? -76 : -114, y1 = fwd ? -114 : -76, h = fwd ? -8 : 8;
+    const fwd = (st.dir > 0) !== right, x = right ? 39 : -29, y0 = fwd ? 114 : 76, y1 = fwd ? 76 : 114, h = fwd ? -8 : 8;
     s += `<path d="M${x} ${y0} V${y1}" stroke="#4cd964" stroke-width="3" stroke-linecap="round"/><path d="M${x - 6} ${y1 - h} L${x} ${y1} L${x + 6} ${y1 - h}" stroke="#4cd964" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
   }
-  s += right ? `<text x="0" y="12" class="leglab" text-anchor="middle">+</text><text x="10" y="12" class="leglab" text-anchor="middle">–</text>`
-    : `<text x="0" y="12" class="leglab" text-anchor="middle">–</text><text x="10" y="12" class="leglab" text-anchor="middle">+</text>`;
+  s += right ? `<text x="0" y="-6" class="leglab" text-anchor="middle">–</text><text x="10" y="-6" class="leglab" text-anchor="middle">+</text>`
+    : `<text x="0" y="-6" class="leglab" text-anchor="middle">+</text><text x="10" y="-6" class="leglab" text-anchor="middle">–</text>`;
   return s + pinsOf(comp);
 }
 
@@ -466,35 +466,35 @@ function renderDHT(comp) {
   return s + pinsOf(comp);
 }
 
-/* Relais-Modul (1 Kanal) wie das übliche blaue Modul: links Stiftleiste VCC, GND, IN (unten, steckbar),
-   rote LED (Versorgung) und grüne LED (Relais angezogen), in der Mitte das Relais, rechts die Schraubklemme NO, COM, NC */
+/* Relais-Modul (1 Kanal), hochkant: unten an der schmalen Seite die Stiftleiste VCC, GND, IN (steckbar), daneben
+   rote LED (Versorgung) und grüne LED (Relais angezogen); in der Mitte das Relais; oben die Schraubklemme NC, COM, NO */
 function renderRelay(comp, st) {
   const on = st && st.on, run = !!st;
-  let s = `<rect class="body" x="-12" y="-66" width="148" height="62" rx="3" fill="#2a6fb8" stroke="#174a85"/>`;
-  // kleine Bauteile: Diode, drei Widerstände, Transistor
-  s += `<rect x="-9" y="-63" width="13" height="4" rx="1" fill="#ddd"/><rect x="0" y="-63" width="2" height="4" fill="#c62828"/>`;
-  for (let k = 0; k < 3; k++) s += `<rect x="12" y="${-63 + k * 8}" width="11" height="5" rx=".8" fill="#222"/><rect x="12" y="${-63 + k * 8}" width="2" height="5" fill="#bbb"/><rect x="21" y="${-63 + k * 8}" width="2" height="5" fill="#bbb"/>`;
-  s += `<rect x="14" y="-37" width="7" height="5" rx=".5" fill="#111"/>`;
-  // LEDs: rot = Versorgung (PWR), grün = Relais angezogen
-  s += `<text x="-6" y="-53" class="tiny" text-anchor="middle" fill="#dfe8ff">PWR</text>`;
-  s += `<circle cx="-6" cy="-45" r="4" fill="${run ? '#ff3b30' : '#8a2a2a'}" stroke="#5a1515" stroke-width=".6"/>`;
-  if (run) s += `<circle cx="-6" cy="-45" r="7" fill="#ff3b30" opacity=".3"/>`;
-  s += `<circle cx="-6" cy="-33" r="4" fill="${on ? '#4cd964' : '#2f6b37'}" stroke="#1d4a24" stroke-width=".6"/>`;
-  if (on) s += `<circle cx="-6" cy="-33" r="7" fill="#4cd964" opacity=".35"/>`;
-  // Relais
-  s += `<rect class="body" x="30" y="-63" width="62" height="56" rx="3" fill="#2f63d6" stroke="#173f9a"/>`;
-  s += `<rect x="33" y="-60" width="56" height="50" rx="2" fill="none" stroke="#5b86e6" stroke-width=".8"/>`;
-  s += `<text x="61" y="-46" class="tiny" text-anchor="middle" fill="#fff">5VDC</text><text x="61" y="-37" class="tiny" text-anchor="middle" fill="#e3ebff">10A 250VAC</text><text x="61" y="-28" class="tiny" text-anchor="middle" fill="#e3ebff">10A 30VDC</text>`;
-  s += `<text x="61" y="-15" class="tiny" text-anchor="middle" fill="#fff">${String(comp.props.trig) === 'L' ? 'LOW' : 'HIGH'}</text>`;
-  // Schraubklemme rechts
-  s += `<rect class="body" x="96" y="-64" width="28" height="58" rx="2" fill="#1e5fc8" stroke="#0f3f85"/>`;
+  let s = `<rect class="body" x="-12" y="-160" width="64" height="156" rx="3" fill="#2a6fb8" stroke="#174a85"/>`;
+  // Schraubklemme oben
+  s += `<rect class="body" x="-8" y="-146" width="56" height="28" rx="2" fill="#1e5fc8" stroke="#0f3f85"/>`;
   for (const p of comp.def.pins) if (p.kind === 'socket') {
-    s += `<circle cx="${p.x}" cy="${p.y}" r="6" fill="#c9ced2" stroke="#7d868c"/>`;
-    s += `<text x="${p.x + 20}" y="${p.y}" class="tiny" text-anchor="middle" fill="#fff" transform="rotate(-90 ${p.x + 20} ${p.y})" dy="1.6">${p.id}</text>`;
+    s += `<circle cx="${p.x}" cy="${p.y}" r="6.5" fill="#c9ced2" stroke="#7d868c"/>`;
+    s += `<text x="${p.x}" y="-150" class="tiny" text-anchor="middle" fill="#fff">${p.id}</text>`;
   }
   // Schaltzustand: COM ist mit NO (angezogen) oder NC (abgefallen) verbunden
   const com = comp.def.pins.find(p => p.id === 'COM'), to = comp.def.pins.find(p => p.id === (on ? 'NO' : 'NC'));
-  s += `<path d="M${com.x - 9} ${com.y} L${to.x - 9} ${to.y + (on ? 4 : -4)}" stroke="#f2c200" stroke-width="2" stroke-linecap="round"/><circle cx="${com.x - 9}" cy="${com.y}" r="1.6" fill="#f2c200"/>`;
+  s += `<path d="M${com.x} ${com.y + 10} L${to.x + (on ? -4 : 4)} ${to.y + 10}" stroke="#f2c200" stroke-width="2" stroke-linecap="round"/><circle cx="${com.x}" cy="${com.y + 10}" r="1.6" fill="#f2c200"/>`;
+  // Relais
+  s += `<rect class="body" x="-8" y="-112" width="56" height="62" rx="3" fill="#2f63d6" stroke="#173f9a"/>`;
+  s += `<rect x="-5" y="-109" width="50" height="56" rx="2" fill="none" stroke="#5b86e6" stroke-width=".8"/>`;
+  s += `<text x="20" y="-94" class="tiny" text-anchor="middle" fill="#fff">5VDC</text><text x="20" y="-84" class="tiny" text-anchor="middle" fill="#e3ebff">10A 250VAC</text><text x="20" y="-74" class="tiny" text-anchor="middle" fill="#e3ebff">10A 30VDC</text>`;
+  s += `<text x="20" y="-59" class="tiny" text-anchor="middle" fill="#fff">${String(comp.props.trig) === 'L' ? 'LOW' : 'HIGH'}</text>`;
+  // kleine Bauteile: Diode, drei Widerstände, Transistor
+  s += `<rect x="-6" y="-46" width="13" height="4" rx="1" fill="#ddd"/><rect x="3" y="-46" width="2" height="4" fill="#c62828"/>`;
+  [[11, -46], [24, -46], [11, -38]].forEach(([x, y]) => { s += `<rect x="${x}" y="${y}" width="11" height="5" rx=".8" fill="#222"/><rect x="${x}" y="${y}" width="2" height="5" fill="#bbb"/><rect x="${x + 9}" y="${y}" width="2" height="5" fill="#bbb"/>`; });
+  s += `<rect x="25" y="-38" width="7" height="5" rx=".5" fill="#111"/>`;
+  // LEDs neben der Stiftleiste: rot = Versorgung (PWR), grün = Relais angezogen
+  s += `<circle cx="40" cy="-28" r="4" fill="${run ? '#ff3b30' : '#8a2a2a'}" stroke="#5a1515" stroke-width=".6"/>`;
+  if (run) s += `<circle cx="40" cy="-28" r="7" fill="#ff3b30" opacity=".3"/>`;
+  s += `<text x="40" y="-36" class="tiny" text-anchor="middle" fill="#dfe8ff">PWR</text>`;
+  s += `<circle cx="40" cy="-14" r="4" fill="${on ? '#4cd964' : '#2f6b37'}" stroke="#1d4a24" stroke-width=".6"/>`;
+  if (on) s += `<circle cx="40" cy="-14" r="7" fill="#4cd964" opacity=".35"/>`;
   s += headerLegs({ def: { pins: comp.def.pins.filter(p => p.kind === 'leg') } }, ['VCC', 'GND', 'IN'], -6);
   return s + pinsOf(comp);
 }
@@ -809,12 +809,12 @@ const COMPONENTS = {
     pins: [S('GND', 0, 0, 'GND (braun)'), S('VCC', 10, 0, '5V (rot)'), S('SIG', 20, 0, 'Signal (orange)')], props: {} },
   motor: { name: 'Lüfter', category: 'Aktoren', render: renderMotor, bbox: [-4, -80, 60, 12],
     pins: [S('P', 0, 0, 'Plus (rot)'), S('N', 10, 0, 'Minus (schwarz)')], props: {} },
-  wheelL: { name: 'Getriebemotor mit Rad links', label: 'Getriebe\u00admotor mit Rad links', ext: 'motoren', category: 'Aktoren', render: renderWheelMotor, wheel: 'L', bbox: [-42, -126, 33, 12],
-    pins: [S('N', 0, 0, 'Minus (schwarz)'), S('P', 10, 0, 'Plus (rot)')], props: {} },
-  wheelR: { name: 'Getriebemotor mit Rad rechts', label: 'Getriebe\u00admotor mit Rad rechts', ext: 'motoren', category: 'Aktoren', render: renderWheelMotor, wheel: 'R', bbox: [-23, -126, 52, 12],
-    pins: [S('P', 0, 0, 'Plus (rot)'), S('N', 10, 0, 'Minus (schwarz)')], props: {} },
   gearmotor: { name: 'Getriebemotor', ext: 'motoren', category: 'Aktoren', render: renderGearMotor, bbox: [-30, -74, 118, 12],
     pins: [S('P', 0, 0, 'Plus (rot)'), S('N', 10, 0, 'Minus (schwarz)')], props: {} },
+  wheelL: { name: 'Getriebemotor mit Rad links', label: 'Getriebe\u00admotor mit Rad links', ext: 'motoren', category: 'Aktoren', render: renderWheelMotor, wheel: 'L', bbox: [-42, -12, 33, 126],
+    pins: [S('P', 0, 0, 'Plus (rot)'), S('N', 10, 0, 'Minus (schwarz)')], props: {} },
+  wheelR: { name: 'Getriebemotor mit Rad rechts', label: 'Getriebe\u00admotor mit Rad rechts', ext: 'motoren', category: 'Aktoren', render: renderWheelMotor, wheel: 'R', bbox: [-23, -12, 52, 126],
+    pins: [S('N', 0, 0, 'Minus (schwarz)'), S('P', 10, 0, 'Plus (rot)')], props: {} },
   stepper: { name: 'Schrittmotor 28BYJ-48 mit ULN2003', label: 'Schrittmotor 28BYJ-48 mit Treiber ULN2003', ext: 'motoren', category: 'Aktoren', render: renderStepper, bbox: [-30, -166, 84, 4],
     pins: [L('IN1', 0), L('IN2', 10), L('IN3', 20), L('IN4', 30), L('GND', 50, '– (GND)'), L('VCC', 60, '+ (5 V)')], props: {} },
   strip: { name: 'NeoPixel-Streifen (8)', ext: 'neopixel',  category: 'Aktoren', render: renderStrip, bbox: [-8, -30, 114, 13], count: 8,
@@ -841,8 +841,8 @@ const COMPONENTS = {
       S('VS', -40, -5, '+12V (Motorspannung, z. B. Batterie)'), S('GND', -30, -5, 'GND'), S('V5', -20, -5, '+5V'),
       S('OUT1', -59, -81, 'OUT1 (Motor A)'), S('OUT2', -59, -67, 'OUT2 (Motor A)'), S('OUT3', 75, -81, 'OUT3 (Motor B)'), S('OUT4', 75, -67, 'OUT4 (Motor B)')],
     props: { ena: '1', enb: '1' } },
-  relay: { name: 'Relais-Modul', ext: 'motoren', category: 'Module', render: renderRelay, bbox: [-12, -66, 136, 4],
-    pins: [L('VCC', 0), L('GND', 10), L('IN', 20, 'IN (Steuereingang)'), S('NO', 110, -50, 'NO (Schließer: verbunden, wenn das Relais angezogen ist)'), S('COM', 110, -35, 'COM (gemeinsamer Anschluss)'), S('NC', 110, -20, 'NC (Öffner: verbunden, wenn das Relais abgefallen ist)')],
+  relay: { name: 'Relais-Modul', ext: 'motoren', category: 'Module', render: renderRelay, bbox: [-12, -160, 52, 4],
+    pins: [L('VCC', 0), L('GND', 10), L('IN', 20, 'IN (Steuereingang)'), S('NO', 38, -132, 'NO (Schließer: verbunden, wenn das Relais angezogen ist)'), S('COM', 20, -132, 'COM (gemeinsamer Anschluss)'), S('NC', 2, -132, 'NC (Öffner: verbunden, wenn das Relais abgefallen ist)')],
     props: { trig: 'H' } },
   ina219: { name: 'Strommesser INA219', ext: 'multimeter',  category: 'Module', render: renderINA, bbox: [-8, -62, 58, 4],
     pins: [L('VCC', 0), L('GND', 10), L('SCL', 20), L('SDA', 30), L('VINM', 40, 'VIN–'), L('VINP', 50, 'VIN+')], props: { address: 64 } },

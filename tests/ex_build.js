@@ -171,13 +171,13 @@
     const bb = k.bb, dx = bb.x + 520, dy = bb.y - 20;
     const d = k.addAt('l298n', dx, dy, { ena: '1', enb: '1' });
     // wie im Fahrzeug von oben: links der Motor mit Rad links, rechts derselbe Motor um 180° gedreht (Rad rechts)
-    const mL = k.addAt('wheelL', dx - 128, dy - 30), mR = k.addAt('wheelR', dx + 128, dy - 30);
+    const mL = k.addAt('wheelL', dx - 128, dy - 150), mR = k.addAt('wheelR', dx + 128, dy - 150);
     const D = p => ({ c: d.id, p });
-    // beide gleich gepolt: Plus an OUT1 bzw. OUT3 (die Fahrzeug-Blöcke drehen den rechten Motor selbst um)
-    k.wire({ c: mL.id, p: 'P' }, D('OUT1'), 'rot', [[dx - 118, dy - 18], [dx - 80, dy - 18], [dx - 80, dy - 81]]);
-    k.wire({ c: mL.id, p: 'N' }, D('OUT2'), 'schwarz', [[dx - 128, dy - 10], [dx - 74, dy - 10], [dx - 74, dy - 67]]);
-    k.wire({ c: mR.id, p: 'P' }, D('OUT3'), 'rot', [[dx + 128, dy - 18], [dx + 100, dy - 18], [dx + 100, dy - 81]]);
-    k.wire({ c: mR.id, p: 'N' }, D('OUT4'), 'schwarz', [[dx + 138, dy - 10], [dx + 94, dy - 10], [dx + 94, dy - 67]]);
+    // Anschlüsse der Motoren zeigen nach vorne (oben); beide gleich gepolt: Plus an OUT1 bzw. OUT3
+    k.wire({ c: mL.id, p: 'P' }, D('OUT1'), 'rot', [[dx - 128, dy - 170], [dx - 74, dy - 170], [dx - 74, dy - 81]]);
+    k.wire({ c: mL.id, p: 'N' }, D('OUT2'), 'schwarz', [[dx - 118, dy - 162], [dx - 80, dy - 162], [dx - 80, dy - 67]]);
+    k.wire({ c: mR.id, p: 'P' }, D('OUT3'), 'rot', [[dx + 138, dy - 170], [dx + 94, dy - 170], [dx + 94, dy - 81]]);
+    k.wire({ c: mR.id, p: 'N' }, D('OUT4'), 'schwarz', [[dx + 128, dy - 162], [dx + 100, dy - 162], [dx + 100, dy - 67]]);
     // Steuerleitungen: hoch in den Kanal, rechts an der Steckplatine vorbei, von unten an die Stiftleiste
     [['GND_T', 'GND', -30], ['D11', 'IN1', 10], ['D6', 'IN2', 20], ['D5', 'IN3', 30], ['D3', 'IN4', 40]].forEach(([mp, dp, ox], i) => {
       const a = k.pos(k.M(mp)), yc = bb.y + 212 + 8 * i, xv = dx + 60 + 8 * i, yb = dy + 48 - 7 * i;
