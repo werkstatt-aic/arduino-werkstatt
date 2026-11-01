@@ -21,6 +21,7 @@ Blockbasierte Arduino-Lernumgebung (Uno und ESP32) mit Simulation und Hochladen 
 | `app/js/serial.js` | Serieller Monitor für echte Hardware (Web Serial per USB, Web Bluetooth per BLE-UART) |
 | `app/js/examples.js` | Beispielprojekte (erzeugt mit `tests/ex_build.py` + `ex_build.js`) |
 | `app/js/export.js` | Schaltung als Bild, Drucken |
+| `app/js/advisor.js` | Hilfe-Knopf: feste Regeln für Schaltung, Schaltung↔Programm, Programm und Tipps (`Advisor.analyze`) |
 | `app/js/tasks.js` | Aufgabenkarten: mitgelieferte Aufgaben, Prüf-Engine (Simulation), Aufgabenkarte, Editor für Lehrkräfte |
 | `app/js/app.js` | Zusammenspiel der Oberfläche, Speichern, Projektverwaltung |
 | `app/lib/blockly/` | Blockly (Apache-Lizenz 2.0), unverändert |
@@ -73,3 +74,5 @@ Umgebungsvariablen nur für Tests: `WERKSTATT_CLI_URL`, `WERKSTATT_UPDATE_API`, 
 - **Erweiterungen:** Bauteile mit `ext` in `COMPONENTS` erscheinen nur mit der Erweiterung, Blöcke stehen in einer eigenen
   Kategorie in `buildToolbox`. `autoExtensions()` (`app.js`) schaltet beim Laden Erweiterungen ein, deren Bauteile oder
   Blöcke das Projekt schon nutzt (z. B. Motoren aus Projekten vor 0.10.2).
+- **Hilfe-Knopf:** `Advisor.analyze(app)` liefert `[{level: 'error'|'warn'|'tip', text, comp?, block?}]`. Neue Regeln dort ergänzen;
+  `tests/adv1.py` stellt sicher, dass Beispiele und Musterlösungen ohne Fehler/Hinweise bleiben, `tests/adv2.py` prüft die Fehlerfälle.

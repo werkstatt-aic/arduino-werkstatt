@@ -726,6 +726,10 @@ const App = {
       ${row('Sensoren', 'Bauteil anklicken und Wert im Eigenschaftsfeld verstellen')}
       ${row('Messwerte speichern', 'im seriellen Monitor: alle Zahlen als Tabelle für Excel (CSV)')}
       </table>
+      <h3>Hilfe-Knopf (oben)</h3><table>
+      ${row('Hilfe', 'prüft Schaltung und Programm: Fehler (z. B. LED ohne Vorwiderstand), Hinweise (z. B. Block nutzt einen Anschluss, an dem nichts steckt) und Tipps, wie es weitergeht')}
+      ${row('Zeigen', 'springt zum betroffenen Bauteil oder Block')}
+      </table>
       <h3>Aufgaben</h3><table>
       ${row('Datei › Aufgaben', 'Aufgabe wählen, sie wird als neues Projekt angelegt')}
       ${row('Tipp anzeigen', 'deckt die Tipps nacheinander auf')}
@@ -914,6 +918,7 @@ const App = {
       this.nameBefore = ok; this.scheduleSave();
     });
     $('#setBtn').onclick = () => Settings.open(this);
+    $('#adviceBtn').onclick = () => Advisor.open(this);
     $('#fileBtn').onclick = e => { e.stopPropagation(); $('#fileMenu').hidden = !$('#fileMenu').hidden; };
     document.addEventListener('click', e => { if (!e.target.closest('.menu')) $('#fileMenu').hidden = true; });
     $('#fileMenu').addEventListener('click', e => { const b = e.target.closest('button'); if (b) this.fileAction(b.dataset.act); });

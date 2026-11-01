@@ -22,6 +22,22 @@ SPEICHERN UND SICHERUNGEN
   Sicherung an (die letzten 15 je Projekt, Ordner "Projekte\.sicherungen").
   Zurückholen: Datei > Ältere Fassung wiederherstellen.
 
+HILFE-KNOPF (oben in der Menüleiste)
+  - "Hilfe" sieht Schaltung und Programm durch, ohne die Simulation zu starten,
+    und zeigt:
+    Fehler   - z. B. LED ohne Vorwiderstand oder verkehrt herum, Getriebemotor
+               direkt am Anschluss, Motortreiber ohne gemeinsames GND, falsche
+               DHT-Bauart, "Fahrzeug fahren" ohne "Fahrzeug einrichten";
+    Hinweise - z. B. Taster ohne Pull-down-Widerstand, Bauteil ohne Versorgung,
+               Block nutzt einen Anschluss, an dem nichts steckt, angeschlossenes
+               Bauteil wird im Programm nie benutzt, PWM an einem Anschluss ohne
+               ~, lose Blöcke, Blinken ohne "warten", Variable ohne Wert;
+    Tipps    - wie es weitergeht (bei einer Aufgabe: was noch fehlt und der
+               nächste Tipp der Aufgabenkarte).
+  - "Zeigen" springt zum betroffenen Bauteil oder Block.
+  - Die Hilfe kennt typische Fehler, aber nicht alle; alles Weitere zeigt die
+    Simulation. Die Prüfungen sind fest eingebaut (keine KI, kein Internet).
+
 AUFGABEN (Menü "Datei > Aufgaben")
   - 18 Aufgaben in vier Stufen: Grundlagen (LED, Blinklicht, Ampel, Taster,
     Lauflicht, PWM), Sensoren (Nachtlicht, Thermometer, Abstandswarner,
