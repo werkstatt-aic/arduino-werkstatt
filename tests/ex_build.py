@@ -5,7 +5,7 @@ with sync_playwright() as p:
     b=p.chromium.launch(); pg=b.new_page(viewport={'width':1400,'height':900})
     errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.goto('http://127.0.0.1:8642/'); pg.wait_for_timeout(900)
-    pg.select_option('#dlgForm select[name=tisch]','14'); pg.fill('#dlgForm input[name=vor]','Bau'); pg.fill('#dlgForm input[name=proj]','Beispiele'); pg.click('button[value=new]'); pg.wait_for_timeout(500)
+    pg.select_option('#dlgForm select[name=tisch]','14'); pg.fill('#dlgForm input[name=nach]','Bau'); pg.fill('#dlgForm input[name=proj]','Beispiele'); pg.click('button[value=new]'); pg.wait_for_timeout(500)
     ex = pg.evaluate(JS)
     # jedes Beispiel laden, Simulation kurz laufen lassen und Zustände prüfen
     for e in ex:

@@ -122,7 +122,7 @@
     // über der Steckplatine entlang, dann links neben dem Treiber hinunter zu den Klemmen
     k.wire({ c: m.id, p: 'N' }, { c: d.id, p: 'MA1' }, 'schwarz', [[mn[0], k.bb.y - 15], [ma1[0] - 16, k.bb.y - 15], [ma1[0] - 16, ma1[1]]]);
     k.wire({ c: m.id, p: 'P' }, { c: d.id, p: 'MA2' }, 'rot', [[mp[0], k.bb.y - 5], [ma2[0] - 26, k.bb.y - 5], [ma2[0] - 26, ma2[1]]]);
-    ex.push({ id: 'motor', title: 'Motor mit Motortreiber', board: 'uno', desc: 'Ein Getriebemotor am Motortreiber L9110S (A-IA an D6, A-IB an D5). Das Potentiometer stellt die Geschwindigkeit ein.', circuit: k.done(),
+    ex.push({ id: 'motor', title: 'Motor mit Motortreiber', board: 'uno', ext: ['motoren'], desc: 'Ein Getriebemotor am Motortreiber L9110S (A-IA an D6, A-IB an D5). Das Potentiometer stellt die Geschwindigkeit ein.', circuit: k.done(),
       blocks: prog([], [`<block type="ard_motor"><field name="IA">6</field><field name="IB">5</field><field name="DIR">1</field><value name="SPEED">${mapA0(100)}</value></block>`]) }); }
 
   /* 8 Webseite schaltet LED (ESP32, LED an D4) */

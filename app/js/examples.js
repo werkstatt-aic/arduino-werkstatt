@@ -1411,6 +1411,9 @@ const EXAMPLES = [
 "id": "motor",
 "title": "Motor mit Motortreiber",
 "board": "uno",
+"ext": [
+"motoren"
+],
 "desc": "Ein Getriebemotor am Motortreiber L9110S (A-IA an D6, A-IB an D5). Das Potentiometer stellt die Geschwindigkeit ein.",
 "circuit": {
 "components": [

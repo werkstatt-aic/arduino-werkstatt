@@ -12,8 +12,8 @@ STARTEN
 START
   Beim Start erscheint eine Auswahl: neues Projekt anlegen, zuletzt bearbeitetes
   oder ein anderes Projekt öffnen, eine Aufgabe wählen oder ein Beispiel öffnen.
-  Für ein neues Projekt gibt man Tisch-Nr. (01 bis 18), Vorname und
-  Projektname ein. Daraus wird z. B. "11 – Lena – Ampelschaltung".
+  Für ein neues Projekt gibt man Tisch-Nr. (01 bis 18), Nachname und
+  Projektname ein. Daraus wird z. B. "11 – Müller – Ampelschaltung".
   Ein vorhandenes Projekt wird nie überschrieben.
 
 SPEICHERN UND SICHERUNGEN
@@ -70,11 +70,9 @@ BEDIENUNG IN KÜRZE
     drücken. Licht, Temperatur, Feuchte, Abstand, Poti und Spannung im
     Eigenschaftsfeld verstellen (auch während der Simulation).
   - Code: Ansicht "Blöcke", "Blöcke + Text" oder "Text (C++)".
-  - "Erweiterungen ..." schaltet NeoPixel, Tastenfeld, Multimeter, OLED-Anzeige
-    und Kommunikation für das jeweilige Projekt zu. Den Knopf gibt es beim
-    Code und in der Bauteilleiste. Die passenden Bauteile erscheinen dann in
-    der Bauteilleiste, die Blöcke im Werkzeugkasten. Steckt ein solches
-    Bauteil in der Schaltung, bleibt seine Erweiterung eingeschaltet.
+  - "Erweiterungen ..." schaltet NeoPixel, Tastenfeld, Multimeter, OLED-Anzeige,
+    Motoren und Kommunikation für das jeweilige Projekt zu. Die passenden Bauteile
+    erscheinen dann auch in der Bauteilleiste.
   - OLED-Grafikeditor: Im Block "OLED-Bild ... zeichnen" auf das Bild klicken.
   - Mathe: runden (auch auf/ab), Betrag, Quadratwurzel.
   - PWM-Blöcke (PWM-Ausgang, Servo, Motor): Alle Anschlüsse sind wählbar. Beim
@@ -86,9 +84,12 @@ BEDIENUNG IN KÜRZE
     (für Messreihen), Anzahl, Mittelwert, Summe, kleinster/größter Wert.
   - Neue Bauteile: Temperatur- und Feuchtesensor DHT11/DHT22, Relais-Modul
     (schaltet einen eigenen Stromkreis über COM/NO/NC), Schrittmotor 28BYJ-48
-    mit Treiber ULN2003 (Block "Schrittmotor ... drehen" unter "Ausgang").
-  - Motortreiber L9110S und L298N (Bauteile > Module) mit dem Block "Motor am
-    Motortreiber" unter "Ausgang": vorwärts, rückwärts, anhalten, Tempo in %.
+    mit Treiber ULN2003 (Erweiterung "Motoren").
+  - Erweiterung "Motoren": Motortreiber L9110S und L298N, Lüfter, Getriebemotor
+    und Schrittmotor 28BYJ-48 mit ULN2003 sowie die Kategorie "Motoren" mit den
+    Blöcken "Motor am Motortreiber" (vorwärts, rückwärts, anhalten, Tempo in %)
+    und "Schrittmotor ... drehen". Ältere Projekte mit Motoren schalten die
+    Erweiterung beim Öffnen automatisch ein. Der Servo bleibt ohne Erweiterung.
     L298N: IN1/IN2 (Motor A) bzw. IN3/IN4 (Motor B), Jumper auf ENA/ENB
     gesteckt lassen. Motorspannung an "12V" und GND (z. B. Spannungsquelle).
 
@@ -151,7 +152,7 @@ ESP32
 ÜBERTRAGEN PER BLUETOOTH (nur ESP32)
   1. Einmal per USB-Kabel hochladen und dabei "Bluetooth-Übertragung in das
      Programm einbauen" anhaken. Den Namen des ESP32 kann man dort ändern
-     (vorbelegt mit "ESP-", Tisch-Nr. und Vorname aus dem Projektnamen).
+     (vorbelegt mit "ESP-" und dem Nachnamen aus dem Projektnamen).
   2. Danach im Hochladen-Fenster "Bluetooth" wählen (oder oben auf das
      Bluetooth-Zeichen klicken) und "Hochladen" klicken. In der Liste den
      eigenen ESP32 auswählen.

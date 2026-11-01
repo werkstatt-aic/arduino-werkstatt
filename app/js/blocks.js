@@ -3,7 +3,7 @@
 
 const COL = {
   ctrl: '#ffab19', loop: '#e08e0b', logic: '#4aa7c2', math: '#59c059', vars: '#ff8c1a', func: '#d65cd6',
-  out: '#4c97ff', inp: '#9966ff', show: '#0fa39a', neo: '#7a5cd6', kp: '#cf4f8f', mm: '#3a9a5b', mmi: '#6cc48a', mmc: '#c8742a', com: '#1e88a8', comu: '#6b7c8c', comw: '#3b6fb6', comf: '#c0563f', comb: '#2d5fa8', oled: '#3a64b0', list: '#e8603c',
+  out: '#4c97ff', inp: '#9966ff', show: '#0fa39a', neo: '#7a5cd6', kp: '#cf4f8f', mm: '#3a9a5b', mmi: '#6cc48a', mmc: '#c8742a', com: '#1e88a8', comu: '#6b7c8c', comw: '#3b6fb6', comf: '#c0563f', comb: '#2d5fa8', oled: '#3a64b0', list: '#e8603c', mot: '#5b7fa6',
 };
 /* Gewählter Mikrocontroller: 'uno' oder 'esp32' */
 let BOARD = 'uno';
@@ -53,6 +53,7 @@ const EXTENSIONS = {
   keypad: { name: 'Tastenfeld', desc: 'Folientastatur 3 × 4 oder 4 × 4 abfragen.' },
   multimeter: { name: 'Multimeter', desc: 'Spannung (ADS1115) und Strom (INA219) über I²C messen.' },
   oled: { name: 'OLED-Anzeige', desc: 'Grafikdisplay SSD1306, 128 × 64 Pixel, I²C.' },
+  motoren: { name: 'Motoren', desc: 'Motortreiber L9110S und L298N mit Lüfter oder Getriebemotor, Schrittmotor 28BYJ-48 mit Treiber ULN2003.' },
   comm: { name: 'Kommunikation', desc: 'USB (senden und empfangen), WLAN, eigene Webseite, Funk zwischen ESP32 und Bluetooth (Handy-App). Nur mit dem ESP32.', esp: true },
 };
 
@@ -143,12 +144,12 @@ function defineBlocks() {
     B({ type: 'ard_motor', message0: 'Motor am Motortreiber %1 IA an %2 IB an %3 %4 mit %5 %% Geschwindigkeit', args0: [{ type: 'input_dummy' },
       { type: 'field_dropdown', name: 'IA', options: PIN.pwm }, { type: 'field_dropdown', name: 'IB', options: PIN.pwm },
       { type: 'field_dropdown', name: 'DIR', options: [['vorwärts', '1'], ['rückwärts', '-1'], ['anhalten', '0']] }, { type: 'input_value', name: 'SPEED', check: 'Number' }],
-    inputsInline: true, tooltip: 'Für Motortreiber wie L9110S (A-IA/A-IB) oder L298N (IN1/IN2 bzw. IN3/IN4, Jumper auf ENA/ENB gesteckt): die beiden Steuereingänge eines Motors. Geschwindigkeit 0 bis 100 %.' }, COL.out),
+    inputsInline: true, tooltip: 'Für Motortreiber wie L9110S (A-IA/A-IB) oder L298N (IN1/IN2 bzw. IN3/IN4, Jumper auf ENA/ENB gesteckt): die beiden Steuereingänge eines Motors. Geschwindigkeit 0 bis 100 %.' }, COL.mot),
     B({ type: 'ard_stepper', message0: 'Schrittmotor IN1 %1 IN2 %2 IN3 %3 IN4 %4 %5 um %6 %7 %8 drehen mit %9 U/min', args0: [
       { type: 'field_dropdown', name: 'P1', options: PIN.out }, { type: 'field_dropdown', name: 'P2', options: PIN.out }, { type: 'field_dropdown', name: 'P3', options: PIN.out }, { type: 'field_dropdown', name: 'P4', options: PIN.out }, { type: 'input_dummy' },
       { type: 'input_value', name: 'N', check: 'Number' }, { type: 'field_dropdown', name: 'UNIT', options: [['Grad', 'DEG'], ['Umdrehungen', 'REV'], ['Schritte', 'STEP']] },
       { type: 'field_dropdown', name: 'DIR', options: [['im Uhrzeigersinn', 'CW'], ['gegen den Uhrzeigersinn', 'CCW']] }, { type: 'input_value', name: 'RPM', check: 'Number' }],
-    inputsInline: true, tooltip: 'Für den Schrittmotor 28BYJ-48 mit Treiberplatine ULN2003 (2048 Schritte = 1 Umdrehung). Geschwindigkeit 1 bis 15 Umdrehungen pro Minute. Das Programm wartet, bis der Motor angekommen ist.' }, COL.out),
+    inputsInline: true, tooltip: 'Für den Schrittmotor 28BYJ-48 mit Treiberplatine ULN2003 (2048 Schritte = 1 Umdrehung). Geschwindigkeit 1 bis 15 Umdrehungen pro Minute. Das Programm wartet, bis der Motor angekommen ist.' }, COL.mot),
     B({ type: 'ard_notone', message0: 'Lautsprecher an Anschluss %1 ausschalten', args0: [{ type: 'field_dropdown', name: 'PIN', options: PIN.out }] }, COL.out),
     /* Eingang */
     { type: 'ard_digital_read', message0: 'Digitalen Anschluss %1 lesen', args0: [{ type: 'field_dropdown', name: 'PIN', options: PIN.inp }], output: 'Number', colour: COL.inp },
@@ -265,8 +266,6 @@ function buildToolbox(ext) {
     <block type="ard_tone"><field name="PIN">${D.tone}</field><field name="NOTE">9</field><field name="OCT">4</field><value name="DUR">${num(1)}</value></block>
     <block type="ard_tone_freq"><field name="PIN">${D.tone}</field><value name="FREQ">${num(440)}</value><value name="DUR">${num(1)}</value></block>
     <block type="ard_notone"><field name="PIN">${D.tone}</field></block>
-    <block type="ard_motor"><field name="IA">${D.mA}</field><field name="IB">${D.mB}</field><value name="SPEED">${num(100)}</value></block>
-    <block type="ard_stepper">${D.st.map((p, i) => `<field name="P${i + 1}">${p}</field>`).join('')}<value name="N">${num(90)}</value><value name="RPM">${num(10)}</value></block>
   </category>
   <category name="Eingang" colour="${COL.inp}">
     <block type="ard_digital_read"><field name="PIN">${D.dr}</field></block>
@@ -321,6 +320,11 @@ function buildToolbox(ext) {
   <category name="Listen" colour="${COL.list}" custom="LISTE"></category>
   <category name="Funktionen" colour="${COL.func}" custom="PROCEDURE"></category>`;
   if (ext.length) x += `<sep></sep>`;
+  if (ext.includes('motoren')) x += `
+  <category name="Motoren" colour="${COL.mot}">
+    <block type="ard_motor"><field name="IA">${D.mA}</field><field name="IB">${D.mB}</field><value name="SPEED">${num(100)}</value></block>
+    <block type="ard_stepper">${D.st.map((p, i) => `<field name="P${i + 1}">${p}</field>`).join('')}<value name="N">${num(90)}</value><value name="RPM">${num(10)}</value></block>
+  </category>`;
   if (ext.includes('neopixel')) x += `
   <category name="NeoPixel" colour="${COL.neo}">
     <block type="neo_init"><field name="PIN">${D.neo}</field></block>

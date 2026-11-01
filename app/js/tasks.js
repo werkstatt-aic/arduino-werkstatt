@@ -270,11 +270,11 @@ const BUILTIN_TASKS = [
     goal: 'Eine Schranke (Servo) öffnet sich auf 90°, wenn der Taster gedrückt wird, und schließt sich nach 3 Sekunden wieder (0°).',
     tips: ['Der Servo hat drei Kabel: braun = GND, rot = 5 V, orange = Signal.', 'Block „Servo an … auf … Grad drehen“.', 'Wenn Taster gedrückt: auf 90 drehen, 3000 ms warten, auf 0 drehen.'],
     checks: [{ k: 'part', type: 'servo', n: 1 }, { k: 'part', type: 'button', n: 1 }, { k: 'button', watch: 'out' }, { k: 'noerror' }] },
-  { id: 'm2', level: 'Motoren', board: 'uno', start: 'vorlage', title: 'Lüfter mit Motortreiber',
+  { id: 'm2', level: 'Motoren', board: 'uno', start: 'vorlage', ext: ['motoren'], title: 'Lüfter mit Motortreiber',
     goal: 'Ein Lüfter soll über einen Motortreiber laufen: 3 Sekunden an, 2 Sekunden aus, immer wieder.',
     tips: ['Ein Motor braucht zu viel Strom für den Arduino-Anschluss. Darum kommt ein Motortreiber (L9110S oder L298N) dazwischen.', 'Der Treiber bekommt die Versorgung, der Arduino gibt nur die Steuersignale.', 'Block „Motor … drehen“ mit der Geschwindigkeit in %.'],
     checks: [{ k: 'part', type: 'motor', n: 1 }, { k: 'part', type: 'driver', n: 1 }, { k: 'motor' }, { k: 'noerror' }] },
-  { id: 'm3', level: 'Motoren', board: 'uno', start: 'vorlage', title: 'Schrittmotor-Zeiger',
+  { id: 'm3', level: 'Motoren', board: 'uno', start: 'vorlage', ext: ['motoren'], title: 'Schrittmotor-Zeiger',
     goal: 'Ein Schrittmotor dreht einen Zeiger um 90° vor, wartet 1 Sekunde und dreht wieder zurück.',
     tips: ['Die Treiberplatine ULN2003 braucht IN1 bis IN4 an vier digitalen Anschlüssen und eine eigene Versorgung (+ und –).', 'Block „Schrittmotor … um … Grad drehen“.', 'Zurück geht es mit „gegen den Uhrzeigersinn“.'],
     checks: [{ k: 'part', type: 'stepper', n: 1 }, { k: 'motor' }, { k: 'noerror' }] },
@@ -652,6 +652,7 @@ const TaskEditor = {
       this.read(f);
       if (rv === 'test') { this.preview(); return; }
       if (rv === 'ok') {
+        this.draft.ext = app.extensions.slice(); // Erweiterungen der Lösung auch für die Schüler
         if (this.draft.start === 'schaltung' || this.draft.start === 'alles') {
           const pd = app.projectData();
           this.draft.project = { circuit: pd.circuit, blocks: pd.blocks, extensions: pd.extensions };
