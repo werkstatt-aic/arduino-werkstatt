@@ -614,26 +614,40 @@ function renderDriver(comp) {
 }
 
 /* Motortreiber L298N: Steuerleiste ENA, IN1–IN4, ENB; Schraubklemmen +12V, GND, +5V; Motor A (OUT1/2), Motor B (OUT3/4) */
+/* Motortreiber L298N, von oben (quadratische Platine, Stiftleiste unten): oben Kühlkörper mit dem L298N,
+   links Klemme OUT1/OUT2, rechts OUT4/OUT3 (jeweils unten, nahe den anderen Anschlüssen), unten links die Stromklemme
+   12V/GND/5V, daneben die Stiftleiste ENA, IN1–IN4, ENB. Dazu Dioden, Spannungsregler 78M05 und zwei Kondensatoren. */
 function renderL298(comp) {
   const p = comp.props;
-  let s = `<rect class="body" x="-72" y="-104" width="164" height="112" rx="4" fill="#c62828" stroke="#8e1b1b"/>`;
-  // Befestigungslöcher in den Ecken
-  for (const [x, y] of [[-65, -97], [85, -97], [-65, 1], [85, 1]]) s += `<circle cx="${x}" cy="${y}" r="3" fill="#f4f5f3" stroke="#8e1b1b"/>`;
-  // Kühlkörper
-  s += `<rect x="-14" y="-100" width="48" height="40" rx="2" fill="#202020"/>`;
-  for (let i = 0; i < 7; i++) s += `<rect x="${-11 + i * 6.5}" y="-98" width="3" height="36" fill="#3a3a3a"/>`;
-  s += `<rect x="-6" y="-58" width="32" height="12" rx="1" fill="#111"/><text x="10" y="-49.5" class="tiny" text-anchor="middle" fill="#ddd">L298N</text>`;
+  let s = `<rect class="body" x="-75" y="-158" width="170" height="170" rx="5" fill="#d32f2f" stroke="#8e1b1b"/>`;
+  for (const [x, y] of [[-63, -146], [83, -146], [-63, 0], [83, 0]]) s += `<circle cx="${x}" cy="${y}" r="6.5" fill="#f2efe6" stroke="#b8a98a" stroke-width="1.5"/><circle cx="${x}" cy="${y}" r="3.5" fill="#fafaf7"/>`;
+  // Kühlkörper mit Rippen (ragt oben etwas über die Platine) und Treiberbaustein
+  s += `<rect x="-46" y="-130" width="92" height="20" rx="2" fill="#1b1b1b"/>`;
+  for (let k = 0; k < 7; k++) s += `<rect x="${-44 + k * 14.3}" y="-166" width="5" height="40" rx="1" fill="#262626"/>`;
+  s += `<rect x="-30" y="-128" width="60" height="16" rx="1.5" fill="#d9dcdf" stroke="#9aa0a5"/><text x="0" y="-117" class="tiny" text-anchor="middle" fill="#333">L298N</text>`;
+  for (let k = 0; k < 15; k++) { const x = -35 + k * 5; s += `<path d="M${x} -110 V${k % 2 ? -98 : -102}" stroke="#b8bcc0" stroke-width="1.6"/><circle cx="${x}" cy="${k % 2 ? -97 : -101}" r="1.4" fill="#c9ced2"/>`; }
+  // je vier SMD-Widerstände links und rechts (schwarzer Körper, Metallkappen, Aufdruck)
+  const smd = (x, y) => `<rect x="${x}" y="${y}" width="15" height="7" rx=".8" fill="#1d1d1d"/><rect x="${x}" y="${y}" width="3" height="7" fill="#c9ced2"/><rect x="${x + 12}" y="${y}" width="3" height="7" fill="#c9ced2"/><text x="${x + 7.5}" y="${y + 5.2}" font-size="4" text-anchor="middle" fill="#ddd">103</text>`;
+  for (let k = 0; k < 4; k++) s += smd(-70, -108 + k * 11) + smd(75, -108 + k * 11);
+  // Spannungsregler 78M05 und zwei Kondensatoren (220 µF, 35 V)
+  s += `<rect x="-24" y="-90" width="22" height="7" fill="#9aa0a5"/><rect x="-26" y="-84" width="26" height="18" rx="1.5" fill="#1d1d1d"/><text x="-13" y="-72" class="tiny" text-anchor="middle" fill="#ccc">78M05</text>`;
+  const cap = (x, y) => `<rect x="${x - 13}" y="${y - 13}" width="26" height="26" rx="2" fill="#1d1d1d"/><circle cx="${x}" cy="${y}" r="11.5" fill="#d6d9dc" stroke="#9aa0a5"/><text x="${x}" y="${y - 1}" class="tiny" text-anchor="middle" fill="#444">220</text><text x="${x}" y="${y + 6}" class="tiny" text-anchor="middle" fill="#444">35V</text>`;
+  s += cap(22, -80) + cap(-6, -46);
+  // kleine Bauteile: LED (Versorgung), Widerstand, Jumper für den 5-V-Regler
+  s += `<rect x="20" y="-56" width="8" height="5" rx="1" fill="#f3f3f3" stroke="#bbb" stroke-width=".5"/><rect x="20" y="-46" width="9" height="5" rx=".5" fill="#1d1d1d"/>`;
+  s += `<rect x="20" y="-36" width="8" height="16" rx="1" fill="#1d1d1d"/><rect x="21" y="-35" width="6" height="8" rx="1" fill="#2b2b2b" stroke="#555" stroke-width=".5"/>`;
   // Schraubklemmen
   const clamp = (x, y, w, h) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="1.5" fill="#1e63c5" stroke="#0f3f85"/>`;
-  s += clamp(-66, -88, 14, 28) + clamp(68, -88, 14, 28) + clamp(-47, -12, 34, 14);
-  for (const pin of comp.def.pins) if (/^(OUT|VS|GND|V5)/.test(pin.id)) s += `<circle cx="${pin.x}" cy="${pin.y}" r="3.2" fill="#c9ced2" stroke="#7d868c"/>`;
-  s += `<text x="-59" y="-91" class="tiny" text-anchor="middle">Motor A</text><text x="75" y="-91" class="tiny" text-anchor="middle">Motor B</text>`;
-  s += `<text x="-40" y="16" class="tiny" text-anchor="middle">12V</text><text x="-30" y="16" class="tiny" text-anchor="middle">GND</text><text x="-20" y="16" class="tiny" text-anchor="middle">5V</text>`;
+  s += clamp(-73, -66, 21, 42) + clamp(72, -66, 21, 42) + clamp(-48, -14, 36, 18);
+  for (const pin of comp.def.pins) if (/^(OUT|VS|GND|V5)/.test(pin.id)) s += `<circle cx="${pin.x}" cy="${pin.y}" r="${/^OUT/.test(pin.id) ? 5.5 : 4.4}" fill="#c9ced2" stroke="#7d868c"/>`;
+  const rot = (x, y, t, a) => `<text x="${x}" y="${y}" class="tiny" text-anchor="${a || 'middle'}" fill="#fff" transform="rotate(-90 ${x} ${y})" dy="1.6">${t}</text>`;
+  s += rot(-46, -55, 'OUT1') + rot(-46, -35, 'OUT2') + rot(66, -55, 'OUT4') + rot(66, -35, 'OUT3');
+  s += rot(-40, -17, '+12V', 'start') + rot(-30, -17, 'GND', 'start') + rot(-20, -17, '+5V', 'start');
   // Steuerleiste mit Jumpern auf ENA/ENB
   const labs = ['ENA', 'IN1', 'IN2', 'IN3', 'IN4', 'ENB'];
-  labs.forEach((l, i) => { s += hdr(i * 10, 0) + `<text x="${i * 10}" y="-8" class="tiny" text-anchor="middle" fill="#fff">${l}</text>`; });
-  if (String(p.ena) !== '0') s += `<rect x="-4" y="-5" width="8" height="12" rx="1" fill="#1d4fa8"/>`;
-  if (String(p.enb) !== '0') s += `<rect x="46" y="-5" width="8" height="12" rx="1" fill="#1d4fa8"/>`;
+  labs.forEach((l, i) => { s += hdr(i * 10, 0) + rot(i * 10, -8, l, 'start'); });
+  if (String(p.ena) !== '0') s += `<rect x="-4" y="-5" width="8" height="12" rx="1" fill="#1b1b1b"/>`;
+  if (String(p.enb) !== '0') s += `<rect x="46" y="-5" width="8" height="12" rx="1" fill="#1b1b1b"/>`;
   return s + pinsOf(comp);
 }
 
@@ -839,10 +853,10 @@ const COMPONENTS = {
   mdriver: { name: 'Motortreiber L9110S', label: 'Motor\u00adtreiber L9110S', ext: 'motoren', hidden: true, category: 'Module', render: renderDriver, bbox: [-28, -70, 80, 4],
     pins: [L('BIA', 0, 'B-IA (Motor B)'), L('BIB', 10, 'B-IB (Motor B)'), L('GND', 20), L('VCC', 30, 'VCC (Motorspannung)'), L('AIA', 40, 'A-IA (Motor A)'), L('AIB', 50, 'A-IB (Motor A)'),
       S('MA1', -19, -53, 'Motor A Anschluss 1'), S('MA2', -19, -39, 'Motor A Anschluss 2'), S('MB1', 71, -53, 'Motor B Anschluss 1'), S('MB2', 71, -39, 'Motor B Anschluss 2')], props: {} },
-  l298n: { name: 'Motortreiber L298N', label: 'Motor\u00adtreiber L298N', ext: 'motoren', category: 'Module', render: renderL298, bbox: [-72, -106, 92, 20],
+  l298n: { name: 'Motortreiber L298N', label: 'Motor\u00adtreiber L298N', ext: 'motoren', category: 'Module', render: renderL298, bbox: [-75, -166, 95, 12],
     pins: [S('ENA', 0, 0, 'ENA (Freigabe Motor A)'), S('IN1', 10, 0, 'IN1 (Motor A)'), S('IN2', 20, 0, 'IN2 (Motor A)'), S('IN3', 30, 0, 'IN3 (Motor B)'), S('IN4', 40, 0, 'IN4 (Motor B)'), S('ENB', 50, 0, 'ENB (Freigabe Motor B)'),
       S('VS', -40, -5, '+12V (Motorspannung, z. B. Batterie)'), S('GND', -30, -5, 'GND'), S('V5', -20, -5, '+5V'),
-      S('OUT1', -59, -81, 'OUT1 (Motor A)'), S('OUT2', -59, -67, 'OUT2 (Motor A)'), S('OUT3', 75, -81, 'OUT3 (Motor B)'), S('OUT4', 75, -67, 'OUT4 (Motor B)')],
+      S('OUT1', -62, -55, 'OUT1 (Motor A)'), S('OUT2', -62, -35, 'OUT2 (Motor A)'), S('OUT3', 82, -35, 'OUT3 (Motor B)'), S('OUT4', 82, -55, 'OUT4 (Motor B)')],
     props: { ena: '1', enb: '1' } },
   relay: { name: 'Relais-Modul', ext: 'motoren', category: 'Module', render: renderRelay, bbox: [-30, -160, 50, 4],
     pins: [L('VCC', 0), L('GND', 10), L('IN', 20, 'IN (Steuereingang)'), S('NO', 28, -132, 'NO (Schließer: verbunden, wenn das Relais angezogen ist)'), S('COM', 10, -132, 'COM (gemeinsamer Anschluss)'), S('NC', -8, -132, 'NC (Öffner: verbunden, wenn das Relais abgefallen ist)')],

@@ -114,12 +114,12 @@
   /* 7 Motor mit Motortreiber L298N (IN1 an D6, IN2 an D5), Motorspannung aus einer Batterie */
   { const k = base('uno');
     poti(k, 3);
-    const bb = k.bb, dx = bb.x + 470, dy = bb.y - 20;
+    const bb = k.bb, dx = bb.x + 510, dy = bb.y - 20;
     const d = k.addAt('l298n', dx, dy, { ena: '1', enb: '1' });
-    const m = k.addAt('gearmotor', dx - 100, dy - 140);
+    const m = k.addAt('gearmotor', dx - 100, dy - 190);
     const D = p => ({ c: d.id, p });
-    k.wire({ c: m.id, p: 'P' }, D('OUT1'), 'rot', [[dx - 100, dy - 81]]);
-    k.wire({ c: m.id, p: 'N' }, D('OUT2'), 'schwarz', [[dx - 90, dy - 67]]);
+    k.wire({ c: m.id, p: 'N' }, D('OUT1'), 'schwarz', [[dx - 90, dy - 55]]);
+    k.wire({ c: m.id, p: 'P' }, D('OUT2'), 'rot', [[dx - 100, dy - 35]]);
     [['GND_T', 'GND', -30], ['D6', 'IN1', 10], ['D5', 'IN2', 20]].forEach(([mp, dp, ox], i) => {
       const a = k.pos(k.M(mp)), yc = bb.y + 222 + 8 * i, xv = dx + 60 + 8 * i, yb = dy + 34 - 7 * i;
       k.wire(k.M(mp), D(dp), i ? 'blau' : 'schwarz', [[a[0], yc], [xv, yc], [xv, yb], [dx + ox, yb]]);
@@ -166,29 +166,35 @@
           `<block type="controls_if"><value name="IF0">${is('an')}</value><statement name="DO0">${chain([dw(4, 'HIGH'), send('LED ist an')])}</statement></block>`,
           `<block type="controls_if"><value name="IF0">${is('aus')}</value><statement name="DO0">${chain([dw(4, 'LOW'), send('LED ist aus')])}</statement></block>`])}</statement></block>`]) }); }
 
-  /* 11 Fahrzeug: zwei Getriebemotoren am L298N, eigene Batterie für die Motoren */
-  { const k = base('uno');
-    const bb = k.bb, dx = bb.x + 520, dy = bb.y - 20;
-    const d = k.addAt('l298n', dx, dy, { ena: '1', enb: '1' });
-    // wie im Fahrzeug von oben: links der Motor mit Rad links, rechts derselbe Motor um 180° gedreht (Rad rechts)
-    const mL = k.addAt('wheelL', dx - 138, dy - 150), mR = k.addAt('wheelR', dx + 138, dy - 150);
-    const D = p => ({ c: d.id, p });
-    // Anschlüsse der Motoren zeigen nach vorne (oben); beide gleich gepolt: Plus an OUT1 bzw. OUT3
-    k.wire({ c: mL.id, p: 'P' }, D('OUT1'), 'rot', [[dx - 138, dy - 170], [dx - 80, dy - 170], [dx - 80, dy - 81]]);
-    k.wire({ c: mL.id, p: 'N' }, D('OUT2'), 'schwarz', [[dx - 128, dy - 162], [dx - 86, dy - 162], [dx - 86, dy - 67]]);
-    k.wire({ c: mR.id, p: 'P' }, D('OUT3'), 'rot', [[dx + 148, dy - 170], [dx + 96, dy - 170], [dx + 96, dy - 81]]);
-    k.wire({ c: mR.id, p: 'N' }, D('OUT4'), 'schwarz', [[dx + 138, dy - 162], [dx + 102, dy - 162], [dx + 102, dy - 67]]);
-    // Steuerleitungen: hoch in den Kanal, rechts an der Steckplatine vorbei, von unten an die Stiftleiste
-    [['GND_T', 'GND', -30], ['D11', 'IN1', 10], ['D6', 'IN2', 20], ['D5', 'IN3', 30], ['D3', 'IN4', 40]].forEach(([mp, dp, ox], i) => {
-      const a = k.pos(k.M(mp)), yc = bb.y + 212 + 8 * i, xv = dx + 60 + 8 * i, yb = dy + 48 - 7 * i;
-      k.wire(k.M(mp), D(dp), i ? 'blau' : 'schwarz', [[a[0], yc], [xv, yc], [xv, yb], [dx + ox, yb]]);
+  /* 11 Fahrzeug: ohne Steckplatine – Motortreiber und Motoren direkt über dem Arduino, wie auf dem Fahrzeug */
+  { BOARD = 'uno';
+    App.circuit.load({ components: [], wires: [] });
+    const C = App.circuit, P = C.project;
+    const u = makeComp('uno', 0, 0, 0, {}, C.newId('c')); P.components.push(u);
+    const add = (t, x, y, pr) => { const o = makeComp(t, x, y, 0, pr, C.newId('c')); P.components.push(o); return o; };
+    const W = (a, b, color, pts) => P.wires.push({ id: C.newId('w'), a, b, color, pts: pts || [] });
+    const pos = r => { const c = C.comp(r.c); return worldPin(c, c.def.pins.find(q => q.id === r.p)); };
+    const M = p => ({ c: u.id, p });
+    const dx = 175, dy = -80;
+    const d = add('l298n', dx, dy, { ena: '1', enb: '1' }), D = p => ({ c: d.id, p });
+    // Motoren mit Rad, Anschlüsse nach vorne; beide gleich gepolt (Plus an OUT1 bzw. OUT3)
+    const mL = add('wheelL', dx - 120, dy - 150), mR = add('wheelR', dx + 140, dy - 150);
+    W({ c: mL.id, p: 'P' }, D('OUT1'), 'rot', [[dx - 120, dy - 170], [dx - 78, dy - 170], [dx - 78, dy - 55]]);
+    W({ c: mL.id, p: 'N' }, D('OUT2'), 'schwarz', [[dx - 110, dy - 162], [dx - 84, dy - 162], [dx - 84, dy - 35]]);
+    W({ c: mR.id, p: 'N' }, D('OUT4'), 'schwarz', [[dx + 140, dy - 162], [dx + 106, dy - 162], [dx + 106, dy - 55]]);
+    W({ c: mR.id, p: 'P' }, D('OUT3'), 'rot', [[dx + 150, dy - 170], [dx + 100, dy - 170], [dx + 100, dy - 35]]);
+    // Steuerleitungen: vom Arduino senkrecht nach oben zur Stiftleiste
+    [['D11', 'IN1', 10, -24], ['D6', 'IN2', 20, -16], ['D5', 'IN3', 30, -24], ['D3', 'IN4', 40, -32]].forEach(([mp, dp, ox, y]) => {
+      const a = pos(M(mp)); W(M(mp), D(dp), 'blau', [[a[0], y], [dx + ox, y]]);
     });
-    // Batterie 9 V für die Motoren (Plus an 12V, Minus an GND)
-    const sx = dx - 120, sy = dy + 110, bat = k.addAt('source', sx, sy, { volt: 9, ri: 1 });
-    k.wire({ c: bat.id, p: 'P' }, D('VS'), 'rot', [[sx, sy + 12], [sx - 20, sy + 12], [sx - 20, dy + 30], [dx - 40, dy + 30]]);
-    k.wire({ c: bat.id, p: 'N' }, D('GND'), 'schwarz', [[sx + 20, sy + 24], [dx - 30, sy + 24]]);
+    // Batterie 9 V links: Plus an 12V, Minus an GND; GND des Arduino ebenfalls an GND
+    const bx = 40, by = -50, bat = add('source', bx, by, { volt: 9, ri: 1 });
+    W({ c: bat.id, p: 'P' }, D('VS'), 'rot', [[bx, by + 10], [dx - 40, by + 10]]);
+    W({ c: bat.id, p: 'N' }, D('GND'), 'schwarz', [[bx + 20, by + 4], [dx - 30, by + 4]]);
+    const g = pos(M('GND_T')); W(M('GND_T'), D('GND'), 'schwarz', [[g[0], -10], [dx - 26, -10], [dx - 26, by + 4], [dx - 30, by + 4]]);
+    C.renderAll();
     const drive = (dir, s) => `<block type="car_drive"><field name="DIR">${dir}</field><value name="SPEED">${N(s)}</value></block>`;
-    ex.push({ id: 'fahrzeug', title: 'Fahrzeug fährt ein Quadrat', board: 'uno', ext: ['motoren'], desc: 'Zwei Getriebemotoren mit Rad am Motortreiber L298N (IN1 D11, IN2 D6, IN3 D5, IN4 D3) mit eigener Batterie. Das Fahrzeug fährt 2 s geradeaus und dreht sich dann nach rechts. Wie im echten Fahrzeug ist der rechte Motor um 180° gedreht eingebaut; beide sind gleich gepolt angeschlossen, die Fahrzeug-Blöcke drehen den rechten Motor selbst um.', circuit: k.done(),
+    ex.push({ id: 'fahrzeug', title: 'Fahrzeug fährt ein Quadrat', board: 'uno', ext: ['motoren'], desc: 'Zwei Getriebemotoren mit Rad am Motortreiber L298N (IN1 D11, IN2 D6, IN3 D5, IN4 D3) mit eigener Batterie, ohne Steckplatine. Das Fahrzeug fährt 2 s geradeaus und dreht sich dann nach rechts. Wie im echten Fahrzeug ist der rechte Motor um 180° gedreht eingebaut; beide sind gleich gepolt angeschlossen, die Fahrzeug-Blöcke drehen den rechten Motor selbst um.', circuit: C.toJSON(),
       blocks: prog([`<block type="car_init"><field name="LA">11</field><field name="LB">6</field><field name="RA">5</field><field name="RB">3</field></block>`],
         [drive('FWD', 80), wait(2), drive('TR', 80), wait(0.6)]) }); }
 
