@@ -5,7 +5,7 @@ with sync_playwright() as p:
     errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.goto('http://127.0.0.1:8642/'); pg.wait_for_timeout(900)
     pg.click('#dlgForm [data-act=examples]'); pg.wait_for_timeout(300); pg.click('[data-ex=motor]'); pg.wait_for_timeout(300)
-    pg.select_option('#dlgForm select[name=tisch]','05'); pg.fill('#dlgForm input[name=nach]','Test'); pg.click('#dlgForm button[value=ok]'); pg.wait_for_timeout(800)
+    pg.select_option('#dlgForm select[name=tisch]','05'); pg.fill('#dlgForm input[name=vor]','Test'); pg.click('#dlgForm button[value=ok]'); pg.wait_for_timeout(800)
     pg.evaluate("()=>App.startSim()"); pg.wait_for_timeout(1500)
     pg.screenshot(path='x2a.png')
     pg.evaluate("()=>App.stopSim()"); pg.click('#modeCode'); pg.wait_for_timeout(500)

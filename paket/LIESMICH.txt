@@ -12,8 +12,8 @@ STARTEN
 START
   Beim Start erscheint eine Auswahl: neues Projekt anlegen, zuletzt bearbeitetes
   oder ein anderes Projekt öffnen, eine Aufgabe wählen oder ein Beispiel öffnen.
-  Für ein neues Projekt gibt man Tisch-Nr. (01 bis 18), Nachname und
-  Projektname ein. Daraus wird z. B. "11 – Müller – Ampelschaltung".
+  Für ein neues Projekt gibt man Tisch-Nr. (01 bis 18), Vorname und
+  Projektname ein. Daraus wird z. B. "11 – Lena – Ampelschaltung".
   Ein vorhandenes Projekt wird nie überschrieben.
 
 SPEICHERN UND SICHERUNGEN
@@ -71,8 +71,10 @@ BEDIENUNG IN KÜRZE
     Eigenschaftsfeld verstellen (auch während der Simulation).
   - Code: Ansicht "Blöcke", "Blöcke + Text" oder "Text (C++)".
   - "Erweiterungen ..." schaltet NeoPixel, Tastenfeld, Multimeter, OLED-Anzeige
-    und Kommunikation für das jeweilige Projekt zu. Die passenden Bauteile
-    erscheinen dann auch in der Bauteilleiste.
+    und Kommunikation für das jeweilige Projekt zu. Den Knopf gibt es beim
+    Code und in der Bauteilleiste. Die passenden Bauteile erscheinen dann in
+    der Bauteilleiste, die Blöcke im Werkzeugkasten. Steckt ein solches
+    Bauteil in der Schaltung, bleibt seine Erweiterung eingeschaltet.
   - OLED-Grafikeditor: Im Block "OLED-Bild ... zeichnen" auf das Bild klicken.
   - Mathe: runden (auch auf/ab), Betrag, Quadratwurzel.
   - PWM-Blöcke (PWM-Ausgang, Servo, Motor): Alle Anschlüsse sind wählbar. Beim
@@ -149,7 +151,7 @@ ESP32
 ÜBERTRAGEN PER BLUETOOTH (nur ESP32)
   1. Einmal per USB-Kabel hochladen und dabei "Bluetooth-Übertragung in das
      Programm einbauen" anhaken. Den Namen des ESP32 kann man dort ändern
-     (vorbelegt mit "ESP-" und dem Nachnamen aus dem Projektnamen).
+     (vorbelegt mit "ESP-", Tisch-Nr. und Vorname aus dem Projektnamen).
   2. Danach im Hochladen-Fenster "Bluetooth" wählen (oder oben auf das
      Bluetooth-Zeichen klicken) und "Hochladen" klicken. In der Liste den
      eigenen ESP32 auswählen.

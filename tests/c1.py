@@ -20,7 +20,7 @@ with sync_playwright() as p:
     b=p.chromium.launch(); pg=b.new_page(viewport={'width':1400,'height':900})
     errs=[]; pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.goto('http://127.0.0.1:8642/'); pg.wait_for_timeout(900)
-    pg.select_option('#dlgForm select[name=tisch]','11'); pg.fill('#dlgForm input[name=nach]','Aichler'); pg.fill('#dlgForm input[name=proj]','Funk Test'); pg.click('button[value=new]'); pg.wait_for_timeout(500)
+    pg.select_option('#dlgForm select[name=tisch]','11'); pg.fill('#dlgForm input[name=vor]','Aichler'); pg.fill('#dlgForm input[name=proj]','Funk Test'); pg.click('button[value=new]'); pg.wait_for_timeout(500)
     print('Name:', pg.input_value('#projName'))
     pg.select_option('#boardSel','esp32'); pg.wait_for_timeout(300)
     pg.evaluate("()=>App.setExtensions(['comm'])")
