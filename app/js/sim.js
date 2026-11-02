@@ -100,8 +100,9 @@ class Simulator {
         val = Math.max(0, Math.min(255, Math.round(Number(val) || 0)));
         const M = S.m(), pwm = !M.pwm || M.pwm.includes(pin);
         if (!pwm) {
-          S.outputs[pin] = { v: val >= 128 ? M.logic : 0, duty: 1 };
-          if (val > 0 && val < 255) S.msg('nopwm' + pin, 'warn', `Anschluss ${pin} kann kein PWM, er ist nur ganz an oder aus (Wert ${val} → ${val >= 128 ? 'an' : 'aus'}). Für Zwischenwerte einen Anschluss mit ~ nehmen: ${M.pwm.join(", ")}.`);
+          // Bewusst ohne Wirkung in der Simulation: PWM nur an Anschlüssen mit ~ (der echte Uno würde ganz an/aus schalten)
+          if (val > 0) S.msg('nopwm' + pin, 'warn', `Anschluss ${pin} kann kein PWM – der Block „PWM-Ausgang … einstellen“ bewirkt dort nichts. Nimm einen Anschluss mit ~: ${M.pwm.join(', ')}.`);
+          return;
         }
         else S.outputs[pin] = { v: val > 0 ? M.logic : 0, duty: val / 255 };
         S.update();

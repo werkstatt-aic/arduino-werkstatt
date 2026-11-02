@@ -107,8 +107,8 @@ BEDIENUNG IN KÜRZE
   - Mathe: runden (auch auf/ab), Betrag, Quadratwurzel.
   - PWM-Blöcke (PWM-Ausgang, Servo, Motor): Alle Anschlüsse sind wählbar. Beim
     Arduino Uno können nur D3, D5, D6, D9, D10 und D11 (mit ~ gekennzeichnet)
-    Zwischenwerte. An anderen Anschlüssen ist der Ausgang nur ganz an oder aus;
-    die Simulation zeigt dann einen Hinweis.
+    PWM. An anderen Anschlüssen bewirken "PWM-Ausgang" und der Motor-Block in
+    der Simulation nichts; es erscheint ein Hinweis.
   - Listen (eigene Kategorie): Liste anlegen (mit Anzahl oder aus Zahlen wie
     "262, 294, 330"), Eintrag lesen/setzen, neuen Wert hinten nachschieben
     (für Messreihen), Liste leeren (alle Einträge 0), Anzahl, Mittelwert,

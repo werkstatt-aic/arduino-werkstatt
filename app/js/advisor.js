@@ -121,7 +121,7 @@ const Advisor = {
         const fields = { ard_analog_write: ['PIN'], ard_motor: ['IA', 'IB'], car_init: ['LA', 'LB', 'RA', 'RB'] }[b.type];
         if (!fields) continue;
         const bad = fields.map(f => pinId(b.getFieldValue(f))).filter(p => !UNO_MCU.pwm.includes(p));
-        if (bad.length) add('warn', `Der Block „${blockText(b)}“ nutzt ${bad.join(', ')} – dort gibt es kein PWM (nur ganz an oder aus). PWM können nur die Anschlüsse mit ~: D3, D5, D6, D9, D10, D11.`, { block: b.id });
+        if (bad.length) add('warn', `Der Block „${blockText(b)}“ nutzt ${bad.join(', ')} – dort gibt es kein PWM – in der Simulation passiert dann nichts. PWM können nur die Anschlüsse mit ~: D3, D5, D6, D9, D10, D11.`, { block: b.id });
       }
     }
     for (const b of live.filter(b => b.type === 'ard_dht')) {
