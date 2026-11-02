@@ -173,11 +173,23 @@ const App = {
         d.close('cancel');
         try { const data = await (await this.api('load?file=' + encodeURIComponent(it.dataset.file))).json(); this.loadProject(data); this.fileName = it.dataset.file; }
         catch (err) { this.toast('Öffnen fehlgeschlagen: ' + err.message); }
-      } else if (act && act.dataset.act === 'open') { d.close('cancel'); this.fileAction('open'); }
-      else if (act && act.dataset.act === 'examples') { d.close('cancel'); this.examplesDialog(); }
-      else if (act && act.dataset.act === 'tasks') { d.close('cancel'); TaskUi.dialog(); }
+      } else if (act && act.dataset.act === 'open') { d.close('cancel'); this.backToStart(list, last, rescue); this.fileAction('open'); }
+      else if (act && act.dataset.act === 'examples') { d.close('cancel'); this.backToStart(list, last, rescue); this.examplesDialog(); }
+      else if (act && act.dataset.act === 'tasks') { d.close('cancel'); this.backToStart(list, last, rescue); TaskUi.dialog(); }
       else if (act && act.dataset.act === 'rescue') { d.close('cancel'); this.loadProject(rescue); this.save(); this.toast('Entwurf wiederhergestellt und gespeichert.'); }
     });
+  },
+
+  /* Wird ein Beispiel, eine Aufgabe oder ein Projekt aus dem Startfenster heraus doch nicht geöffnet
+     (Abbrechen), geht es zurück ins Startfenster statt in eine Werkstatt ohne Projektnamen. */
+  backToStart(list, last, rescue) {
+    const d = $('#dlg'), before = this.loadCount || 0;
+    const check = () => setTimeout(() => {
+      if ((this.loadCount || 0) !== before || this.opening) return; // es wurde (oder wird gerade) etwas geöffnet
+      if (d.open) { d.addEventListener('close', check, { once: true }); return; } // nächster Dialog (z. B. Name)
+      this.startScreen(list, last, rescue);
+    }, 60);
+    setTimeout(() => { if (d.open) d.addEventListener('close', check, { once: true }); else check(); }, 0);
   },
 
   blankProject(name) {
@@ -185,6 +197,7 @@ const App = {
   },
 
   loadProject(data) {
+    this.loadCount = (this.loadCount || 0) + 1;
     if (this.sim.running) this.stopSim();
     this.loading = true;
     $('#projName').value = data.name || 'Neues Projekt';
@@ -947,11 +960,13 @@ const App = {
       try { list = await (await this.api('list')).json(); } catch (e) { this.toast('Projektliste konnte nicht geladen werden.'); return; }
       const items = list.length ? list.map(p => `<li data-file="${esc(p.file)}"><span>${esc(p.file.replace(/\.awp$/, ''))}</span><span class="d">${new Date(p.modified).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })}</span></li>`).join('') : '<li>Noch keine Projekte im Ordner „Projekte“.</li>';
       this.dialog(`<h2>Projekt öffnen</h2><p>Projekte im Ordner „Projekte“:</p><ul class="plist">${items}</ul><div class="dlg-btns"><button class="btn" value="file" type="submit">Andere Datei …</button><button class="btn" value="cancel">Abbrechen</button></div>`,
-        rv => { if (rv === 'file') $('#fileInput').click(); });
+        rv => { if (rv === 'file') { this.opening = true; $('#fileInput').click(); } });
       $('#dlgForm .plist').addEventListener('click', async e => {
         const li = e.target.closest('li[data-file]'); if (!li) return;
+        this.opening = true;
         $('#dlg').close('cancel');
         try { const data = await (await this.api('load?file=' + encodeURIComponent(li.dataset.file))).json(); this.loadProject(data); this.fileName = li.dataset.file; } catch (err) { this.toast('Öffnen fehlgeschlagen: ' + err.message); }
+        this.opening = false;
       });
     } else if (act === 'duplicate') {
       await this.refreshFiles();
