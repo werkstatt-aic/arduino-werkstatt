@@ -361,7 +361,7 @@ function renderWheelMotor(comp, st) {
   b += `<rect x="-35" y="86" width="12" height="18" rx="2" fill="#ffd21f" stroke="#c9a200"/>`;
   let s = right ? `<g transform="matrix(-1 0 0 1 10 0)">${b}</g>` : b;
   if (run) {
-    const fwd = (st.dir > 0) !== right, x = right ? 39 : -29, y0 = fwd ? 114 : 76, y1 = fwd ? 76 : 114, h = fwd ? -8 : 8;
+    const fwd = (st.dir < 0) !== right, x = right ? 39 : -29, y0 = fwd ? 114 : 76, y1 = fwd ? 76 : 114, h = fwd ? -8 : 8;
     s += `<path d="M${x} ${y0} V${y1}" stroke="#4cd964" stroke-width="3" stroke-linecap="round"/><path d="M${x - 6} ${y1 - h} L${x} ${y1} L${x + 6} ${y1 - h}" stroke="#4cd964" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
   }
   s += right ? `<text x="0" y="-6" class="leglab" text-anchor="middle">–</text><text x="10" y="-6" class="leglab" text-anchor="middle">+</text>`

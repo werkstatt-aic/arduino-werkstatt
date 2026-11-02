@@ -113,7 +113,7 @@ class Simulator {
       async motor(ia, ib, dir, pct) {
         check();
         const v = Math.round(Math.max(0, Math.min(100, Number(pct) || 0)) * 255 / 100);
-        await this.analogWrite(ia, dir > 0 ? v : 0); await this.analogWrite(ib, dir < 0 ? v : 0);
+        await this.analogWrite(ia, dir < 0 ? v : 0); await this.analogWrite(ib, dir > 0 ? v : 0); // vorwärts: IN2 (bzw. IN4) an
       },
       /* Fahrzeug mit zwei Motoren: -100 … 100 je Seite */
       carInit(pins) { check(); S.car = pins; },

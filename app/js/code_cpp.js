@@ -253,12 +253,12 @@ Arduino.scrub_ = function (block, code, thisOnly) {
   A['ard_motor'] = b => {
     const ia = pinNum(b, 'IA'), ib = pinNum(b, 'IB');
     mode(ia, 'OUTPUT'); mode(ib, 'OUTPUT');
-    A.helpers_.motor = '// Motortreiber L298N (IN1/IN2 bzw. IN3/IN4): richtung 1 = vorwärts, -1 = rückwärts, 0 = anhalten\nvoid motor(int ia, int ib, int richtung, int prozent)\n{\n  int pwm = constrain(prozent, 0, 100) * 255 / 100;\n  analogWrite(ia, richtung > 0 ? pwm : 0);\n  analogWrite(ib, richtung < 0 ? pwm : 0);\n}';
+    A.helpers_.motor = '// Motortreiber L298N (IN1/IN2 bzw. IN3/IN4): richtung 1 = vorwärts, -1 = rückwärts, 0 = anhalten\nvoid motor(int ia, int ib, int richtung, int prozent)\n{\n  int pwm = constrain(prozent, 0, 100) * 255 / 100;\n  analogWrite(ia, richtung < 0 ? pwm : 0); // rückwärts: IN1 (bzw. IN3)\n  analogWrite(ib, richtung > 0 ? pwm : 0); // vorwärts: IN2 (bzw. IN4)\n}';
     return `motor(${ia}, ${ib}, ${b.getFieldValue('DIR')}, ${v(b, 'SPEED')});\n`;
   };
   // Fahrzeug mit zwei Motoren am Motortreiber
   const carHelper = () => {
-    A.helpers_.motor = '// Motortreiber L298N (IN1/IN2 bzw. IN3/IN4): richtung 1 = vorwärts, -1 = rückwärts, 0 = anhalten\nvoid motor(int ia, int ib, int richtung, int prozent)\n{\n  int pwm = constrain(prozent, 0, 100) * 255 / 100;\n  analogWrite(ia, richtung > 0 ? pwm : 0);\n  analogWrite(ib, richtung < 0 ? pwm : 0);\n}';
+    A.helpers_.motor = '// Motortreiber L298N (IN1/IN2 bzw. IN3/IN4): richtung 1 = vorwärts, -1 = rückwärts, 0 = anhalten\nvoid motor(int ia, int ib, int richtung, int prozent)\n{\n  int pwm = constrain(prozent, 0, 100) * 255 / 100;\n  analogWrite(ia, richtung < 0 ? pwm : 0); // rückwärts: IN1 (bzw. IN3)\n  analogWrite(ib, richtung > 0 ? pwm : 0); // vorwärts: IN2 (bzw. IN4)\n}';
     A.helpers_.zcar = `// Fahrzeug mit zwei Motoren: je Seite -100 (voll rückwärts) bis 100 (voll vorwärts)
 int fahrzeugPins[4] = {-1, -1, -1, -1};
 void fahrzeugEinrichten(int la, int lb, int ra, int rb)

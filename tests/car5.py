@@ -17,7 +17,7 @@ with sync_playwright() as p:
         const xml=e.blocks.replace(/<block type="ard_loop"[\\s\\S]*<\\/xml>/, '<block type="ard_loop" x="30" y="200"><statement name="DO">'+blk+'</statement></block></xml>');
         App.loadProject({format:FORMAT,version:1,name:'01 – T – '+n,board:'uno',extensions:['motoren'],circuit:JSON.parse(JSON.stringify(e.circuit)),blocks:xml});
         App.startSim(); await new Promise(r=>setTimeout(r,700));
-        const w=t=>{const c=App.project.components.find(c=>c.type===t), s=App.circuit.states[c.id]; if(!s||!s.running) return 'steht'; return (((s.dir>0)!==(t==='wheelR'))?'vor ':'zurück ')+Math.round(s.speed*100)+'%';};
+        const w=t=>{const c=App.project.components.find(c=>c.type===t), s=App.circuit.states[c.id]; if(!s||!s.running) return 'steht'; return (((s.dir<0)!==(t==='wheelR'))?'vor ':'zurück ')+Math.round(s.speed*100)+'%';};
         out.push(n.padEnd(14)+' links: '+w('wheelL').padEnd(12)+' rechts: '+w('wheelR')); App.stopSim();
       }
       return out;}""")
