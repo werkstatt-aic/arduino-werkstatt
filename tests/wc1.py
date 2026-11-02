@@ -4,7 +4,7 @@ with sync_playwright() as p:
     b = p.chromium.launch(); pg = b.new_page(viewport={'width': 1400, 'height': 900})
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.goto('http://127.0.0.1:8642/'); pg.wait_for_timeout(900)
-    pg.evaluate("()=>{const f=document.querySelector('#dlgForm');f.tisch.value='05';f.vor.value='Neu';f.proj.value='Kabel'}"); pg.click('button[value=new]'); pg.wait_for_timeout(500)
+    pg.evaluate("()=>{const f=document.querySelector('#dlgForm');f.tisch.value='05';f.vor.value='Neu';f.proj.value='Kabel'+Date.now()}"); pg.click('button[value=new]'); pg.wait_for_timeout(500)
     for manual in [False, True]:
         wid = pg.evaluate("""(manual)=>{const C=App.circuit; C.load({components:[],wires:[]}); C.addTemplate(365,430);
           const P=C.project, bb=P.components.find(c=>c.type==='breadboard');

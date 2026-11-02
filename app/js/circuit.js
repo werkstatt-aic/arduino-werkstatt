@@ -332,9 +332,19 @@ class CircuitEditor {
       return;
     }
     if (knot) {
-      const w = this.project.wires.find(x => x.id === wireEl.dataset.id);
+      const w = this.project.wires.find(x => x.id === wireEl.dataset.id), i = +knot.dataset.knot, now = Date.now();
+      // Doppelklick auf einen Knickpunkt entfernt ihn
+      const last = this.lastKnot;
+      this.lastKnot = { w, i, t: now };
+      if (last && last.w === w && last.i === i && now - last.t < 450) {
+        this.lastKnot = null;
+        w.pts.splice(i, 1);
+        this.renderWires();
+        this.app.changed();
+        return;
+      }
       this.app.pushUndo();
-      this.drag = { kind: 'knot', w, i: +knot.dataset.knot, moved: false };
+      this.drag = { kind: 'knot', w, i, moved: false };
       svg_capture(this.svg, e);
       return;
     }
@@ -345,7 +355,13 @@ class CircuitEditor {
       this.drawTemp(e);
       return;
     }
-    if (wireEl) { this.select({ kind: 'wire', id: wireEl.dataset.id }); return; }
+    if (wireEl) {
+      // Klick wählt das Kabel aus; Ziehen an einer Stelle des Kabels setzt dort einen neuen Knickpunkt
+      const w = this.project.wires.find(x => x.id === wireEl.dataset.id);
+      this.select({ kind: 'wire', id: wireEl.dataset.id });
+      if (w) { this.drag = { kind: 'bend', w, start: this.pt(e) }; svg_capture(this.svg, e); }
+      return;
+    }
     if (compEl) {
       const c = this.comp(compEl.dataset.id);
       this.select({ kind: 'comp', id: c.id });
@@ -393,6 +409,24 @@ class CircuitEditor {
         this.renderWires();
         this.renderSelection();
       }
+    } else if (d.kind === 'bend') {
+      const [x, y] = this.pt(e);
+      if (Math.hypot(x - d.start[0], y - d.start[1]) * this.view.k < 5) return; // erst ab kurzem Ziehen
+      // Abschnitt finden, der dem Startpunkt am nächsten liegt, und dort einen Knickpunkt einfügen
+      const a = this.pinPos(d.w.a), b = this.pinPos(d.w.b);
+      if (!a || !b) return;
+      const pts = [a, ...d.w.pts, b], [px, py] = d.start;
+      let best = 0, bestD = Infinity;
+      for (let i = 0; i + 1 < pts.length; i++) {
+        const [x1, y1] = pts[i], [x2, y2] = pts[i + 1], dx = x2 - x1, dy = y2 - y1, L = dx * dx + dy * dy || 1;
+        const t = Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / L));
+        const dist = Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
+        if (dist < bestD) { bestD = dist; best = i; }
+      }
+      this.app.pushUndo();
+      d.w.pts.splice(best, 0, [Math.round(x / 5) * 5, Math.round(y / 5) * 5]);
+      this.drag = { kind: 'knot', w: d.w, i: best, moved: true };
+      this.renderWires();
     } else if (d.kind === 'end') {
       d.pos = this.pt(e);
       this.renderWires();

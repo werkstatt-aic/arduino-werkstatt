@@ -4,7 +4,7 @@ with sync_playwright() as p:
     b = p.chromium.launch(); pg = b.new_page(viewport={'width': 1400, 'height': 900})
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.goto('http://127.0.0.1:8642/'); pg.wait_for_timeout(900)
-    pg.evaluate("()=>{const f=document.querySelector('#dlgForm');f.tisch.value='05';f.vor.value='Neu';f.proj.value='Kabel'}"); pg.click('button[value=new]'); pg.wait_for_timeout(500)
+    pg.evaluate("()=>{const f=document.querySelector('#dlgForm');f.tisch.value='05';f.vor.value='Neu';f.proj.value='Kabel'+Date.now()}"); pg.click('button[value=new]'); pg.wait_for_timeout(500)
     def run(frm, to, color):
         wid = pg.evaluate("""([frm,color])=>{const C=App.circuit; C.load({components:[],wires:[]}); C.addTemplate(365,430);
           const P=C.project, bb=P.components.find(c=>c.type==='breadboard');
@@ -14,8 +14,10 @@ with sync_playwright() as p:
         before = pg.evaluate("(id)=>App.project.wires.find(w=>w.id===id).color", wid)
         e = pg.locator('.wire-endh[data-end=a]').bounding_box()
         t = pg.evaluate("""(to)=>{const C=App.circuit, bb=C.project.components.find(c=>c.type==='breadboard'); const el=[...document.querySelectorAll('.pin')].find(x=>{const r=C.pinRef(x); return r && r.c===bb.id && r.p===to;}); const r=el.getBoundingClientRect(); return [r.x+r.width/2, r.y+r.height/2];}""", to)
+        if pg.evaluate("()=>document.querySelector('#dlg').open"): print('  DIALOG:', pg.inner_text('#dlg')[:300].replace('\n',' | '))
+        print('  Treffer:', pg.evaluate("([x,y])=>{const e=document.elementFromPoint(x,y); return e.getAttribute('class')}", [e['x']+e['width']/2, e['y']+e['height']/2]), 'Ziel:', pg.evaluate("([x,y])=>{const e=document.elementFromPoint(x,y); return e.getAttribute('class')}", t))
         pg.mouse.move(e['x']+e['width']/2, e['y']+e['height']/2); pg.mouse.down(); pg.mouse.move(t[0], t[1], steps=8); pg.mouse.up(); pg.wait_for_timeout(250)
-        after = pg.evaluate("(id)=>App.project.wires.find(w=>w.id===id).color", wid)
+        after = pg.evaluate("(id)=>{const w=App.project.wires.find(w=>w.id===id); return w.color+' '+w.a.p+' pts'+w.pts.length}", wid)
         pg.evaluate("(id)=>App.circuit.select({kind:'wire',id})", wid); pg.wait_for_timeout(150)
         dis = pg.evaluate("()=>[...document.querySelectorAll('#props .swatch:disabled')].map(b=>b.dataset.color)")
         print(f'{frm}→{to} ({color or "auto"}): {before} → {after} | gesperrt: {dis}')

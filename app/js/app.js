@@ -510,7 +510,7 @@ const App = {
         const reserved = (k === 'rot' || k === 'schwarz') && k !== auto;
         h += `<button class="swatch${w.color === k ? ' on' : ''}${reserved ? ' reserved' : ''}" data-color="${k}" title="${WIRE_COLOR_NAMES[k]}${reserved ? (k === 'rot' ? ' – nur für Plus (5V/3,3V)' : ' – nur für GND') : ''}" style="background:${WIRE_COLORS[k]}" ${sim || reserved ? 'disabled' : ''}></button>`;
       }
-      h += `</div><div class="note">Schwarz ist für GND, Rot für Plus reserviert, alle anderen Leitungen in anderen Farben. Knickpunkte lassen sich verschieben.</div>`;
+      h += `</div><div class="note">Schwarz ist für GND, Rot für Plus reserviert, alle anderen Leitungen in anderen Farben. <br>Knickpunkte: an einer Stelle des Kabels ziehen = neuer Knickpunkt, Punkt ziehen = verschieben, Doppelklick auf einen Punkt = entfernen.</div>`;
       if (!sim) h += `<div class="btns"><button class="btn danger small" data-act="delete">Löschen (Entf)</button></div>`;
     } else {
       const c = this.circuit.comp(sel.id);
@@ -797,7 +797,7 @@ const App = {
       ${row('Entf', 'Bauteil oder Kabel löschen')}
       ${row('Strg + D', 'Bauteil verdoppeln')}
       ${row('Strg + Z / Strg + Y', 'Rückgängig / Wiederholen')}
-      ${row('Kabel anklicken', 'Farbe wählen. Weiße Punkte an den Enden ziehen = umstecken, Knickpunkte ziehen = verschieben.')}
+      ${row('Kabel anklicken', 'Farbe wählen. Weiße Punkte an den Enden ziehen = umstecken. Am Kabel ziehen = neuer Knickpunkt, Knickpunkt ziehen = verschieben, Doppelklick auf Knickpunkt = entfernen.')}
       ${row('Mausrad', 'Vergrößern / Verkleinern')}
       ${row('Freie Fläche ziehen', 'Ansicht verschieben (⤢ zeigt alles)')}
       </table>

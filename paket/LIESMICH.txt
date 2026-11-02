@@ -79,7 +79,9 @@ BEDIENUNG IN KÜRZE
     Strg+D = verdoppeln, Strg+Z = rückgängig. Ansicht verschieben: freie Stelle
     ziehen. Zoom: Mausrad. Alle Kürzel: Knopf "?" unten links oder F1.
   - Kabel anklicken: Farbe wählen; die weißen Punkte an den Enden ziehen, um
-    das Kabel umzustecken. Neue Signalkabel sind blau, Grün/Gelb ist für
+    das Kabel umzustecken. Knickpunkte nachträglich: an einer Stelle des
+    Kabels ziehen = neuer Knickpunkt; Knickpunkt ziehen = verschieben;
+    Doppelklick auf einen Knickpunkt = entfernen. Neue Signalkabel sind blau, Grün/Gelb ist für
     SDA/SCL. Rot ist nur für Plus, Schwarz nur für GND (für andere Kabel
     gesperrt). Beim Umstecken wechselt die Farbe mit: an Plus rot, an GND
     schwarz, ein rotes/schwarzes Kabel an einem Signal wird blau.

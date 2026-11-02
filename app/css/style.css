@@ -175,6 +175,7 @@ button { font: inherit; color: inherit; }
 .circuit .wire-line { fill: none; stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
 .circuit .wire-edge { fill: none; stroke: #9a9a9a; stroke-width: .6; stroke-dasharray: none; pointer-events: none; }
 .circuit .wire-hit { fill: none; stroke: transparent; stroke-width: 9; cursor: pointer; stroke-linecap: round; }
+.circuit .wire.selected .wire-hit { cursor: grab; }
 .circuit .wire-sel { fill: none; stroke: #19c3cf; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; opacity: .55; pointer-events: none; }
 .circuit .wire-end { pointer-events: none; }
 .circuit .wire-knot { fill: #fff; stroke: var(--accent); stroke-width: 1.4; cursor: move; }
