@@ -92,6 +92,8 @@ const Uploader = {
     const log = [];
     let result = { ok: false };
     let cur = null;
+    // Schritte und Zeitmessung stehen auch im Protokoll, damit man sie zusammen mit den Details kopieren kann
+    const note = t => { logEl.textContent += t + '\n'; };
     const done = cls => { if (cur) { cur.className = 'up-step ' + cls; cur.textContent += ` (${Math.max(1, Math.round((performance.now() - cur.t0) / 1000))} s)`; cur = null; } };
     try {
       await this.streamLines(url, opts, line => {
@@ -101,10 +103,12 @@ const Uploader = {
           cur = document.createElement('div'); cur.className = 'up-step run'; cur.t0 = performance.now();
           cur.textContent = (m ? m[2] : line.slice(10));
           steps.appendChild(cur);
+          note('== ' + cur.textContent + ' ==');
           bar.hidden = true;
         } else if (line.startsWith('##INFO')) {
           const el = document.createElement('div'); el.className = 'up-info'; el.textContent = line.slice(7);
           steps.appendChild(el);
+          note('» ' + line.slice(7));
         } else if (line.startsWith('##FORTSCHRITT')) {
           bar.hidden = false; bar.firstElementChild.style.width = Math.min(100, Number(line.slice(14)) || 0) + '%';
         } else if (line.startsWith('##OK')) {

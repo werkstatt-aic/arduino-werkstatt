@@ -10,6 +10,7 @@ with sync_playwright() as p:
     pg.click('#uploadBtn'); pg.wait_for_timeout(5000)
     pg.click('#upGo'); pg.wait_for_timeout(3000)
     print('gewartet:', pg.inner_text('#upSteps').replace('\n',' | '))
+    print('Details:', pg.evaluate("()=>document.querySelector('#upLog').textContent"))
     pg.keyboard.press('Escape'); pg.wait_for_timeout(300)
     pg.evaluate("()=>localStorage.setItem('werkstatt.details','0')")
     pg.click('#uploadBtn'); pg.wait_for_timeout(5000)
