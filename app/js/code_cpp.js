@@ -120,7 +120,7 @@ function inferVarTypes(ws) {
     for (const b of ws.getAllBlocks(false)) {
       if (b.type === 'list_set' || b.type === 'list_push') addL(b.getFieldValue('L'), valueType(b.getInputTargetBlock('V')));
       else if (b.type === 'list_init') addL(b.getFieldValue('L'), parseListNumbers(b.getFieldValue('V')).every(Number.isInteger) ? 'int' : 'float');
-      else if (b.type === 'list_new') addL(b.getFieldValue('L'), 'int');
+      else if (b.type === 'list_new' || b.type === 'list_clear') addL(b.getFieldValue('L'), 'int');
       if (b.type === 'variables_set') add(b.getFieldValue('VAR'), valueType(b.getInputTargetBlock('VALUE')));
       else if (b.type === 'ard_count') add(b.getFieldValue('VAR'), widest(['FROM', 'TO', 'STEP'].map(n => valueType(b.getInputTargetBlock(n)))));
       else if (/^procedures_call/.test(b.type)) {
@@ -337,6 +337,7 @@ void schrittmotor(int in1, int in2, int in3, int in4, long schritte, float upm)
   A['list_get'] = b => { listPos(); const l = lst(b); return [`${l}[listenStelle(${v(b, 'I', A.ORDER_NONE, '1')}, ${l}_anzahl)]`, A.ORDER_ATOMIC]; };
   A['list_set'] = b => { listPos(); const l = lst(b); return `${l}[listenStelle(${v(b, 'I', A.ORDER_NONE, '1')}, ${l}_anzahl)] = ${v(b, 'V')};\n`; };
   A['list_push'] = b => { const l = lst(b); return `for (int i = 0; i + 1 < ${l}_anzahl; i++) ${l}[i] = ${l}[i + 1]; // alle eins nach vorne\nif (${l}_anzahl > 0) ${l}[${l}_anzahl - 1] = ${v(b, 'V')};\n`; };
+  A['list_clear'] = b => { const l = lst(b); return `for (int i = 0; i < ${l}_anzahl; i++) ${l}[i] = 0; // Liste leeren\n`; };
   A['list_len'] = b => [`${lst(b)}_anzahl`, A.ORDER_ATOMIC];
   A['list_stat'] = b => {
     const t = listType(b.getFieldValue('L')), op = b.getFieldValue('OP');

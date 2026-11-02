@@ -187,6 +187,7 @@ function defineBlocks() {
     B({ type: 'list_init', message0: 'Liste %1 aus den Zahlen %2 anlegen', args0: [{ type: 'field_variable', name: 'L', variable: 'Messwerte', variableTypes: ['Liste'], defaultType: 'Liste' }, { type: 'field_input', name: 'V', text: '262, 294, 330' }], tooltip: 'Legt eine Liste mit diesen Zahlen an, z. B. Tonhöhen, Anschlüsse oder Wartezeiten. Zahlen durch Komma trennen, Kommazahlen mit Punkt (2.5).' }, COL.list),
     { type: 'list_get', message0: 'Eintrag Nr. %1 der Liste %2', args0: [{ type: 'input_value', name: 'I', check: 'Number' }, { type: 'field_variable', name: 'L', variable: 'Messwerte', variableTypes: ['Liste'], defaultType: 'Liste' }], inputsInline: true, output: 'Number', colour: COL.list, tooltip: 'Liest einen Eintrag. Der erste Eintrag hat die Nummer 1.' },
     B({ type: 'list_set', message0: 'Eintrag Nr. %1 der Liste %2 auf %3 setzen', args0: [{ type: 'input_value', name: 'I', check: 'Number' }, { type: 'field_variable', name: 'L', variable: 'Messwerte', variableTypes: ['Liste'], defaultType: 'Liste' }, { type: 'input_value', name: 'V', check: 'Number' }], inputsInline: true, tooltip: 'Ändert einen Eintrag. Der erste Eintrag hat die Nummer 1.' }, COL.list),
+    B({ type: 'list_clear', message0: 'Liste %1 leeren (alle Einträge 0)', args0: [{ type: 'field_variable', name: 'L', variable: 'Messwerte', variableTypes: ['Liste'], defaultType: 'Liste' }], tooltip: 'Setzt alle Einträge der Liste auf 0. Die Anzahl der Einträge bleibt gleich. Gut, um eine neue Messreihe zu beginnen.' }, COL.list),
     B({ type: 'list_push', message0: 'neuen Wert %1 hinten in Liste %2 nachschieben', args0: [{ type: 'input_value', name: 'V', check: 'Number' }, { type: 'field_variable', name: 'L', variable: 'Messwerte', variableTypes: ['Liste'], defaultType: 'Liste' }], inputsInline: true, tooltip: 'Alle Einträge rücken eins nach vorne, der älteste (Nr. 1) fällt weg, der neue Wert kommt ans Ende. Gut für Messreihen und gleitende Mittelwerte.' }, COL.list),
     { type: 'list_len', message0: 'Anzahl Einträge der Liste %1', args0: [{ type: 'field_variable', name: 'L', variable: 'Messwerte', variableTypes: ['Liste'], defaultType: 'Liste' }], output: 'Number', colour: COL.list },
     { type: 'list_stat', message0: '%1 der Liste %2', args0: [{ type: 'field_dropdown', name: 'OP', options: [['Mittelwert', 'AVG'], ['Summe', 'SUM'], ['kleinster Wert', 'MIN'], ['größter Wert', 'MAX']] }, { type: 'field_variable', name: 'L', variable: 'Messwerte', variableTypes: ['Liste'], defaultType: 'Liste' }], output: 'Number', colour: COL.list },
@@ -438,6 +439,7 @@ function listFlyout(ws) {
     `<block type="list_get"><value name="I">${num(1)}</value>${f}</block>`,
     `<block type="list_set"><value name="I">${num(1)}</value>${f}<value name="V">${num(0)}</value></block>`,
     `<block type="list_push"><value name="V">${num(0)}</value>${f}</block>`,
+    `<block type="list_clear">${f}</block>`,
     `<block type="list_len">${f}</block>`,
     `<block type="list_stat">${f}</block>`,
   ];

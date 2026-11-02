@@ -105,6 +105,15 @@ const Settings = {
   async run(url, opts) {
     if (this.busy) return { ok: false };
     this.busy = true;
+    // Fortschritt direkt unter dem Abschnitt zeigen, in dem geklickt wurde (sonst ganz unten außer Sicht)
+    const sec = document.activeElement && document.activeElement.closest('.set-sec');
+    if (sec) {
+      let at = sec;
+      ['#upSteps', '#upBar', '#upMsg', '#upLogBox'].forEach(s => { const el = document.querySelector(s); if (el) { at.after(el); at = el; } });
+      const msg = document.querySelector('#upMsg');
+      setTimeout(() => sec.scrollIntoView({ block: 'start', behavior: 'smooth' }), 50);
+      if (msg) msg.textContent = 'Läuft …';
+    }
     document.querySelectorAll('.set-btns button, #setErase').forEach(b => { b.disabled = true; });
     const res = await Uploader.runStream(url, Object.assign({ method: 'POST' }, opts || {}), 1);
     this.busy = false;

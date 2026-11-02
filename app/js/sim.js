@@ -245,7 +245,9 @@ class Simulator {
     const n = this.unoNet(pin);
     if (res.floating.has(n)) return Math.floor(this.m().adcMax * (0.2 + Math.random() * 0.6));
     const M = this.m();
-    return Math.max(0, Math.min(M.adcMax, Math.round(res.V[n] / M.vref * M.adcMax)));
+    const v = Math.max(0, Math.min(M.adcMax, Math.round(res.V[n] / M.vref * M.adcMax)));
+    (this.analogSeen || (this.analogSeen = new Map())).set(String(pin), v); // für die Aufgabenprüfung
+    return v;
   }
 
   ultrasonic(trig, echo, unit) {

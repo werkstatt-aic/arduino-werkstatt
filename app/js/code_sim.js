@@ -44,6 +44,7 @@ function setupSimGenerator() {
   J['list_get'] = b => [`api.listGet(${lst(b)}, ${v(b, 'I', J.ORDER_NONE, '1')}, ${lname(b)})`, J.ORDER_FUNCTION_CALL];
   J['list_set'] = b => `api.listSet(${lst(b)}, ${v(b, 'I', J.ORDER_NONE, '1')}, ${v(b, 'V')}, ${lname(b)});\n`;
   J['list_push'] = b => `api.listPush(${lst(b)}, ${v(b, 'V')});\n`;
+  J['list_clear'] = b => `if (Array.isArray(${lst(b)})) ${lst(b)}.fill(0);\n`;
   J['list_len'] = b => [`${lst(b)}.length`, J.ORDER_MEMBER];
   J['list_stat'] = b => [`api.listStat(${lst(b)}, '${b.getFieldValue('OP')}')`, J.ORDER_FUNCTION_CALL];
   J['ard_round'] = b => [`Math.${{ ROUND: 'round', UP: 'ceil', DOWN: 'floor' }[b.getFieldValue('OP')]}(${v(b, 'V')})`, J.ORDER_FUNCTION_CALL];

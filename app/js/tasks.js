@@ -183,12 +183,25 @@ const TASK_CHECKS = {
       const comps = ctx.app.project.components.filter(c => types.includes(c.type));
       if (!s || !comps.length) return { ok: false, hint: `Der Sensor (${partName(p.type)}) fehlt.` };
       const w = comps.some(c => TASK_SENSORS[c.type].slow) ? 2600 : 1400;
+      const sim = ctx.app.sim;
       comps.forEach(c => ctx.setProp(c, s.prop, Number(p.a)));
       await ctx.wait(400);
+      if (sim) sim.analogSeen = new Map();
       const A = await ctx.window(p.watch, w);
+      const vA = new Map(sim && sim.analogSeen || []);
       comps.forEach(c => ctx.setProp(c, s.prop, Number(p.b)));
       await ctx.wait(400);
+      if (sim) sim.analogSeen = new Map();
       const B = await ctx.window(p.watch, w);
+      const vB = new Map(sim && sim.analogSeen || []);
+      // Liest das Programm einen Analogeingang, muss sich dessen Wert mit dem Sensor ändern
+      // (sonst z. B. Spannungsteiler vergessen – ein gleitender Mittelwert allein täuscht sonst eine Reaktion vor)
+      const max = BOARD === 'esp32' ? 4095 : 1023;
+      const pins = [...vA.keys()].filter(k => vB.has(k));
+      if (pins.length && pins.every(k => Math.abs(vA.get(k) - vB.get(k)) < max * 0.02)) {
+        const k = pins[0], val = vA.get(k);
+        return { ok: false, hint: `Der Wert am Analogeingang ${/^\d+$/.test(k) && BOARD !== 'esp32' ? 'A' + k : k} bleibt bei ${val}, egal ob ${p.a} oder ${p.b} ${s.unit}. ${val >= max * 0.95 || val <= max * 0.05 ? 'Fehlt der Spannungsteiler? Vom Eingang muss ein fester Widerstand nach GND gehen.' : 'Ist der Sensor am richtigen Eingang angeschlossen?'}` };
+      }
       return !sameSet(A, B) ? { ok: true } : { ok: false, hint: `Bei ${p.a} und bei ${p.b} ${s.unit} passiert dasselbe. Liest das Programm den richtigen Anschluss? Passt die Schwelle?` };
     },
   },
@@ -247,27 +260,27 @@ const BUILTIN_TASKS = [
   { id: 'g2', level: 'Grundlagen', board: 'uno', start: 'vorlage', title: 'Blinklicht',
     goal: 'Eine LED soll immer wieder 1 Sekunde leuchten und 1 Sekunde aus sein.',
     tips: ['Was immer wieder passieren soll, gehört in „wiederhole fortlaufend“.', 'Nach dem Einschalten UND nach dem Ausschalten muss gewartet werden.', '1 Sekunde = 1000 Millisekunden.'],
-    checks: [{ k: 'part', type: 'led', n: 1 }, { k: 'blink', ms: 1000 }, { k: 'noerror' }] },
+    checks: [{ k: 'part', type: 'led', n: 1 }, { k: 'part', type: 'resistor', n: 1 }, { k: 'blink', ms: 1000 }, { k: 'noerror' }] },
   { id: 'g3', level: 'Grundlagen', board: 'uno', start: 'vorlage', title: 'Ampel',
     goal: 'Baue eine Verkehrsampel mit einer roten, einer gelben und einer grünen LED. Sie soll die Ampelphasen nacheinander durchlaufen: Rot – Rot+Gelb – Grün – Gelb – Rot …',
     tips: ['Jede LED braucht einen eigenen Anschluss und einen eigenen Vorwiderstand.', 'Die Farbe der LED stellst du bei der LED selbst ein (anklicken).', 'Schreibe die Phasen nacheinander: LEDs setzen, dann warten.'],
-    checks: [{ k: 'part', type: 'led', n: 3 }, { k: 'sequence', n: 3 }, { k: 'noerror' }] },
+    checks: [{ k: 'part', type: 'led', n: 3 }, { k: 'part', type: 'resistor', n: 3 }, { k: 'sequence', n: 3 }, { k: 'noerror' }] },
   { id: 'g4', level: 'Grundlagen', board: 'uno', start: 'vorlage', title: 'Taster schaltet LED',
     goal: 'Solange der Taster gedrückt ist, leuchtet die LED. Lässt man los, geht sie aus.',
     tips: ['Ein Tastereingang braucht einen Pull-down-Widerstand (10 kΩ nach GND), sonst „schwebt“ er.', 'Der Taster verbindet den Eingang mit 5 V.', 'Programm: „wenn … dann … sonst“ mit „Anschluss … ist HOCH“.'],
-    checks: [{ k: 'part', type: 'button', n: 1 }, { k: 'part', type: 'led', n: 1 }, { k: 'button', watch: 'out' }, { k: 'noerror' }] },
+    checks: [{ k: 'part', type: 'button', n: 1 }, { k: 'part', type: 'led', n: 1 }, { k: 'part', type: 'resistor', n: 2 }, { k: 'button', watch: 'out' }, { k: 'noerror' }] },
   { id: 'g5', level: 'Grundlagen', board: 'uno', start: 'vorlage', title: 'Lauflicht',
     goal: 'Mindestens 4 LEDs leuchten nacheinander auf – wie ein Lauflicht.',
     tips: ['Immer nur eine LED einschalten, kurz warten, wieder ausschalten, dann die nächste.', 'Mit „zähle … von … bis …“ und einer Liste der Anschlüsse geht es kürzer.'],
-    checks: [{ k: 'part', type: 'led', n: 4 }, { k: 'sequence', n: 4 }, { k: 'noerror' }] },
+    checks: [{ k: 'part', type: 'led', n: 4 }, { k: 'part', type: 'resistor', n: 4 }, { k: 'sequence', n: 4 }, { k: 'noerror' }] },
   { id: 'g6', level: 'Grundlagen', board: 'uno', start: 'vorlage', title: 'LED dimmen (PWM)',
     goal: 'Eine LED soll nur halb hell leuchten.',
     tips: ['Halb hell geht mit dem Block „PWM-Ausgang … auf … einstellen“ (0 = aus, 255 = voll).', 'Nicht jeder Anschluss kann PWM. Schau auf den Arduino: Die PWM-Anschlüsse sind mit ~ gekennzeichnet.', 'Beim Arduino Uno sind das D3, D5, D6, D9, D10 und D11.'],
-    checks: [{ k: 'part', type: 'led', n: 1 }, { k: 'dim' }, { k: 'noerror' }] },
+    checks: [{ k: 'part', type: 'led', n: 1 }, { k: 'part', type: 'resistor', n: 1 }, { k: 'dim' }, { k: 'noerror' }] },
   { id: 's1', level: 'Sensoren', board: 'uno', start: 'vorlage', title: 'Nachtlicht',
     goal: 'Wenn es dunkel wird, geht eine LED an. Ist es hell, bleibt sie aus.',
     tips: ['Der Fotowiderstand (LDR) bildet mit einem 10-kΩ-Widerstand einen Spannungsteiler. Die Mitte kommt an A0.', 'Lies den Wert mit „analogen Eingang A0 lesen“ und lass ihn dir im seriellen Monitor anzeigen.', 'Vergleiche den Wert mit einer Schwelle: „wenn Wert < … dann LED an, sonst aus“.'],
-    checks: [{ k: 'part', type: 'ldr', n: 1 }, { k: 'part', type: 'led', n: 1 }, { k: 'sensor', type: 'ldr', a: 5, b: 90, watch: 'out' }, { k: 'noerror' }] },
+    checks: [{ k: 'part', type: 'ldr', n: 1 }, { k: 'part', type: 'led', n: 1 }, { k: 'part', type: 'resistor', n: 2 }, { k: 'sensor', type: 'ldr', a: 5, b: 90, watch: 'out' }, { k: 'noerror' }] },
   { id: 's2', level: 'Sensoren', board: 'uno', start: 'vorlage', title: 'Thermometer',
     goal: 'Miss mit dem Sensor DHT11 die Temperatur und zeige sie jede Sekunde im seriellen Monitor an, z. B. „Temperatur: 22 °C“.',
     tips: ['Der DHT11 hat drei Anschlüsse: + an 5 V, – an GND, out an einen digitalen Anschluss.', 'Den Block „Sensor DHT … lesen“ findest du unter „Eingang“.', 'Stelle im Block dieselbe Bauart (11 oder 22) ein wie in der Schaltung.'],
@@ -279,11 +292,11 @@ const BUILTIN_TASKS = [
   { id: 's4', level: 'Sensoren', board: 'uno', start: 'vorlage', title: 'Messreihe mit Mittelwert',
     goal: 'Miss die Helligkeit mit einem Fotowiderstand zweimal pro Sekunde. Speichere die letzten 10 Messwerte in einer Liste und gib den Mittelwert im seriellen Monitor aus. Speichere die Messreihe danach mit „Messwerte speichern“ als Tabelle.',
     tips: ['Lege die Liste in „beim Start“ an: „Liste … mit 10 Einträgen anlegen“.', 'Neue Messwerte mit „neuen Wert … hinten in Liste … nachschieben“ hineinschreiben.', 'Den Mittelwert liefert der Block „Mittelwert der Liste …“.'],
-    checks: [{ k: 'part', type: 'ldr', n: 1 }, { k: 'block', type: 'list_push', label: 'neuen Wert hinten in Liste nachschieben' }, { k: 'block', type: 'list_stat', label: 'Mittelwert der Liste' }, { k: 'sensor', type: 'ldr', a: 10, b: 90, watch: 'serial' }, { k: 'noerror' }] },
+    checks: [{ k: 'part', type: 'ldr', n: 1 }, { k: 'part', type: 'resistor', n: 1 }, { k: 'block', type: 'list_push', label: 'neuen Wert hinten in Liste nachschieben' }, { k: 'block', type: 'list_stat', label: 'Mittelwert der Liste' }, { k: 'sensor', type: 'ldr', a: 10, b: 90, watch: 'serial' }, { k: 'noerror' }] },
   { id: 'm1', level: 'Motoren', board: 'uno', start: 'vorlage', title: 'Servo-Schranke',
     goal: 'Eine Schranke (Servo) öffnet sich auf 90°, wenn der Taster gedrückt wird, und schließt sich nach 3 Sekunden wieder (0°).',
     tips: ['Der Servo hat drei Kabel: braun = GND, rot = 5 V, orange = Signal.', 'Block „Servo an … auf … Grad drehen“.', 'Wenn Taster gedrückt: auf 90 drehen, 3000 ms warten, auf 0 drehen.'],
-    checks: [{ k: 'part', type: 'servo', n: 1 }, { k: 'part', type: 'button', n: 1 }, { k: 'button', watch: 'out' }, { k: 'noerror' }] },
+    checks: [{ k: 'part', type: 'servo', n: 1 }, { k: 'part', type: 'button', n: 1 }, { k: 'part', type: 'resistor', n: 1 }, { k: 'button', watch: 'out' }, { k: 'noerror' }] },
   { id: 'm2', level: 'Motoren', board: 'uno', start: 'vorlage', ext: ['motoren'], title: 'Lüfter mit Motortreiber',
     goal: 'Ein Lüfter soll über einen Motortreiber laufen: 3 Sekunden an, 2 Sekunden aus, immer wieder.',
     tips: ['Ein Motor braucht zu viel Strom für den Arduino-Anschluss. Darum kommt der Motortreiber L298N dazwischen.', 'Der Treiber bekommt die Versorgung, der Arduino gibt nur die Steuersignale.', 'Block „Motor am Motortreiber“ mit der Geschwindigkeit in %. Beim L298N bleiben die Jumper auf ENA und ENB gesteckt.'],
@@ -300,18 +313,18 @@ const BUILTIN_TASKS = [
     goal: 'Baue ein Fahrzeug mit zwei Getriebemotoren mit Rad am Motortreiber L298N. Es soll ein Quadrat fahren: geradeaus, nach rechts drehen, wieder geradeaus …',
     tips: ['„Getriebemotor mit Rad links“ an OUT1/OUT2, „… rechts“ an OUT3/OUT4, beide gleich gepolt (+ an OUT1 bzw. OUT3). Den rechten Motor dreht die Werkstatt im Programm selbst um, weil er im Fahrzeug um 180° gedreht eingebaut ist.', 'Die Motoren bekommen eine eigene Batterie (an 12V und GND), und GND des Treibers muss auch mit GND des Arduino verbunden sein.', 'In „beim Start“: „Fahrzeug einrichten“ mit den vier Anschlüssen IN1 bis IN4 (Anschlüsse mit ~).', 'Im Dauerlauf: „vorwärts fahren“, warten, „auf der Stelle nach rechts drehen“, kurz warten. Wie lange für 90° gedreht werden muss, probiert man am echten Fahrzeug aus.'],
     checks: [{ k: 'part', type: 'gear', n: 2 }, { k: 'part', type: 'l298n', n: 1 }, { k: 'block', type: 'car_drive', label: 'Fahrzeug … fahren' }, { k: 'drive' }, { k: 'noerror' }] },
-  { id: 'k1', level: 'Kommunikation', board: 'esp32', start: 'vorlage', title: 'Handy schaltet LED (Bluetooth)',
+  { id: 'k1', level: 'Kommunikation', board: 'esp32', start: 'vorlage', ext: ['comm'], title: 'Handy schaltet LED (Bluetooth)',
     goal: 'Schicke vom Handy „an“ oder „aus“ per Bluetooth an den ESP32. Die LED geht entsprechend an oder aus.',
     tips: ['In „beim Start“: „Bluetooth einrichten“.', 'In „wiederhole fortlaufend“: „wenn Bluetooth-Nachricht empfangen“, dann den empfangenen Text vergleichen.', 'In der Simulation schickst du Nachrichten im Reiter „WLAN, Funk & Bluetooth“.'],
-    checks: [{ k: 'part', type: 'led', n: 1 }, { k: 'message', ch: 'bt', a: 'an', b: 'aus', watch: 'out' }, { k: 'noerror' }] },
-  { id: 'k2', level: 'Kommunikation', board: 'esp32', start: 'vorlage', title: 'Befehle über USB',
+    checks: [{ k: 'part', type: 'led', n: 1 }, { k: 'part', type: 'resistor', n: 1 }, { k: 'message', ch: 'bt', a: 'an', b: 'aus', watch: 'out' }, { k: 'noerror' }] },
+  { id: 'k2', level: 'Kommunikation', board: 'esp32', start: 'vorlage', ext: ['comm'], title: 'Befehle über USB',
     goal: 'Tippe im seriellen Monitor „an“ oder „aus“. Der ESP32 schaltet damit eine LED und antwortet mit „LED ist an“ bzw. „LED ist aus“.',
     tips: ['Unter „Kommunikation“ findest du „wenn USB-Nachricht empfangen“.', 'Vergleiche den empfangenen Text mit „an“ und „aus“.'],
-    checks: [{ k: 'part', type: 'led', n: 1 }, { k: 'message', ch: 'usb', a: 'an', b: 'aus', watch: 'out' }, { k: 'serial', text: 'LED ist' }, { k: 'noerror' }] },
-  { id: 'k3', level: 'Kommunikation', board: 'esp32', start: 'vorlage', title: 'Messwert auf der Webseite',
+    checks: [{ k: 'part', type: 'led', n: 1 }, { k: 'part', type: 'resistor', n: 1 }, { k: 'message', ch: 'usb', a: 'an', b: 'aus', watch: 'out' }, { k: 'serial', text: 'LED ist' }, { k: 'noerror' }] },
+  { id: 'k3', level: 'Kommunikation', board: 'esp32', start: 'vorlage', ext: ['comm'], title: 'Messwert auf der Webseite',
     goal: 'Der ESP32 öffnet ein eigenes WLAN und zeigt auf einer Webseite die Helligkeit eines Fotowiderstands an.',
     tips: ['„WLAN öffnen“ und „Webseite starten“ gehören in „beim Start“.', '„auf der Webseite anzeigen“ zeigt einen Wert mit Namen an.', 'In der Simulation siehst du die Webseite im Reiter „WLAN, Funk & Bluetooth“.'],
-    checks: [{ k: 'part', type: 'ldr', n: 1 }, { k: 'block', type: 'com_web_start', label: 'Webseite starten' }, { k: 'block', type: 'com_web_show', label: 'auf der Webseite anzeigen' }, { k: 'noerror' }] },
+    checks: [{ k: 'part', type: 'ldr', n: 1 }, { k: 'part', type: 'resistor', n: 1 }, { k: 'block', type: 'com_web_start', label: 'Webseite starten' }, { k: 'block', type: 'com_web_show', label: 'auf der Webseite anzeigen' }, { k: 'noerror' }] },
 ];
 
 /* ---------- Ablage: eigene Aufgaben und gelöste Aufgaben ---------- */
@@ -513,7 +526,8 @@ const TaskUi = {
     let h = `<div class="tp-head"><span class="tp-tag">${t.preview ? 'Testlauf' : 'Aufgabe'}</span><b>${esc(t.title)}</b>${solved && !t.preview ? '<span class="tp-solved" title="gelöst">✓</span>' : ''}<button class="tp-min" data-act="min" title="${t.min ? 'Aufgabe aufklappen' : 'Aufgabe einklappen'}">${t.min ? '▸' : '▾'}</button></div>`;
     if (!t.min) {
       h += `<div class="tp-body"><p class="tp-goal">${esc(t.goal || '').replace(/\n/g, '<br>')}</p>`;
-      if (parts.length) h += `<div class="tp-sub">Du brauchst</div><ul class="tp-parts">${parts.map(x => `<li>${x}</li>`).join('')}</ul>`;
+      const exts = (t.ext || []).filter(k => EXTENSIONS[k]).map(k => `Erweiterung „${esc(EXTENSIONS[k].name)}“`);
+      if (parts.length || exts.length) h += `<div class="tp-sub">Du brauchst</div><ul class="tp-parts">${parts.concat(exts).map(x => `<li>${x}</li>`).join('')}</ul>`;
       if (tips.length) {
         h += `<div class="tp-sub">Tipps</div><ol class="tp-tips">${tips.slice(0, shown).map(x => `<li>${esc(x)}</li>`).join('')}</ol>`;
         if (shown < tips.length) h += `<button class="btn small ghost" data-act="tip">Tipp ${shown + 1} von ${tips.length} anzeigen</button>`;
@@ -607,7 +621,7 @@ const TaskUi = {
         if (rv !== 'ok' || !f.n.value) return;
         const pr = t.project || {};
         const own = t.start === 'schaltung' || t.start === 'alles';
-        app.loadProject({ format: FORMAT, version: 1, name: f.n.value, board: t.board === 'esp32' ? 'esp32' : 'uno', extensions: (own && pr.extensions) || t.ext || [],
+        app.loadProject({ format: FORMAT, version: 1, name: f.n.value, board: t.board === 'esp32' ? 'esp32' : 'uno', extensions: [...new Set([...((own && pr.extensions) || []), ...(t.ext || [])])],
           circuit: own && pr.circuit ? JSON.parse(JSON.stringify(pr.circuit)) : { components: [], wires: [] },
           blocks: t.start === 'alles' && pr.blocks ? pr.blocks : DEFAULT_BLOCKS_XML,
           task: { ...TaskStore.clean(t), tipsShown: 0 } });

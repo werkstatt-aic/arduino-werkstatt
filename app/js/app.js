@@ -628,8 +628,62 @@ const App = {
     $('#modeCode').classList.toggle('on', m === 'code');
     $('#main').classList.toggle('view-both', this.codeView === 'both');
     this.needCenter = true;
+    this.applyCodeWidth();
     this.resizeBlockly();
     requestAnimationFrame(() => this.circuit.fitView());
+  },
+  /* Codefenster in der Code-Ansicht breiter ziehen (über die Bauteilseite), je Ansicht gemerkt */
+  codeWidths() { try { return JSON.parse(localStorage.getItem('werkstatt.codeBreite') || '{}'); } catch (e) { return {}; } },
+  applyCodeWidth() {
+    const main = $('#main'), w = this.codeWidths()[this.codeView || 'blocks'];
+    main.style.gridTemplateColumns = main.classList.contains('mode-code') && w ? `minmax(160px, 1fr) ${Math.round(w)}px` : '';
+  },
+  /* Schwebende Fenster (Eigenschaften, Aufgabe) an der Titelzeile zur Seite schieben; Doppelklick: zurück */
+  makeMovable(box, handleSel) {
+    if (!box) return;
+    box.addEventListener('pointerdown', e => {
+      const h = e.target.closest(handleSel);
+      if (!h || !box.contains(h) || e.target.closest('button, input, select, textarea, a') || e.button !== 0) return;
+      if (handleSel === 'h3' && h !== box.querySelector('h3')) return; // nur die oberste Überschrift
+      e.preventDefault();
+      const stage = box.offsetParent.getBoundingClientRect(), r = box.getBoundingClientRect();
+      const dx = e.clientX - r.left, dy = e.clientY - r.top;
+      h.setPointerCapture(e.pointerId);
+      const move = ev => {
+        const x = Math.max(0, Math.min(stage.width - 60, ev.clientX - stage.left - dx));
+        const y = Math.max(0, Math.min(stage.height - 30, ev.clientY - stage.top - dy));
+        Object.assign(box.style, { left: x + 'px', top: y + 'px', right: 'auto' });
+      };
+      const up = () => { h.removeEventListener('pointermove', move); h.removeEventListener('pointerup', up); };
+      h.addEventListener('pointermove', move); h.addEventListener('pointerup', up);
+    });
+    box.addEventListener('dblclick', e => {
+      const h = e.target.closest(handleSel);
+      if (h && !e.target.closest('button, input, select, textarea, a')) Object.assign(box.style, { left: '', top: '', right: '' });
+    });
+  },
+  initCodeSplit() {
+    const sp = $('#codeSplit'), main = $('#main');
+    if (!sp) return;
+    const save = w => { const all = this.codeWidths(); if (w) all[this.codeView || 'blocks'] = w; else delete all[this.codeView || 'blocks']; try { localStorage.setItem('werkstatt.codeBreite', JSON.stringify(all)); } catch (e) { /* ohne Speicher */ } };
+    sp.addEventListener('pointerdown', e => {
+      e.preventDefault(); sp.setPointerCapture(e.pointerId); sp.classList.add('drag');
+      const r = main.getBoundingClientRect();
+      const move = ev => {
+        const w = Math.max(360, Math.min(r.width - 160, r.right - ev.clientX));
+        main.style.gridTemplateColumns = `minmax(160px, 1fr) ${Math.round(w)}px`;
+        Blockly.svgResize(this.workspace);
+        sp.dataset.w = Math.round(w);
+      };
+      const up = () => {
+        sp.removeEventListener('pointermove', move); sp.removeEventListener('pointerup', up); sp.classList.remove('drag');
+        if (sp.dataset.w) save(Number(sp.dataset.w));
+        delete sp.dataset.w;
+        this.resizeBlockly(); this.circuit.fitView();
+      };
+      sp.addEventListener('pointermove', move); sp.addEventListener('pointerup', up);
+    });
+    sp.addEventListener('dblclick', () => { save(0); this.applyCodeWidth(); this.resizeBlockly(); this.circuit.fitView(); });
   },
   setCodeView(v) {
     this.codeView = v;
@@ -639,6 +693,7 @@ const App = {
     $('#copyCode').hidden = v === 'blocks';
     this.needCenter = true;
     this.updateCodeText();
+    this.applyCodeWidth();
     this.resizeBlockly();
   },
 
@@ -911,6 +966,9 @@ const App = {
     $('#tabComm').onclick = () => this.showBottom('comm');
     CommPanel.init(this);
     SerialLink.init(this);
+    this.initCodeSplit();
+    this.makeMovable($('#props'), 'h3');
+    this.makeMovable($('#taskPanel'), '.tp-head');
     TaskUi.init(this);
     $('#bottomToggle').onclick = () => { $('#bottom').classList.toggle('collapsed'); $('#bottomToggle').textContent = $('#bottom').classList.contains('collapsed') ? '▴' : '▾'; this.resizeBlockly(); };
     $('#boardSel').addEventListener('change', e => { if (this.sim.running) this.stopSim(); this.setBoard(e.target.value); });

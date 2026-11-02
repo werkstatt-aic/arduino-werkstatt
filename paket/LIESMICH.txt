@@ -80,7 +80,13 @@ BEDIENUNG IN KÜRZE
     ziehen. Zoom: Mausrad. Alle Kürzel: Knopf "?" unten links oder F1.
   - Kabel anklicken: Farbe wählen; die weißen Punkte an den Enden ziehen, um
     das Kabel umzustecken. Neue Signalkabel sind blau, Grün/Gelb ist für
-    SDA/SCL, Rot für Plus, Schwarz für GND.
+    SDA/SCL, Rot für Plus, Schwarz für GND. Steckt man ein Kabel von GND auf
+    Plus um (oder umgekehrt), wechselt die Farbe mit – außer sie wurde von
+    Hand gewählt.
+  - Das Eigenschaften-Fenster und das Aufgabenfenster lassen sich an der
+    Titelzeile zur Seite schieben. Doppelklick auf die Titelzeile: zurück.
+  - Code-Ansicht: Den linken Rand des Codefensters nach links ziehen macht es
+    breiter (Doppelklick: zurücksetzen). Die Breite wird gemerkt.
   - Steuerung: "warten bis ..." (z. B. bis ein Taster gedrückt ist) und
     "Zeit seit Start" zum Messen von Zeiten.
   - Beine, die in der Steckplatine stecken, sind schwarz umrandet.
@@ -102,7 +108,8 @@ BEDIENUNG IN KÜRZE
     die Simulation zeigt dann einen Hinweis.
   - Listen (eigene Kategorie): Liste anlegen (mit Anzahl oder aus Zahlen wie
     "262, 294, 330"), Eintrag lesen/setzen, neuen Wert hinten nachschieben
-    (für Messreihen), Anzahl, Mittelwert, Summe, kleinster/größter Wert.
+    (für Messreihen), Liste leeren (alle Einträge 0), Anzahl, Mittelwert,
+    Summe, kleinster/größter Wert.
   - Neue Bauteile: Temperatur- und Feuchtesensor DHT11/DHT22, Relais-Modul
     (schaltet einen eigenen Stromkreis über COM/NO/NC), Schrittmotor 28BYJ-48
     mit Treiber ULN2003 (Relais und Schrittmotor: Erweiterung "Motoren und
@@ -137,7 +144,8 @@ SERIELLER MONITOR
     eingeben, der über USB an das Programm geht.
   - "Per USB verbinden": zeigt die Ausgaben des echten Arduino oder ESP32
     (USB-Kabel). Beim Hochladen wird die Verbindung kurz getrennt und danach
-    automatisch wiederhergestellt.
+    automatisch wiederhergestellt. Steckt nur ein Mikrocontroller und wurde er
+    schon einmal ausgewählt, verbindet die Werkstatt ohne Auswahlfenster.
   - "Messwerte speichern": alle Zahlen aus dem Monitor als Tabelle (CSV) mit
     Datum, Uhrzeit und Zeit in Sekunden – öffnet sich direkt in Excel.
   - "Per Bluetooth verbinden" (nur ESP32): ohne Kabel, wenn das Programm den

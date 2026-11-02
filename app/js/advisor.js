@@ -62,6 +62,17 @@ const Advisor = {
           add('warn', 'Ein Taster ist mit keinem Anschluss des Mikrocontrollers verbunden.', { comp: c.id });
         }
       }
+      // Fotowiderstand, Heißleiter, Feuchtefühler: brauchen einen Spannungsteiler mit festem Widerstand
+      if (['ldr', 'ntc', 'soil'].includes(c.type) && mcu) {
+        const [s1, s2] = ['1', '2'].map(p => net(c, p));
+        const pin = pinOfNet(s1) ? s1 : pinOfNet(s2) ? s2 : null, other = pin === s1 ? s2 : s1;
+        const fixed = n => members(n).some(k => { const r = compOf(k); return r && r !== c && ['resistor', 'poti'].includes(r.type); });
+        if (pin !== null) {
+          const ref = c.type === 'ntc' ? '10 kΩ' : c.type === 'soil' ? '10 kΩ' : '10 kΩ (oder 1 kΩ)';
+          if (!fixed(pin)) add('error', `${name(c)} an ${pinOfNet(pin)} ohne Spannungsteiler: Ohne festen Widerstand vom Eingang nach GND misst der Eingang immer nur die volle Spannung (Uno: 1023, ESP32: 4095) – egal wie ${c.type === 'ldr' ? 'hell' : c.type === 'ntc' ? 'warm' : 'feucht'} es ist. Setze ${ref} vom Eingang nach GND.`, { comp: c.id });
+          else if (other !== n5 && other !== n33 && other !== g && !supplied(other)) add('warn', `Das zweite Bein von ${name(c)} an ${pinOfNet(pin)} ist nicht mit ${BOARD === 'esp32' ? '3,3 V' : '5V'} verbunden – der Spannungsteiler bekommt keine Spannung.`, { comp: c.id });
+        }
+      }
       const pins = c.def.pins.map(p => p.id);
       if (!c.def.mcu && pins.includes('VCC') && pins.includes('GND') && c.type !== 'l298n' && c.type !== 'mdriver') {
         if (mcu && !moduleSupply(nl, c, 'VCC', 'GND', n5, n33, g)) add('warn', `${name(c)}: keine Versorgung. VCC kommt an 5V (beim ESP32 an 3,3 V), GND an GND.`, { comp: c.id });

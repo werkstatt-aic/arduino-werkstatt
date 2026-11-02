@@ -88,7 +88,12 @@ button { font: inherit; color: inherit; }
 .swatch.on { box-shadow: 0 0 0 2px var(--accent); }
 
 /* Code */
-.codepanel { display: flex; flex-direction: column; border-left: 1px solid var(--line); background: #fff; min-width: 0; min-height: 0; }
+.props > h3:first-child, .task-panel .tp-head { cursor: move; user-select: none; }
+.props > h3:first-child::after { content: '⠿'; float: right; color: #b0bec5; font-weight: 400; }
+.code-split { position: absolute; left: -4px; top: 0; bottom: 0; width: 8px; cursor: col-resize; z-index: 80; }
+.code-split:hover, .code-split.drag { background: rgba(33, 150, 243, .25); }
+.main.mode-parts .code-split { display: none; }
+.codepanel { position: relative; display: flex; flex-direction: column; border-left: 1px solid var(--line); background: #fff; min-width: 0; min-height: 0; }
 .code-head { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; border-bottom: 1px solid var(--line); }
 .code-tools { display: flex; gap: 6px; align-items: center; }
 .code-body { flex: 1; min-height: 0; display: flex; position: relative; }
@@ -141,7 +146,7 @@ button { font: inherit; color: inherit; }
 .plist li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 12px; border-bottom: 1px solid var(--line); cursor: pointer; }
 .plist li:last-child { border-bottom: 0; } .plist li:hover { background: var(--accent-bg); }
 .plist .d { color: var(--muted); font-size: 12px; white-space: nowrap; }
-.toast { position: fixed; left: 50%; bottom: 190px; transform: translateX(-50%) translateY(10px); background: #263238; color: #fff; padding: 9px 16px; border-radius: 8px; opacity: 0; transition: all .2s; pointer-events: none; z-index: 50; }
+.toast { position: fixed; left: 50%; bottom: 190px; transform: translateX(-50%) translateY(10px); background: #263238; color: #fff; padding: 9px 16px; border-radius: 8px; opacity: 0; transition: all .2s; pointer-events: none; z-index: 1000; max-width: min(640px, calc(100vw - 40px)); text-align: center; }
 .toast.show { opacity: .95; transform: translateX(-50%); }
 
 /* ---------- SVG-Schaltung ---------- */

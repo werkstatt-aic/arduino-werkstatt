@@ -425,7 +425,10 @@ class CircuitEditor {
       const ref = pinEl && this.pinRef(pinEl), other = d.w[d.end === 'a' ? 'b' : 'a'];
       if (ref && !(ref.c === other.c && ref.p === other.p) && !(ref.c === d.w[d.end].c && ref.p === d.w[d.end].p)) {
         this.app.pushUndoRaw(d.snap);
+        // Farbe anpassen (z. B. GND → 5V: schwarz → rot), außer sie wurde von Hand gewählt
+        const autoBefore = this.app.defaultWireColor(d.w.a, d.w.b);
         d.w[d.end] = ref;
+        if (d.w.color === autoBefore) d.w.color = this.app.defaultWireColor(d.w.a, d.w.b);
         this.app.changed();
       }
       this.renderWires();

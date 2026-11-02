@@ -40,7 +40,7 @@ const SerialLink = {
   async connect(ask) {
     if (!this.available) return false;
     try {
-      if (!this.port || ask) this.port = await navigator.serial.requestPort();
+      if (!this.port || ask) this.port = (ask && await this.autoPort()) || await navigator.serial.requestPort();
       await this.port.open({ baudRate: this.baud() });
       if (BOARD === 'esp32') { try { await this.port.setSignals({ dataTerminalReady: false, requestToSend: false }); } catch (e) { /* egal */ } }
       this.connected = true; this.mode = 'usb';
@@ -53,6 +53,16 @@ const SerialLink = {
       this.app.toast(/already open|in use|Failed to open/i.test(String(e && e.message)) ? 'Der Anschluss ist belegt (z. B. durch ein anderes Programm oder ein Hochladen).' : 'Verbinden fehlgeschlagen: ' + (e && e.message));
       return false;
     }
+  },
+
+  /* Automatische Suche: Steckt genau ein Mikrocontroller (USB-Wandler CH340, CP210x, FTDI, Arduino, ESP32-S3),
+     den Chrome schon einmal freigegeben hat, wird er ohne Auswahlfenster verbunden. Sonst fragt Chrome einmal nach. */
+  async autoPort() {
+    try {
+      const known = [0x1a86, 0x10c4, 0x0403, 0x2341, 0x2a03, 0x303a];
+      const ports = (await navigator.serial.getPorts()).filter(p => known.includes((p.getInfo() || {}).usbVendorId));
+      return ports.length === 1 ? ports[0] : null;
+    } catch (e) { return null; }
   },
 
   /* Bluetooth: Programm mit dem Block „Bluetooth einrichten“ (BLE-UART) */
