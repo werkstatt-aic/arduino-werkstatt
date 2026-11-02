@@ -31,6 +31,12 @@ const App = {
       if (e.type === Blockly.Events.BLOCK_CREATE && !this.loading) (e.ids || []).forEach(id => { const b = this.workspace.getBlockById(id); if (b && /^kp_init/.test(b.type) && b.getFieldValue('R0') === '0') initKeypadDefaults(b); });
     });
     this.workspace.addChangeListener(e => this.onBlocksChanged(e));
+    // Wächst „beim Start“ nach unten, rutscht „für immer“ mit (damit sich die beiden nicht überdecken)
+    this.workspace.addChangeListener(e => {
+      if (this.loading || e.isUiEvent || ![Blockly.Events.BLOCK_MOVE, Blockly.Events.BLOCK_CREATE, Blockly.Events.BLOCK_CHANGE].includes(e.type)) return;
+      clearTimeout(this.bumpTimer);
+      this.bumpTimer = setTimeout(() => this.bumpLoop(e.group), 0);
+    });
     $('#blockly').addEventListener('pointerdown', () => { this.focusArea = 'code'; }, true);
 
     this.buildPartList();
@@ -642,6 +648,19 @@ const App = {
   applyCodeWidth() {
     const main = $('#main'), w = this.codeWidths()[this.codeView || 'blocks'];
     main.style.gridTemplateColumns = main.classList.contains('mode-code') && w ? `minmax(160px, 1fr) ${Math.round(w)}px` : '';
+  },
+  bumpLoop(group) {
+    const ws = this.workspace;
+    if (!ws || (ws.isDragging && ws.isDragging())) return;
+    const top = ws.getTopBlocks(false), setup = top.find(b => b.type === 'ard_setup'), loop = top.find(b => b.type === 'ard_loop');
+    if (!setup || !loop) return;
+    const s = setup.getBoundingRectangle(), l = loop.getBoundingRectangle(), gap = 24;
+    const sideBySide = l.left > s.right || l.right < s.left;
+    if (sideBySide || l.top < s.top || l.top >= s.bottom + gap) return;
+    const old = Blockly.Events.getGroup();
+    Blockly.Events.setGroup(group || true); // zusammen mit dem Auslöser rückgängig machen
+    loop.moveBy(0, s.bottom + gap - l.top);
+    Blockly.Events.setGroup(old);
   },
   /* Schwebende Fenster (Eigenschaften, Aufgabe) an der Titelzeile zur Seite schieben; Doppelklick: zurück */
   makeMovable(box, handleSel) {
