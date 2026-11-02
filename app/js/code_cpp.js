@@ -204,7 +204,9 @@ Arduino.scrub_ = function (block, code, thisOnly) {
   const A = Arduino;
   const v = (b, n, ord, def) => A.valueToCode(b, n, ord || A.ORDER_NONE) || def || '0';
   const pinNum = (b, f) => b.getFieldValue(f || 'PIN');
-  const mode = (p, m) => { A.setupPre_['pm' + p] = `pinMode(${p}, ${m});`; };
+  // Wird ein Anschluss geschaltet und auch gelesen (z. B. Zustand der LED anzeigen), bleibt er ein Ausgang:
+  // digitalRead liefert dann den eingestellten Zustand. Ein bloßes INPUT überschreibt nie einen anderen Modus.
+  const mode = (p, m) => { const k = 'pm' + p; if (m === 'INPUT' && A.setupPre_[k]) return; A.setupPre_[k] = `pinMode(${p}, ${m});`; };
   const varName = id => A.nameDB_.getName(id, Blockly.VARIABLE_CATEGORY_NAME);
   const isNum = s => /^-?[\d.]+$/.test(s);
   const lcd = () => {
@@ -559,6 +561,7 @@ void webDaten()
   j += "],\"regler\":[";
   for (int i = 0; i < webRegler; i++) j += String(i ? "," : "") + "[" + webJson(webReglerName[i]) + "," + String(webReglerWert[i]) + "]";
   j += "]}";
+  webServer.sendHeader("Cache-Control", "no-store");
   webServer.send(200, "application/json", j);
 }
 
@@ -571,20 +574,20 @@ main{padding:12px;max-width:520px;margin:auto}.k{background:#fff;border-radius:1
 var bau = '';
 function el(t, c, x) { var e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; }
 function lade() {
-  fetch('/daten').then(function (r) { return r.json(); }).then(function (d) {
+  fetch('/daten', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (d) {
     document.getElementById('t').textContent = d.titel; document.title = d.titel;
     var w = document.getElementById('w'); w.innerHTML = '';
     d.werte.forEach(function (p) { var k = el('div', 'k'); k.appendChild(el('span', '', p[0])); k.appendChild(el('b', '', p[1])); w.appendChild(k); });
     var neu = JSON.stringify([d.knoepfe, d.regler.map(function (r) { return r[0]; })]);
     if (neu === bau) return;
     bau = neu; var s = document.getElementById('s'); s.innerHTML = '';
-    d.knoepfe.forEach(function (n, i) { var b = el('button', '', n); b.onclick = function () { fetch('/knopf?i=' + i); }; s.appendChild(b); });
+    d.knoepfe.forEach(function (n, i) { var b = el('button', '', n); b.onclick = function () { fetch('/knopf?i=' + i + '&t=' + Date.now(), { cache: 'no-store' }); }; s.appendChild(b); });
     d.regler.forEach(function (r, i) {
       var k = el('div', 'k'), v = el('b', '', r[1]), e = el('input');
       k.appendChild(el('span', '', r[0])); k.appendChild(v);
       e.type = 'range'; e.min = 0; e.max = 100; e.value = r[1];
       e.oninput = function () { v.textContent = e.value; };
-      e.onchange = function () { fetch('/regler?i=' + i + '&w=' + e.value); };
+      e.onchange = function () { fetch('/regler?i=' + i + '&w=' + e.value + '&t=' + Date.now(), { cache: 'no-store' }); };
       s.appendChild(k); s.appendChild(e);
     });
   }).catch(function () {});
