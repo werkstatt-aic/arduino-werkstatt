@@ -55,6 +55,11 @@ Umgebungsvariablen nur für Tests: `WERKSTATT_CLI_URL`, `WERKSTATT_UPDATE_API`, 
   damit arduino-cli seinen Zwischenspeicher behält. Programme mit/ohne Bluetooth haben eigene Zwischenordner.
 - **Vorübersetzen:** Beim Öffnen des Hochladen-Fensters wird im Hintergrund übersetzt (`?pre=1`); das Ergebnis
   wird per SHA-256 des Programms wiedererkannt.
+  Die Prüfsumme steht zusätzlich in `export-<board>/werkstatt.pruefsumme` (`builtAlready`), sodass ein
+  unverändertes Programm auch nach einem Neustart nicht neu übersetzt/gelinkt wird (ESP32-WLAN: Linken ≈ 10–15 s).
+  Beim Einrichten wird die Datei gelöscht; vor jedem Übersetzen wird `export-<board>` geleert.
+- **ESP32 ohne merged.bin:** `--build-property recipe.hooks.objcopy.postobjcopy.3.pattern=` – die 4-MB-Gesamtdatei
+  wird zum Hochladen nicht gebraucht.
 - **Bluetooth-Empfänger:** NimBLE-Arduino 2.5.2 (fest), Protokoll `START <Größe> <MD5>` / Daten / `ENDE`,
   Dienst-UUIDs `8e4f000x-6a1b-4c5e-9d2a-7765726b7374`.
 - **Sicherheit:** Das Startprogramm nimmt nur Anfragen von der eigenen Seite an (Host-/Origin-Prüfung),

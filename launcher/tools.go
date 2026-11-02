@@ -281,6 +281,8 @@ func apiInstall(w http.ResponseWriter, r *http.Request) {
 	}
 	fqbnCache = map[string]string{}
 	lastBuild = ""
+	// Nach dem (Neu-)Einrichten alles einmal frisch übersetzen.
+	_ = os.Remove(filepath.Join(workDir(), "export-"+board, stampName))
 	_ = os.WriteFile(markerFile(board), []byte("Eingerichtet am "+time.Now().Format("02.01.2006 15:04")+"\r\n"), 0o644)
 	s.line("##OK Die Werkzeuge sind eingerichtet.")
 }
@@ -598,13 +600,19 @@ func apiUpload(w http.ResponseWriter, r *http.Request) {
 	export := filepath.Join(workDir(), "export-"+boardOf(fqbn))
 	sketch := filepath.Join(toolsDir(), "sketch", "werkstatt")
 
-	if lastBuild == hash && fileExists(filepath.Join(export, "werkstatt.ino.bin")) || lastBuild == hash && fileExists(filepath.Join(export, "werkstatt.ino.hex")) {
+	if builtAlready(build, export, hash) {
 		if !stepShown {
 			s.line("##SCHRITT 1 Programm übersetzen")
 		}
-		s.line("##INFO Schon beim Öffnen des Fensters im Hintergrund übersetzt.")
-		if q.Get("details") == "1" && lastSummary != "" {
-			s.line("##INFO %s (im Hintergrund)", lastSummary)
+		if lastBuild == hash {
+			s.line("##INFO Schon beim Öffnen des Fensters im Hintergrund übersetzt.")
+			if q.Get("details") == "1" && lastSummary != "" {
+				s.line("##INFO %s (im Hintergrund)", lastSummary)
+			}
+		} else {
+			s.line("##INFO Das Programm ist unverändert – es wird das schon übersetzte verwendet.")
+			lastBuild = hash
+			lastSummary = ""
 		}
 	} else {
 		lastSummary = ""
@@ -637,6 +645,10 @@ func apiUpload(w http.ResponseWriter, r *http.Request) {
 			s.line("##SCHRITT 1 Programm übersetzen")
 		}
 		args := []string{"compile", "--fqbn", fqbn, "--build-path", build, "--output-dir", export}
+		if boardOf(fqbn) == "esp32" {
+			// Die 4-MB-Gesamtdatei (merged.bin) wird zum Hochladen nicht gebraucht.
+			args = append(args, "--build-property", "recipe.hooks.objcopy.postobjcopy.3.pattern=")
+		}
 		var keep func(string) bool
 		var tm *phaseTimer
 		if q.Get("details") == "1" {
@@ -659,6 +671,7 @@ func apiUpload(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		lastBuild = hash
+		_ = os.WriteFile(filepath.Join(export, stampName), []byte(hash), 0o644)
 	}
 	if port == "" {
 		s.line("##OK Das Programm wurde übersetzt.")
@@ -683,6 +696,24 @@ var (
 	lastBuild   string // nur unter lock() verwenden
 	lastSummary string // Zeitmessung des letzten Übersetzens (auch im Hintergrund)
 )
+
+// Merkzettel im Ausgabeordner: Prüfsumme des zuletzt übersetzten Programms.
+// Bleibt über einen Neustart der Werkstatt erhalten, sodass ein unverändertes
+// Programm nicht erneut übersetzt und zusammengefügt werden muss.
+const stampName = "werkstatt.pruefsumme"
+
+func builtAlready(build, export, hash string) bool {
+	b, err := os.ReadFile(filepath.Join(export, stampName))
+	if err != nil || strings.TrimSpace(string(b)) != hash {
+		return false
+	}
+	for _, f := range []string{"werkstatt.ino.bin", "werkstatt.ino.hex"} {
+		if fileExists(filepath.Join(export, f)) && fileExists(filepath.Join(build, f)) {
+			return true
+		}
+	}
+	return false
+}
 
 func fileExists(p string) bool { _, err := os.Stat(p); return err == nil }
 

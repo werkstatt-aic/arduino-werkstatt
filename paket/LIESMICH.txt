@@ -223,6 +223,10 @@ EINSTELLUNGEN (Zahnrad oben rechts oder Datei > Einstellungen)
   - ESP32 komplett löschen (wenn er hängt oder per Bluetooth nicht mehr
     erreichbar ist). Danach wieder ein Programm hochladen.
   - Zeitmessung beim Übersetzen: zeigt, welcher Teil wie lange dauert.
+    Ein unverändertes Programm wird nicht neu übersetzt (auch nach einem
+    Neustart der Werkstatt). Tipp für Schulrechner: Eine Virenscanner-
+    Ausnahme für den Werkstatt-Ordner und %TEMP%\arduino-werkstatt
+    beschleunigt das Übersetzen deutlich (Admin fragen).
   - Lehrkraft-Modus: eigene Aufgaben erstellen und verwalten.
 
 NOCH NICHT ENTHALTEN (folgt)
