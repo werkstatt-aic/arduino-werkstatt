@@ -498,8 +498,13 @@ const App = {
       const w = this.project.wires.find(x => x.id === sel.id);
       if (!w) { box.hidden = true; return; }
       h += `<h3>Leitung</h3><label>Farbe</label><div class="swatches">`;
-      for (const k in WIRE_COLORS) h += `<button class="swatch${w.color === k ? ' on' : ''}" data-color="${k}" title="${WIRE_COLOR_NAMES[k]}" style="background:${WIRE_COLORS[k]}" ${sim ? 'disabled' : ''}></button>`;
-      h += `</div><div class="note">Schwarz für GND, Rot für 5V, alle anderen Leitungen in anderen Farben. Knickpunkte lassen sich verschieben.</div>`;
+      // Rot und Schwarz nur für Plus und GND
+      const auto = this.defaultWireColor(w.a, w.b);
+      for (const k in WIRE_COLORS) {
+        const reserved = (k === 'rot' || k === 'schwarz') && k !== auto;
+        h += `<button class="swatch${w.color === k ? ' on' : ''}${reserved ? ' reserved' : ''}" data-color="${k}" title="${WIRE_COLOR_NAMES[k]}${reserved ? (k === 'rot' ? ' – nur für Plus (5V/3,3V)' : ' – nur für GND') : ''}" style="background:${WIRE_COLORS[k]}" ${sim || reserved ? 'disabled' : ''}></button>`;
+      }
+      h += `</div><div class="note">Schwarz ist für GND, Rot für Plus reserviert, alle anderen Leitungen in anderen Farben. Knickpunkte lassen sich verschieben.</div>`;
       if (!sim) h += `<div class="btns"><button class="btn danger small" data-act="delete">Löschen (Entf)</button></div>`;
     } else {
       const c = this.circuit.comp(sel.id);

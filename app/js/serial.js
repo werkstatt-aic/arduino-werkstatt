@@ -16,7 +16,7 @@ const SerialLink = {
   init(app) {
     this.app = app;
     const btn = document.querySelector('#serialConn'), bt = document.querySelector('#serialBt');
-    btn.onclick = () => (this.connected && this.mode === 'usb' ? this.disconnect() : this.connect(true));
+    btn.onclick = e => (this.connected && this.mode === 'usb' ? this.disconnect() : this.connect(true, e.shiftKey));
     bt.onclick = () => (this.connected && this.mode === 'bt' ? this.disconnect() : this.connectBt());
     document.querySelector('#serialClr').onclick = () => app.serialClear();
     document.querySelector('#serialCsv').onclick = () => app.serialCsv();
@@ -37,10 +37,14 @@ const SerialLink = {
     document.querySelector('#serialWrap').classList.toggle('live', this.connected);
   },
 
-  async connect(ask) {
+  /* USB-Wandler, die auf Arduino- und ESP32-Boards sitzen: CH340, CP210x, FTDI, Arduino, ESP32-S3/C3 */
+  USB_IDS: [0x1a86, 0x10c4, 0x0403, 0x2341, 0x2a03, 0x303a],
+
+  async connect(ask, all) {
     if (!this.available) return false;
     try {
-      if (!this.port || ask) this.port = (ask && await this.autoPort()) || await navigator.serial.requestPort();
+      // Auswahlfenster zeigt nur Anschlüsse mit Mikrocontroller (Umschalt+Klick: alle Anschlüsse)
+      if (!this.port || ask) this.port = (ask && !all && await this.autoPort()) || await navigator.serial.requestPort(all ? {} : { filters: this.USB_IDS.map(v => ({ usbVendorId: v })) });
       await this.port.open({ baudRate: this.baud() });
       if (BOARD === 'esp32') { try { await this.port.setSignals({ dataTerminalReady: false, requestToSend: false }); } catch (e) { /* egal */ } }
       this.connected = true; this.mode = 'usb';
@@ -49,7 +53,10 @@ const SerialLink = {
       this.readLoop();
       return true;
     } catch (e) {
-      if (e && e.name === 'NotFoundError') return false; // Auswahl abgebrochen
+      if (e && e.name === 'NotFoundError') { // Auswahl abgebrochen oder kein Mikrocontroller gefunden
+        if (!all) this.app.toast('Kein Mikrocontroller in der Liste? USB-Kabel prüfen. Mit Umschalt+Klick auf „Per USB verbinden“ werden alle Anschlüsse angezeigt.');
+        return false;
+      }
       this.app.toast(/already open|in use|Failed to open/i.test(String(e && e.message)) ? 'Der Anschluss ist belegt (z. B. durch ein anderes Programm oder ein Hochladen).' : 'Verbinden fehlgeschlagen: ' + (e && e.message));
       return false;
     }
@@ -59,7 +66,7 @@ const SerialLink = {
      den Chrome schon einmal freigegeben hat, wird er ohne Auswahlfenster verbunden. Sonst fragt Chrome einmal nach. */
   async autoPort() {
     try {
-      const known = [0x1a86, 0x10c4, 0x0403, 0x2341, 0x2a03, 0x303a];
+      const known = this.USB_IDS;
       const ports = (await navigator.serial.getPorts()).filter(p => known.includes((p.getInfo() || {}).usbVendorId));
       return ports.length === 1 ? ports[0] : null;
     } catch (e) { return null; }

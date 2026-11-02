@@ -86,6 +86,7 @@ button { font: inherit; color: inherit; }
 .swatches { display: flex; flex-wrap: wrap; gap: 5px; }
 .swatch { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--line-2); cursor: pointer; }
 .swatch.on { box-shadow: 0 0 0 2px var(--accent); }
+.swatch.reserved { opacity: .25; cursor: not-allowed; }
 
 /* Code */
 .props > h3:first-child, .task-panel .tp-head { cursor: move; user-select: none; }

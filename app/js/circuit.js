@@ -425,10 +425,13 @@ class CircuitEditor {
       const ref = pinEl && this.pinRef(pinEl), other = d.w[d.end === 'a' ? 'b' : 'a'];
       if (ref && !(ref.c === other.c && ref.p === other.p) && !(ref.c === d.w[d.end].c && ref.p === d.w[d.end].p)) {
         this.app.pushUndoRaw(d.snap);
-        // Farbe anpassen (z. B. GND → 5V: schwarz → rot), außer sie wurde von Hand gewählt
+        // Farbe anpassen: Rot und Schwarz sind für Plus und GND reserviert.
+        // Liegt das Kabel jetzt an Plus/GND → rot/schwarz; war es rot/schwarz und ist jetzt ein Signal → Signalfarbe.
+        // Eine von Hand gewählte Signalfarbe bleibt bei Signal-Kabeln erhalten.
         const autoBefore = this.app.defaultWireColor(d.w.a, d.w.b);
         d.w[d.end] = ref;
-        if (d.w.color === autoBefore) d.w.color = this.app.defaultWireColor(d.w.a, d.w.b);
+        const autoNow = this.app.defaultWireColor(d.w.a, d.w.b), power = k => k === 'rot' || k === 'schwarz';
+        if (power(autoNow) || power(d.w.color) || d.w.color === autoBefore) d.w.color = autoNow;
         this.app.changed();
       }
       this.renderWires();
