@@ -380,7 +380,14 @@ const App = {
       if (cells.length && /^\S{1,3}$/.test(tail)) cells[cells.length - 1].unit = tail;
       return cells;
     };
-    let rows = (this.serialLog || []).map(([t, line]) => ({ t, cells: parse(line), sig: line.replace(/-?\d+(?:\.\d+)?|\bnan\b/gi, '#').trim() })).filter(r => r.cells.length);
+    // Startmeldungen des ESP32 (beim Verbinden oder nach einem Neustart) sind keine Messwerte:
+    // „rst:0x1 (POWERON_RESET)…“, „load:0x40078000,len:16532“, „entry 0x400805b4“, Fehlerausgaben usw.
+    const boot = /^\s*(ets \w|rst:0x|configsip:|clk_drv:|mode:\w+,\s*clock div|load:0x|entry 0x|ho \d+ tail|[EWID] \(\d+\)|Brownout|Guru Meditation|Rebooting|Backtrace:|ELF file SHA256|Core\s+\d+ register dump|E\s*\(\d+\))/i;
+    const isBoot = line => boot.test(line) || /\b0x[0-9a-f]{2,}/i.test(line);
+    let rows = (this.serialLog || []).filter(([, line]) => !isBoot(line)).map(([t, line]) => ({ t, cells: parse(line), sig: line.replace(/-?\d+(?:\.\d+)?|\bnan\b/gi, '#').trim() })).filter(r => r.cells.length);
+    if (!rows.length && (this.serialLog || []).some(([, line]) => isBoot(line))) {
+      this.toast('Im seriellen Monitor stehen nur die Startmeldungen des ESP32, noch keine Messwerte. Läuft das Programm schon und gibt es Werte mit „auf seriellem Monitor drucken“ aus?'); return;
+    }
     if (!rows.length) { this.toast('Im seriellen Monitor stehen noch keine Zahlen. Gib Messwerte mit „auf seriellem Monitor drucken“ aus.'); return; }
     // Einmalige Zeilen (z. B. Überschrift „Messung 1 startet“) weglassen, wenn es sonst genug Messzeilen gibt
     const count = {};
