@@ -538,7 +538,7 @@ const App = {
           break;
         case 'relay':
           h += `<label>Schaltet bei</label><select data-prop="trig" ${dis}><option value="H" ${String(c.props.trig) !== 'L' ? 'selected' : ''}>HOCH an IN (High-Level-Trigger)</option><option value="L" ${String(c.props.trig) === 'L' ? 'selected' : ''}>NIEDRIG an IN (Low-Level-Trigger)</option></select>`;
-          h += '<div class="note">Der Jumper L/H auf der Platine zeigt die Einstellung. Anschlüsse rechts: IN (Steuereingang), DC− an GND, DC+ an 5V – mit Kabeln, das Modul hat Schraubklemmen.</div><div class="note">Das Relais ist ein Schalter, den der Mikrocontroller betätigt: COM ist mit NO verbunden, solange es angezogen ist, sonst mit NC. Damit kann man einen eigenen Stromkreis schalten (z. B. Pumpe oder Lampe mit eigener Spannungsquelle).</div>';
+          h += '<div class="note">Zum Umstecken auf den Jumper L/H auf der Platine klicken. Anschlüsse rechts: IN (Steuereingang), DC− an GND, DC+ an 5V – mit Kabeln, das Modul hat Schraubklemmen.</div><div class="note">Das Relais ist ein Schalter, den der Mikrocontroller betätigt: COM ist mit NO verbunden, solange es angezogen ist, sonst mit NC. Damit kann man einen eigenen Stromkreis schalten (z. B. Pumpe oder Lampe mit eigener Spannungsquelle).</div>';
           break;
         case 'stepper':
           h += '<div class="note">Treiber ULN2003: IN1 bis IN4 an vier digitale Anschlüsse, – an GND und + an 5V. Die LEDs A bis D zeigen, welche Spule gerade Strom bekommt.</div>';

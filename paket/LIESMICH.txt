@@ -116,7 +116,8 @@ BEDIENUNG IN KÜRZE
   - Neue Bauteile: Temperatur- und Feuchtesensor DHT11/DHT22, Relais-Modul
     (schaltet einen eigenen Stromkreis über COM/NO/NC; Schraubklemmen
     IN/DC−/DC+ werden mit Kabeln verbunden, Jumper L/H = Auslösung bei
-    NIEDRIG/HOCH, einstellbar in den Eigenschaften), Schrittmotor 28BYJ-48
+    NIEDRIG/HOCH – zum Umstecken auf den Jumper klicken, auch während der
+    Simulation, oder in den Eigenschaften einstellen), Schrittmotor 28BYJ-48
     mit Treiber ULN2003 (Relais und Schrittmotor: Erweiterung "Motoren und
     Relais").
   - Erweiterung "Motoren und Relais": Motortreiber L298N, Getriebemotor (auch

@@ -501,9 +501,10 @@ function renderRelay(comp, st) {
   s += `<rect x="40" y="-45" width="4" height="7" rx=".8" fill="${on ? '#ff3b30' : '#e9e4dc'}" stroke="#9b938a" stroke-width=".4"/><text x="49" y="-40" font-size="3.4" fill="#fff">LED1</text>`;
   if (on) s += `<circle cx="42" cy="-41.5" r="6" fill="#ff3b30" opacity=".35"/>`;
   // Jumper L/H (zeigt die Einstellung „Schaltet bei“)
+  s += `<g class="jumper" style="cursor:pointer"><title>Jumper umstecken (L = schaltet bei NIEDRIG, H = schaltet bei HOCH)</title><rect x="11" y="-18" width="35" height="14" fill="transparent"/>`;
   s += `<rect x="20" y="-13" width="18" height="6" fill="#1b1b1b"/>` + [23, 29, 35].map(x => `<rect x="${x - 1}" y="-11" width="2" height="2" fill="#d4af37"/>`).join('');
   s += `<rect x="${low ? 19.5 : 25.5}" y="-14" width="13" height="8" rx="1" fill="#2a2a2a" stroke="#555" stroke-width=".5"/>`;
-  s += `<text x="16" y="-8" font-size="4" text-anchor="middle" fill="#fff">L</text><text x="41" y="-8" font-size="4" text-anchor="middle" fill="#fff">H</text>`;
+  s += `<text x="16" y="-8" font-size="4" text-anchor="middle" fill="#fff">L</text><text x="41" y="-8" font-size="4" text-anchor="middle" fill="#fff">H</text></g>`;
   s += `<text x="-50" y="-11" font-size="5" fill="#fff">1 Relay Module</text><text x="-50" y="-4" font-size="5" fill="#fff">high/low level trigger</text>`;
   return s + pinsOf(comp);
 }

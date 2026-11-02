@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-const version = "0.12.13"
+const version = "0.12.14"
 
 var (
 	baseDir    string

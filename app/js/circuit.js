@@ -321,6 +321,21 @@ class CircuitEditor {
     const wireEl = t.closest('.wire');
     const compEl = t.closest('.comp');
 
+    // Jumper am Relais-Modul umstecken (auch während der Simulation)
+    const jumper = t.closest('.jumper');
+    if (jumper && compEl && !this.wiring) {
+      const c = this.comp(compEl.dataset.id);
+      if (c && c.type === 'relay') {
+        this.app.pushUndo();
+        c.props.trig = String(c.props.trig) === 'L' ? 'H' : 'L';
+        this.renderComp(c);
+        this.select({ kind: 'comp', id: c.id });
+        if (sim) this.app.sim.update();
+        this.app.changed();
+        this.app.toast(c.props.trig === 'L' ? 'Jumper auf L: Das Relais schaltet bei NIEDRIG an IN.' : 'Jumper auf H: Das Relais schaltet bei HOCH an IN.');
+        return;
+      }
+    }
     if (sim) {
       if (compEl) {
         const c = this.comp(compEl.dataset.id);
