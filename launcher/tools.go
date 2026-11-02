@@ -603,7 +603,11 @@ func apiUpload(w http.ResponseWriter, r *http.Request) {
 			s.line("##SCHRITT 1 Programm übersetzen")
 		}
 		s.line("##INFO Schon beim Öffnen des Fensters im Hintergrund übersetzt.")
+		if q.Get("details") == "1" && lastSummary != "" {
+			s.line("##INFO %s (im Hintergrund)", lastSummary)
+		}
 	} else {
+		lastSummary = ""
 		lastBuild = ""
 		_ = os.MkdirAll(sketch, 0o755)
 		if err := os.WriteFile(filepath.Join(sketch, "werkstatt.ino"), code, 0o644); err != nil {
@@ -635,7 +639,7 @@ func apiUpload(w http.ResponseWriter, r *http.Request) {
 		args := []string{"compile", "--fqbn", fqbn, "--build-path", build, "--output-dir", export}
 		var keep func(string) bool
 		var tm *phaseTimer
-		if q.Get("details") == "1" && !pre {
+		if q.Get("details") == "1" {
 			tm = newPhaseTimer()
 			keep = tm.line
 			args = append(args, "-v")
@@ -645,7 +649,10 @@ func apiUpload(w http.ResponseWriter, r *http.Request) {
 		err = runCLIx(s, keep, args...)
 		cliExtraEnv = nil
 		if tm != nil {
-			s.line("##INFO %s", tm.summary())
+			lastSummary = tm.summary()
+			if !pre {
+				s.line("##INFO %s", lastSummary)
+			}
 		}
 		if err != nil {
 			s.line("##FEHLER Das Programm konnte nicht übersetzt werden.")
@@ -658,18 +665,23 @@ func apiUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.line("##SCHRITT 2 Übertragen (%s)", port)
+	tUp := time.Now()
 	if err := runCLI(s, "upload", "--fqbn", fqbn, "--port", port, "--input-dir", build, sketch); err != nil {
 		s.line("##FEHLER Das Übertragen ist fehlgeschlagen.")
 		return
+	}
+	if q.Get("details") == "1" {
+		s.line("##INFO Zeitmessung Übertragen: %s", secs(time.Since(tUp)))
 	}
 	s.line("##OK Fertig! Das Programm läuft jetzt auf dem Mikrocontroller.")
 }
 
 // Vorübersetzen: Merkt sich, welches Programm zuletzt erfolgreich übersetzt wurde.
 var (
-	preMu     sync.Mutex
-	preLatest string
-	lastBuild string // nur unter lock() verwenden
+	preMu       sync.Mutex
+	preLatest   string
+	lastBuild   string // nur unter lock() verwenden
+	lastSummary string // Zeitmessung des letzten Übersetzens (auch im Hintergrund)
 )
 
 func fileExists(p string) bool { _, err := os.Stat(p); return err == nil }

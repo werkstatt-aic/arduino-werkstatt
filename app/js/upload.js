@@ -235,7 +235,7 @@ const Uploader = {
     if (!sel) return;
     let c;
     try { c = this.fullCode(); } catch (e) { return; } // Fehler zeigt erst das richtige Hochladen
-    fetch(`api/upload?pre=1&port=&fqbn=${encodeURIComponent(sel.value)}`, { method: 'POST', body: c, headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
+    fetch(`api/upload?pre=1&port=&fqbn=${encodeURIComponent(sel.value)}${this.details()}`, { method: 'POST', body: c, headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
       .then(r => r.text()).catch(() => { /* egal: dann wird beim Hochladen übersetzt */ });
   },
 
