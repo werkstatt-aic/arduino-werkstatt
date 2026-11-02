@@ -77,7 +77,8 @@ BEDIENUNG IN KÜRZE
     setzen Knickpunkte. Esc bricht ab.
   - Bauteil anklicken: Eigenschaften oben rechts. R = drehen, Entf = löschen,
     Strg+D = verdoppeln, Strg+Z = rückgängig. Ansicht verschieben: freie Stelle
-    ziehen. Zoom: Mausrad. Alle Kürzel: Knopf "?" unten links oder F1.
+    ziehen. Zoom: Mausrad. Knopf "Startansicht" unten links (oder Taste Pos1):
+    ganze Schaltung ins Fenster einpassen. Alle Kürzel: Knopf "?" oder F1.
   - Kabel anklicken: Farbe wählen; die weißen Punkte an den Enden ziehen, um
     das Kabel umzustecken. Knickpunkte nachträglich: an einer Stelle des
     Kabels ziehen = neuer Knickpunkt; Knickpunkt ziehen = verschieben;

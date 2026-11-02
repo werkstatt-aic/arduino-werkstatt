@@ -1,0 +1,18 @@
+from playwright.sync_api import sync_playwright
+with sync_playwright() as p:
+    b = p.chromium.launch(); pg = b.new_page(viewport={'width': 1400, 'height': 900})
+    errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
+    pg.goto('http://127.0.0.1:8642/'); pg.wait_for_timeout(900)
+    pg.evaluate("()=>{const f=document.querySelector('#dlgForm');f.tisch.value='05';f.vor.value='Neu';f.proj.value='Fit'+Date.now()}"); pg.click('button[value=new]'); pg.wait_for_timeout(500)
+    pg.evaluate("()=>{const C=App.circuit; C.load({components:[],wires:[]}); C.addTemplate(365,430); C.renderAll(); C.fitView();}"); pg.wait_for_timeout(300)
+    v0 = pg.evaluate("()=>({...App.circuit.view})")
+    pg.evaluate("()=>{const C=App.circuit; C.view={x:-900,y:300,k:0.4}; C.applyView();}")
+    pg.click('#zoomFit'); pg.wait_for_timeout(300)
+    v1 = pg.evaluate("()=>({...App.circuit.view})")
+    pg.evaluate("()=>{const C=App.circuit; C.view={x:-900,y:300,k:3}; C.applyView();}")
+    pg.mouse.click(700, 120); pg.keyboard.press('Home'); pg.wait_for_timeout(300)
+    v2 = pg.evaluate("()=>({...App.circuit.view})")
+    print('eingepasst:', v0, '| Knopf:', v1, '| Pos1:', v2)
+    pg.screenshot(path='fit1.png', clip={'x':0,'y':650,'width':500,'height':100})
+    print('Fehler:', errs)
+    b.close()

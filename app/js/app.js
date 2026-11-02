@@ -799,6 +799,7 @@ const App = {
       ${row('Strg + Z / Strg + Y', 'Rückgängig / Wiederholen')}
       ${row('Kabel anklicken', 'Farbe wählen. Weiße Punkte an den Enden ziehen = umstecken. Am Kabel ziehen = neuer Knickpunkt, Knickpunkt ziehen = verschieben, Doppelklick auf Knickpunkt = entfernen.')}
       ${row('Mausrad', 'Vergrößern / Verkleinern')}
+      ${row('Pos1 oder „Startansicht“', 'Ganze Schaltung ins Fenster einpassen (Knopf unten links)')}
       ${row('Freie Fläche ziehen', 'Ansicht verschieben (⤢ zeigt alles)')}
       </table>
       <h3>Blöcke</h3><table>
@@ -1042,6 +1043,7 @@ const App = {
     window.addEventListener('keydown', e => {
       const inField = e.target.closest && e.target.closest('input, select, textarea, .blocklyHtmlInput');
       if (inField || this.focusArea !== 'circuit') return;
+      if (e.key === 'Home' && !$('#dlg').open) { e.preventDefault(); this.circuit.fitView(); return; }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.stopImmediatePropagation(); e.shiftKey ? this.redo() : this.undo(); return; }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); e.stopImmediatePropagation(); this.redo(); return; }
       if (this.sim.running) return;
