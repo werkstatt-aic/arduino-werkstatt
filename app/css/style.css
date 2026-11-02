@@ -148,7 +148,7 @@ button { font: inherit; color: inherit; }
 .plist li:last-child { border-bottom: 0; } .plist li:hover { background: var(--accent-bg); }
 .plist .d { color: var(--muted); font-size: 12px; white-space: nowrap; }
 .toast { position: fixed; left: 50%; bottom: 190px; transform: translateX(-50%) translateY(10px); background: #263238; color: #fff; padding: 9px 16px; border-radius: 8px; opacity: 0; transition: all .2s; pointer-events: none; z-index: 1000; max-width: min(640px, calc(100vw - 40px)); text-align: center; }
-.toast.show { opacity: .95; transform: translateX(-50%); }
+.toast.show { opacity: .95; transform: translateX(-50%); pointer-events: auto; cursor: pointer; }
 
 /* ---------- SVG-Schaltung ---------- */
 .circuit .pin { cursor: crosshair; }

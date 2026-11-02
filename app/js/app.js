@@ -887,8 +887,13 @@ const App = {
   toast(t) {
     const el = $('#toast');
     el.textContent = t; el.classList.add('show');
+    // Anzeigedauer nach Textlänge: mindestens 6 s, längere Hinweise bis 15 s; Klick schließt sie sofort
+    const ms = Math.min(15000, Math.max(6000, String(t).length * 70));
+    const hide = () => { clearTimeout(this.toastTimer); el.classList.remove('show'); };
+    el.onclick = hide;
+    el.title = 'Klicken zum Schließen';
     clearTimeout(this.toastTimer);
-    this.toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+    this.toastTimer = setTimeout(hide, ms);
   },
 
   hint(t) { const h = $('#hint'); if (t) { h.textContent = t; h.classList.add('show'); } else h.classList.remove('show'); },
