@@ -39,8 +39,25 @@ class CircuitEditor {
     this.project.wires = (data.wires || []).map(w => ({ id: w.id, a: w.a, b: w.b, pts: w.pts || [], color: w.color || 'gruen' }));
     const ids = [...this.project.components, ...this.project.wires].map(o => parseInt(String(o.id).slice(1), 10) || 0);
     this.nextId = Math.max(0, ...ids) + 1;
+    this.migrateRelays(data.components || []);
     this.sel = null; this.wiring = null; this.states = {}; this.stateCache = {};
     this.renderAll();
+  }
+  /* Ältere Projekte (bis 0.12.12): Das Relais-Modul hatte eine Stiftleiste VCC/GND/IN (x = 0/10/20) und steckte
+     in der Steckplatine. Das neue Modul hat Schraubklemmen – die Verbindungen werden als Kabel übernommen. */
+  migrateRelays(raw) {
+    const holes = new Map();
+    for (const c of this.project.components) if (c.def.isBreadboard) for (const p of c.def.pins) { const [x, y] = worldPin(c, p); holes.set(x + ',' + y, { c: c.id, p: p.id }); }
+    for (const r of raw) {
+      if (r.type !== 'relay' || (r.props && r.props.bauform)) continue;
+      const c = this.project.components.find(x => x.id === r.id);
+      if (!c) continue;
+      [['VCC', 0, 'rot'], ['GND', 10, 'schwarz'], ['IN', 20, 'blau']].forEach(([pin, lx, color]) => {
+        const [rx, ry] = rotPoint(lx, 0, c.rot || 0), h = holes.get((c.x + rx) + ',' + (c.y + ry));
+        if (h) this.project.wires.push({ id: this.newId('w'), a: { c: c.id, p: pin }, b: h, pts: [], color });
+      });
+      c.y -= 30; // Platine etwas über die Steckplatine schieben
+    }
   }
   toJSON() {
     return {

@@ -89,7 +89,7 @@
   { const k = base('uno'); const st = k.add('stepper', 3, 'h'); k.down(8, 'bm'); k.down(9, 'bp'); ['D8', 'D9', 'D10', 'D11'].forEach((p, i) => k.up(p, 3 + i, k.bb.y + 245 - i * 6));
     const sm = dir => `<block type="ard_stepper"><field name="P1">8</field><field name="P2">9</field><field name="P3">10</field><field name="P4">11</field><field name="DIR">${dir}</field><field name="UNIT">DEG</field><value name="N">${N(90)}</value><value name="RPM">${N(15)}</value></block>`;
     sol('m3', 'uno', k, prog([], [sm('CW'), waitS(1), sm('CCW'), waitS(1)])); }
-  { const k = base('uno'); k.add('moisture', 3, 'h'); k.down(3, 'bm'); k.down(4, 'bp'); k.toA0(5); k.add('relay', 20, 'h'); k.down(20, 'bp'); k.down(21, 'bm'); k.up('D7', 22, k.bb.y + 245);
+  { const k = base('uno'); k.add('moisture', 3, 'h'); k.down(3, 'bm'); k.down(4, 'bp'); k.toA0(5); const r = k.addAt('relay', k.bb.x + 470, k.bb.y + 150); k.wire({ c: r.id, p: 'VCC' }, k.rail('bp', 29), 'rot'); k.wire({ c: r.id, p: 'GND' }, k.rail('bm', 28), 'schwarz'); k.wire({ c: r.id, p: 'IN' }, k.M('D7'), 'blau');
     sol('m4', 'uno', k, prog([], [ifelse(cmp('LT', ar('A0'), N(400)), dw(7, 'HIGH'), dw(7, 'LOW'))])); }
   { const k = base('esp32'); ledR(k, 5, 'rot'); k.up('D4', 5, k.bb.y + 212);
     const is = w => cmp('EQ', `<block type="com_usb_text"></block>`, T2(w));

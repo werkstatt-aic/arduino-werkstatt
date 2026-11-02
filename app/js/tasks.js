@@ -307,7 +307,7 @@ const BUILTIN_TASKS = [
     checks: [{ k: 'part', type: 'stepper', n: 1 }, { k: 'motor' }, { k: 'noerror' }] },
   { id: 'm4', level: 'Motoren', board: 'uno', start: 'vorlage', ext: ['motoren'], title: 'Bewässerung mit Relais',
     goal: 'Ist die Erde zu trocken, schaltet ein Relais die Pumpe ein. Ist sie feucht genug, schaltet es wieder aus.',
-    tips: ['Der Feuchtesensor liefert einen analogen Wert (A0).', 'Das Relais wird wie eine LED geschaltet: IN an einen digitalen Anschluss.', 'Den Pumpenstromkreis (eigene Spannungsquelle) schaltet das Relais über COM und NO.'],
+    tips: ['Der Feuchtesensor liefert einen analogen Wert (A0).', 'Das Relais-Modul hat Schraubklemmen: DC+ an 5V, DC− an GND, IN an einen digitalen Anschluss (mit Kabeln, nicht in die Steckplatine). Es wird wie eine LED geschaltet.', 'Den Pumpenstromkreis (eigene Spannungsquelle) schaltet das Relais über COM und NO.'],
     checks: [{ k: 'part', type: 'relay', n: 1 }, { k: 'part', type: 'moist', n: 1 }, { k: 'sensor', type: 'moisture', a: 5, b: 90, watch: 'out' }, { k: 'noerror' }] },
   { id: 'm5', level: 'Motoren', board: 'uno', start: 'vorlage', ext: ['motoren'], title: 'Fahrzeug fährt ein Quadrat',
     goal: 'Baue ein Fahrzeug mit zwei Getriebemotoren mit Rad am Motortreiber L298N. Es soll ein Quadrat fahren: geradeaus, nach rechts drehen, wieder geradeaus …',

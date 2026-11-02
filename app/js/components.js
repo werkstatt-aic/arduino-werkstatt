@@ -469,34 +469,42 @@ function renderDHT(comp) {
 /* Relais-Modul (1 Kanal), hochkant: unten an der schmalen Seite die Stiftleiste VCC, GND, IN (steckbar), daneben
    rote LED (Versorgung) und grüne LED (Relais angezogen); in der Mitte das Relais; oben die Schraubklemme NC, COM, NO */
 function renderRelay(comp, st) {
-  const on = st && st.on, run = !!st;
-  // Platine mittig über der Stiftleiste (VCC, GND, IN bei x = 0, 10, 20)
-  let s = `<rect class="body" x="-30" y="-160" width="80" height="156" rx="3" fill="#2a6fb8" stroke="#174a85"/>`;
-  // Schraubklemme oben
-  s += `<rect class="body" x="-18" y="-146" width="56" height="28" rx="2" fill="#1e5fc8" stroke="#0f3f85"/>`;
-  for (const p of comp.def.pins) if (p.kind === 'socket') {
-    s += `<circle cx="${p.x}" cy="${p.y}" r="6.5" fill="#c9ced2" stroke="#7d868c"/>`;
-    s += `<text x="${p.x}" y="-150" class="tiny" text-anchor="middle" fill="#fff">${p.id}</text>`;
+  // 1-Kanal-Relaismodul mit Optokoppler und Jumper für High/Low-Level-Trigger (rote Platine):
+  // links Schraubklemme NO/COM/NC, rechts Schraubklemme IN/DC−/DC+
+  const on = st && st.on, run = !!st, low = String(comp.props.trig) === 'L';
+  let s = `<rect class="body" x="-88" y="-96" width="176" height="96" rx="5" fill="#d3261c" stroke="#8e1a12"/>`;
+  for (const [x, y] of [[-79, -87], [79, -87], [-79, -9], [79, -9]]) s += `<circle cx="${x}" cy="${y}" r="6" fill="#f3f1ec" stroke="#b9b2a6" stroke-width="1.2"/><circle cx="${x}" cy="${y}" r="3.4" fill="#fafaf7"/>`;
+  // Schraubklemmen (blau) mit Beschriftung außen
+  for (const x of [-66, 66]) s += `<rect class="body" x="${x - 10}" y="-76" width="20" height="60" rx="2" fill="#2b78d6" stroke="#174f99"/><rect x="${x + (x < 0 ? 6 : -10)}" y="-76" width="4" height="60" fill="#1f63b8"/>`;
+  for (const p of comp.def.pins) {
+    s += `<circle cx="${p.x}" cy="${p.y}" r="6.5" fill="#c9ced2" stroke="#7d868c"/><path d="M${p.x - 4} ${p.y - 4}L${p.x + 4} ${p.y + 4}M${p.x + 4} ${p.y - 4}L${p.x - 4} ${p.y + 4}" stroke="#7d868c" stroke-width="1.2"/>`;
+    const t = p.id === 'VCC' ? 'DC+' : p.id === 'GND' ? 'DC−' : p.id, lx = p.x < 0 ? p.x - 16 : p.x + 16;
+    s += `<text x="${lx}" y="${p.y}" class="tiny" text-anchor="middle" fill="#fff" transform="rotate(${p.x < 0 ? -90 : 90} ${lx} ${p.y})" dy="2">${t}</text>`;
   }
   // Schaltzustand: COM ist mit NO (angezogen) oder NC (abgefallen) verbunden
   const com = comp.def.pins.find(p => p.id === 'COM'), to = comp.def.pins.find(p => p.id === (on ? 'NO' : 'NC'));
-  s += `<path d="M${com.x} ${com.y + 10} L${to.x + (on ? -4 : 4)} ${to.y + 10}" stroke="#f2c200" stroke-width="2" stroke-linecap="round"/><circle cx="${com.x}" cy="${com.y + 10}" r="1.6" fill="#f2c200"/>`;
-  // Relais
-  s += `<rect class="body" x="-18" y="-112" width="56" height="62" rx="3" fill="#2f63d6" stroke="#173f9a"/>`;
-  s += `<rect x="-15" y="-109" width="50" height="56" rx="2" fill="none" stroke="#5b86e6" stroke-width=".8"/>`;
-  s += `<text x="10" y="-94" class="tiny" text-anchor="middle" fill="#fff">5VDC</text><text x="10" y="-84" class="tiny" text-anchor="middle" fill="#e3ebff">10A 250VAC</text><text x="10" y="-74" class="tiny" text-anchor="middle" fill="#e3ebff">10A 30VDC</text>`;
-  s += `<text x="10" y="-59" class="tiny" text-anchor="middle" fill="#fff">${String(comp.props.trig) === 'L' ? 'LOW' : 'HIGH'}</text>`;
-  // kleine Bauteile: Diode, drei Widerstände, Transistor
-  s += `<rect x="-16" y="-46" width="13" height="4" rx="1" fill="#ddd"/><rect x="-7" y="-46" width="2" height="4" fill="#c62828"/>`;
-  [[1, -46], [14, -46], [1, -38]].forEach(([x, y]) => { s += `<rect x="${x}" y="${y}" width="11" height="5" rx=".8" fill="#222"/><rect x="${x}" y="${y}" width="2" height="5" fill="#bbb"/><rect x="${x + 9}" y="${y}" width="2" height="5" fill="#bbb"/>`; });
-  s += `<rect x="15" y="-38" width="7" height="5" rx=".5" fill="#111"/>`;
-  // LEDs links und rechts der Stiftleiste: grün links (Relais angezogen), rot rechts (Versorgung, PWR)
-  s += `<circle cx="-14" cy="-13" r="4" fill="${on ? '#4cd964' : '#2f6b37'}" stroke="#1d4a24" stroke-width=".6"/>`;
-  if (on) s += `<circle cx="-14" cy="-13" r="7" fill="#4cd964" opacity=".35"/>`;
-  s += `<circle cx="34" cy="-13" r="4" fill="${run ? '#ff3b30' : '#8a2a2a'}" stroke="#5a1515" stroke-width=".6"/>`;
-  if (run) s += `<circle cx="34" cy="-13" r="7" fill="#ff3b30" opacity=".3"/>`;
-  s += `<text x="34" y="-21" class="tiny" text-anchor="middle" fill="#dfe8ff">PWR</text>`;
-  s += headerLegs({ def: { pins: comp.def.pins.filter(p => p.kind === 'leg') } }, ['VCC', 'GND', 'IN'], -6);
+  s += `<path d="M${com.x + 13} ${com.y} L${to.x + 13} ${to.y + (on ? 5 : -5)}" stroke="#f2c200" stroke-width="2" stroke-linecap="round"/><circle cx="${com.x + 13}" cy="${com.y}" r="1.8" fill="#f2c200"/>`;
+  // Relais (blauer Würfel)
+  s += `<rect class="body" x="-50" y="-78" width="62" height="58" rx="2" fill="#2f6fd6" stroke="#173f9a"/>`;
+  s += `<text x="-19" y="-64" class="tiny" text-anchor="middle" fill="#fff" font-style="italic">SONGLE</text>`;
+  s += `<text x="-19" y="-52" class="tiny" text-anchor="middle" fill="#e3ebff">10A 250VAC</text><text x="-19" y="-44" class="tiny" text-anchor="middle" fill="#e3ebff">10A 30VDC</text>`;
+  s += `<text x="-19" y="-28" class="tiny" text-anchor="middle" fill="#fff">SRD-5VDC-SL-C</text>`;
+  // SMD-Bauteile: Transistor, Diode, Widerstände, Optokoppler
+  const res = (x, y, t, v) => `<rect x="${x}" y="${y}" width="${v ? 5 : 9}" height="${v ? 9 : 5}" rx=".6" fill="#2a2a2a"/>` + (t ? `<text x="${x + (v ? 2.5 : 4.5)}" y="${y + (v ? 5.5 : 3.6)}" font-size="2.6" text-anchor="middle" fill="#ddd">${t}</text>` : '');
+  s += `<rect x="18" y="-72" width="9" height="6" rx=".6" fill="#222"/><rect x="20" y="-74" width="1.4" height="2" fill="#bbb"/><rect x="24" y="-74" width="1.4" height="2" fill="#bbb"/><rect x="22" y="-66" width="1.4" height="2" fill="#bbb"/>`;
+  s += `<rect x="31" y="-72" width="6" height="11" rx=".6" fill="#ddd"/><rect x="31" y="-63" width="6" height="2" fill="#7a1c1c"/>`;
+  s += res(29, -82, '222') + res(42, -66, '222', true) + res(18, -46, '102', true) + res(27, -46, '103', true) + res(47, -16, '102', true);
+  s += `<rect class="body" x="20" y="-31" width="16" height="13" rx="1" fill="#1b1b1b"/>` + [[18, -29], [18, -22], [36, -29], [36, -22]].map(([x, y]) => `<rect x="${x}" y="${y}" width="2" height="3" fill="#bbb"/>`).join('');
+  // SMD-LEDs: PWR (Versorgung) oben, LED1 (Relais angezogen) in der Mitte
+  s += `<rect x="44" y="-82" width="7" height="4" rx=".8" fill="${run ? '#ff3b30' : '#e9e4dc'}" stroke="#9b938a" stroke-width=".4"/><text x="47.5" y="-73" font-size="3.4" text-anchor="middle" fill="#fff">PWR</text>`;
+  if (run) s += `<circle cx="47.5" cy="-80" r="6" fill="#ff3b30" opacity=".35"/>`;
+  s += `<rect x="40" y="-45" width="4" height="7" rx=".8" fill="${on ? '#ff3b30' : '#e9e4dc'}" stroke="#9b938a" stroke-width=".4"/><text x="49" y="-40" font-size="3.4" fill="#fff">LED1</text>`;
+  if (on) s += `<circle cx="42" cy="-41.5" r="6" fill="#ff3b30" opacity=".35"/>`;
+  // Jumper L/H (zeigt die Einstellung „Schaltet bei“)
+  s += `<rect x="20" y="-13" width="18" height="6" fill="#1b1b1b"/>` + [23, 29, 35].map(x => `<rect x="${x - 1}" y="-11" width="2" height="2" fill="#d4af37"/>`).join('');
+  s += `<rect x="${low ? 19.5 : 25.5}" y="-14" width="13" height="8" rx="1" fill="#2a2a2a" stroke="#555" stroke-width=".5"/>`;
+  s += `<text x="16" y="-8" font-size="4" text-anchor="middle" fill="#fff">L</text><text x="41" y="-8" font-size="4" text-anchor="middle" fill="#fff">H</text>`;
+  s += `<text x="-50" y="-11" font-size="5" fill="#fff">1 Relay Module</text><text x="-50" y="-4" font-size="5" fill="#fff">high/low level trigger</text>`;
   return s + pinsOf(comp);
 }
 
@@ -858,9 +866,10 @@ const COMPONENTS = {
       S('VS', -40, -5, '+12V (Motorspannung, z. B. Batterie)'), S('GND', -30, -5, 'GND'), S('V5', -20, -5, '+5V'),
       S('OUT1', -62, -55, 'OUT1 (Motor A)'), S('OUT2', -62, -35, 'OUT2 (Motor A)'), S('OUT3', 82, -35, 'OUT3 (Motor B)'), S('OUT4', 82, -55, 'OUT4 (Motor B)')],
     props: { ena: '1', enb: '1' } },
-  relay: { name: 'Relais-Modul', ext: 'motoren', category: 'Module', render: renderRelay, bbox: [-30, -160, 50, 4],
-    pins: [L('VCC', 0), L('GND', 10), L('IN', 20, 'IN (Steuereingang)'), S('NO', 28, -132, 'NO (Schließer: verbunden, wenn das Relais angezogen ist)'), S('COM', 10, -132, 'COM (gemeinsamer Anschluss)'), S('NC', -8, -132, 'NC (Öffner: verbunden, wenn das Relais abgefallen ist)')],
-    props: { trig: 'H' } },
+  relay: { name: 'Relais-Modul', ext: 'motoren', category: 'Module', render: renderRelay, bbox: [-88, -96, 88, 0],
+    pins: [S('NO', -66, -66, 'NO (Schließer: verbunden, wenn das Relais angezogen ist)'), S('COM', -66, -46, 'COM (gemeinsamer Anschluss)'), S('NC', -66, -26, 'NC (Öffner: verbunden, wenn das Relais abgefallen ist)'),
+      S('IN', 66, -66, 'IN (Steuereingang)'), S('GND', 66, -46, 'DC− (GND)'), S('VCC', 66, -26, 'DC+ (5V)')],
+    props: { trig: 'H', bauform: 2 } },
   ina219: { name: 'Strommesser INA219', ext: 'multimeter',  category: 'Module', render: renderINA, bbox: [-8, -62, 58, 4],
     pins: [L('VCC', 0), L('GND', 10), L('SCL', 20), L('SDA', 30), L('VINM', 40, 'VIN–'), L('VINP', 50, 'VIN+')], props: { address: 64 } },
 };
