@@ -285,7 +285,12 @@ func latestFromRepo() (*releaseInfo, string, error) {
 	if src == "" {
 		return nil, "", fmt.Errorf("Die Update-Suche ist noch nicht eingerichtet.")
 	}
-	req, _ := http.NewRequest("GET", src, nil)
+	// GitHub liefert raw-Dateien bis zu 5 Minuten aus dem Zwischenspeicher: eigene Adresse je Abfrage
+	sep := "?"
+	if strings.Contains(src, "?") {
+		sep = "&"
+	}
+	req, _ := http.NewRequest("GET", src+sep+"t="+strconv.FormatInt(time.Now().Unix(), 10), nil)
 	req.Header.Set("User-Agent", "Arduino-Werkstatt/"+version)
 	req.Header.Set("Cache-Control", "no-cache")
 	c := *httpClient
@@ -309,6 +314,9 @@ func latestFromRepo() (*releaseInfo, string, error) {
 	zip := v.Zip
 	if !strings.HasPrefix(zip, "https://") && !strings.HasPrefix(zip, "http://") {
 		zip = src[:strings.LastIndex(src, "/")+1] + zip // relativ zur version.json
+	}
+	if strings.Contains(zip, "raw.githubusercontent.com") && !strings.Contains(zip, "?") {
+		zip += "?v=" + v.Version // je Version eine eigene Adresse, damit nicht die ZIP der Vorversion kommt
 	}
 	return &releaseInfo{Tag: v.Version, Body: v.Notes}, zip, nil
 }
