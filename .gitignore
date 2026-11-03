@@ -6,3 +6,4 @@ Werkzeuge/
 launcher/*.exe
 tests/__pycache__/
 tests/*.png
+!update/Werkstatt-Schulserver.zip

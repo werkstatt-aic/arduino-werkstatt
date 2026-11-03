@@ -95,6 +95,11 @@ const App = {
     if (School.on && !School.who) { this.loadProject(this.blankProject()); School.loginScreen(() => this.loadInitial()); return; }
     if (School.on && !this.schoolPolling) { this.schoolPolling = true; School.startPolling(); }
     this.loadProject(this.blankProject());
+    this.loadCount = 0; // zählt ab hier nur Projekte, die der Schüler selbst öffnet oder anlegt
+    if (!this.tourHooked) { // Einführungstour, sobald das erste Projekt offen und kein Fenster mehr im Weg ist
+      this.tourHooked = true;
+      $('#dlg').addEventListener('close', () => setTimeout(() => { if (!$('#dlg').open && this.loadCount > 0 && !Tour.box) Tour.maybeStart(this); }, 500));
+    }
     TaskStore.load(this).then(() => TaskUi.render());
     let list = [], last = '';
     if (this.launcher) {
@@ -883,7 +888,8 @@ const App = {
       ${row('Datei › Aufgaben', 'Aufgabe wählen, sie wird als neues Projekt angelegt')}
       ${row('Tipp anzeigen', 'deckt die Tipps nacheinander auf')}
       ${row('Aufgabe prüfen', 'die Simulation testet die Lösung automatisch, gelöste Aufgaben bekommen einen Haken')}
-      </table></div><div class="dlg-btns"><button class="btn primary" value="ok">Schließen</button></div>`);
+      </table></div><div class="dlg-btns"><button class="btn" type="button" id="tourAgain">Einführungstour starten</button><button class="btn primary" value="ok">Schließen</button></div>`);
+    $('#tourAgain').onclick = () => { $('#dlg').close('ok'); Tour.start(this); };
   },
 
   /* Kommunikationsblöcke im Uno-Projekt mit Hinweis kennzeichnen */

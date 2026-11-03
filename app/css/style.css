@@ -381,3 +381,13 @@ input.bad { border-color: var(--err) !important; box-shadow: 0 0 0 2px var(--err
 .exam-panel .tp-tag { background: #fdecea; color: #c62828; }
 .exam-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(240, 248, 241, .97); display: flex; align-items: center; justify-content: center; text-align: center; font-size: 18px; }
 .exam-overlay .big { font-size: 48px; font-weight: 700; color: #2e7d32; margin-bottom: 10px; }
+
+/* Einführungstour */
+.tour { position: fixed; inset: 0; z-index: 3000; }
+.tour-hole { position: fixed; border-radius: 10px; box-shadow: 0 0 0 9999px rgba(20, 32, 28, .55); transition: all .25s ease; pointer-events: none; outline: 3px solid #4dd0c8; }
+.tour-card { position: fixed; background: #fff; border-radius: 12px; padding: 16px 18px 14px; box-shadow: 0 18px 50px rgba(0,0,0,.3); transition: left .25s ease, top .25s ease; font-size: 14px; line-height: 1.5; }
+.tour-card h3 { margin: 2px 0 6px; font-size: 17px; color: var(--accent, #137a7f); }
+.tour-card p { margin: 0 0 12px; }
+.tour-step { font-size: 12px; color: #7a857f; }
+.tour-btns { display: flex; gap: 8px; align-items: center; }
+.tour-btns span { flex: 1; }

@@ -79,6 +79,8 @@ BEDIENUNG IN KÜRZE
     Strg+D = verdoppeln, Strg+Z = rückgängig. Ansicht verschieben: freie Stelle
     ziehen. Zoom: Mausrad. Knopf "Startansicht" unten links (oder Taste Pos1):
     ganze Schaltung ins Fenster einpassen. Alle Kürzel: Knopf "?" oder F1.
+  - Einführungstour: erscheint beim ersten Start automatisch; jederzeit wieder
+    über "?" (F1) > "Einführungstour starten".
   - Kabel anklicken: Farbe wählen; die weißen Punkte an den Enden ziehen, um
     das Kabel umzustecken. Knickpunkte nachträglich: an einer Stelle des
     Kabels ziehen = neuer Knickpunkt; Knickpunkt ziehen = verschieben;

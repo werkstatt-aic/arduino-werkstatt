@@ -106,3 +106,8 @@ Umgebungsvariablen nur für Tests: `WERKSTATT_CLI_URL`, `WERKSTATT_UPDATE_API`, 
 - Oberfläche: `app/js/school.js` (Anmeldung, Zustand alle 3 s, Prüfungsmodus, Abgabe, Verlassen melden, Einfügen sperren).
   Server erzwingt in der Prüfung: nur Projekte seit Prüfungsbeginn, keine Aufgaben/Beispiele.
 - Tests: tests/ss1.py (Lehrer-Oberfläche), ss2.py (Schüler-Werkstatt + Server Ende zu Ende), ss3.py (Rechte).
+
+## Einführungstour (ab 0.14.1)
+- `app/js/tour.js`: 14 Schritte mit Ausschnitt (`.tour-hole`, Schatten) und Karte; startet nach dem ersten geöffneten Projekt,
+  gemerkt in localStorage `werkstatt.tour = fertig`. Nicht im Ansichts- und Prüfungsmodus, nicht bei `navigator.webdriver` (außer `?tour`).
+  Wieder aufrufbar in der Bedienhilfe (Knopf `#tourAgain`). Test: tests/tour1.py.
