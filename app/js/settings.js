@@ -108,11 +108,11 @@ const Settings = {
     sel.value = best.port;
   },
 
-  async run(url, opts) {
+  async run(url, opts, at) {
     if (this.busy) return { ok: false };
     this.busy = true;
     // Fortschritt direkt unter dem Abschnitt zeigen, in dem geklickt wurde (sonst ganz unten außer Sicht)
-    const sec = document.activeElement && document.activeElement.closest('.set-sec');
+    const sec = at || (document.activeElement && document.activeElement.closest('.set-sec'));
     if (sec) {
       let at = sec;
       ['#upSteps', '#upBar', '#upMsg', '#upLogBox'].forEach(s => { const el = document.querySelector(s); if (el) { at.after(el); at = el; } });
@@ -143,7 +143,8 @@ const Settings = {
 
   async install(file) {
     try { await this.app.save(); } catch (e) { /* weiter */ }
-    const res = await this.run(file ? 'api/update/install' : 'api/update/install?from=github', file ? { body: file } : {});
+    // Fortschritt direkt unter „Programm“ (Update) zeigen, auch beim Update aus einer ZIP-Datei
+    const res = await this.run(file ? 'api/update/install' : 'api/update/install?from=github', file ? { body: file } : {}, document.querySelector('#setUpd').closest('.set-sec'));
     if (res.ok) {
       document.querySelectorAll('#dlg button').forEach(b => { b.disabled = true; });
       this.busy = true; // Dialog offen lassen, bis das neue Fenster da ist
