@@ -21,13 +21,17 @@ const Settings = {
     let details = false;
     try { details = localStorage.getItem('werkstatt.details') === '1'; } catch (e) { /* ohne Speicher */ }
     const yes = ok => ok ? '<span class="set-ok">eingerichtet</span>' : '<span class="set-no">noch nicht eingerichtet</span>';
+    const ro = info.schreibbar === false; // Netzwerk-Version ohne Schreibrechte: nichts einrichten, kein Update
+    const lock = ro ? 'disabled title="Nur im Original-Ordner mit Schreibrechten (Lehrkraft)"' : '';
     app.dialog(`<h2>Einstellungen</h2>
       <section class="set-sec">
         <h3>Programm</h3>
         <p class="set-line">Version <b>${esc(info.version || '?')}</b><span class="set-path" title="${esc(info.folder || '')}">${esc(info.folder || '')}</span></p>
+        ${info.netz ? `<div class="set-note good">Netzwerk-Version: Deine Projekte werden in deinem persönlichen Ordner gespeichert:<br><b>${esc(info.projekte || '')}</b></div>` : ''}
+        ${ro ? '<div class="set-note">Der Werkstatt-Ordner ist schreibgeschützt. Updates und das Einrichten der Werkzeuge macht die Lehrkraft im Original-Ordner.</div>' : ''}
         <div class="set-btns">
-          <button class="btn small" type="button" id="setCheck" ${info.updateRepo ? '' : 'disabled title="Die Update-Adresse ist noch nicht eingerichtet."'}>Nach Updates suchen</button>
-          <button class="btn small" type="button" id="setZip">Update aus ZIP-Datei …</button>
+          <button class="btn small" type="button" id="setCheck" ${ro ? lock : info.updateRepo ? '' : 'disabled title="Die Update-Adresse ist noch nicht eingerichtet."'}>Nach Updates suchen</button>
+          <button class="btn small" type="button" id="setZip" ${lock}>Update aus ZIP-Datei …</button>
           <input type="file" id="setZipFile" accept=".zip" hidden>
         </div>
         <div class="set-note" id="setUpd">${info.updateRepo ? '' : 'Die automatische Update-Suche wird noch eingerichtet. Updates lassen sich schon jetzt aus einer ZIP-Datei einspielen.'}</div>
@@ -38,8 +42,9 @@ const Settings = {
         <p class="set-line">Arduino Uno: ${yes(info.ready)}<br>ESP32: ${yes(info.readyEsp32)}<br>Zwischenspeicher: ${info.cacheMB != null ? info.cacheMB + ' MB' : '?'}</p>
         <div class="set-btns">
           <button class="btn small" type="button" id="setTools">Werkzeuge prüfen</button>
-          <button class="btn small" type="button" data-setup="uno">Uno neu einrichten</button>
-          <button class="btn small" type="button" data-setup="esp32">ESP32 neu einrichten</button>
+          <button class="btn small" type="button" data-setup="uno" ${lock}>Uno neu einrichten</button>
+          <button class="btn small" type="button" data-setup="esp32" ${lock}>ESP32 neu einrichten</button>
+          ${ro ? '' : '<button class="btn small" type="button" id="setNet" title="Alle Bibliotheken jetzt einrichten, damit die Werkstatt danach schreibgeschützt (Tauschlaufwerk) laufen kann">Alles für das Netzwerk einrichten</button>'}
           <button class="btn small" type="button" id="setCache">Zwischenspeicher leeren</button>
         </div>
         <div class="set-note">„Neu einrichten“ ergänzt fehlende Teile (Internet nötig). Den Zwischenspeicher nur leeren, wenn das Übersetzen seltsame Fehler meldet – danach dauert es einmal länger.</div>
@@ -77,6 +82,7 @@ const Settings = {
     $q('#setZipFile').onchange = e => { const f = e.target.files[0]; if (f) this.install(f); };
     $q('#setTools').onclick = () => this.run('api/tools/check');
     $q('#setCache').onclick = () => this.run('api/cache/clear');
+    if ($q('#setNet')) $q('#setNet').onclick = () => this.run('api/tools/netprep');
     document.querySelectorAll('[data-setup]').forEach(b => { b.onclick = () => { if (!this.busy) Uploader.showSetup(b.dataset.setup); }; });
     $q('#setPortRefresh').onclick = () => this.loadPorts();
     const erase = $q('#setErase');
@@ -117,7 +123,7 @@ const Settings = {
     document.querySelectorAll('.set-btns button, #setErase').forEach(b => { b.disabled = true; });
     const res = await Uploader.runStream(url, Object.assign({ method: 'POST' }, opts || {}), 1);
     this.busy = false;
-    document.querySelectorAll('.set-btns button, #setErase').forEach(b => { b.disabled = b.id === 'setCheck' && !!b.title; });
+    document.querySelectorAll('.set-btns button, #setErase').forEach(b => { b.disabled = !!b.title && (b.id === 'setCheck' || /Original-Ordner/.test(b.title)); });
     return res;
   },
 

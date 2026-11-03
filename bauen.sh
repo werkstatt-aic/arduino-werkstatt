@@ -9,7 +9,7 @@ P="$OUT/Arduino-Werkstatt"
 mkdir -p "$P/Projekte"
 (cd launcher && GOOS=windows GOARCH=amd64 go build -ldflags="-H=windowsgui -s -w" -o "$P/Arduino-Werkstatt starten.exe" .)
 cp -r app "$P/app"
-cp paket/LIESMICH.txt paket/"Notstart ohne Startprogramm.bat" "$P/"
+cp paket/LIESMICH.txt paket/"Notstart ohne Startprogramm.bat" paket/werkstatt-vorlage.ini "$P/"
 sed -i "1s/Testversion [0-9.]*/Testversion $VER/" "$P/LIESMICH.txt"
 rm -f "Arduino-Werkstatt-$VER.zip"
 (cd "$OUT" && zip -qr "$OLDPWD/Arduino-Werkstatt-$VER.zip" Arduino-Werkstatt)

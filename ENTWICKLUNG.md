@@ -81,3 +81,15 @@ Umgebungsvariablen nur für Tests: `WERKSTATT_CLI_URL`, `WERKSTATT_UPDATE_API`, 
   Blöcke das Projekt schon nutzt (z. B. Motoren aus Projekten vor 0.10.2).
 - **Hilfe-Knopf:** `Advisor.analyze(app)` liefert `[{level: 'error'|'warn'|'tip', text, comp?, block?}]`. Neue Regeln dort ergänzen;
   `tests/adv1.py` stellt sicher, dass Beispiele und Musterlösungen ohne Fehler/Hinweise bleiben, `tests/adv2.py` prüft die Fehlerfälle.
+
+## Netzwerk-Version (ab 0.13.0)
+- `launcher/netmode.go`: `setupMode()` beim Start. `writable` = Schreibprobe im Werkstatt-Ordner;
+  `netMode` = werkstatt.ini (`Netzwerkmodus = auto|ja|nein`) bzw. auto: schreibgeschützt oder Netzwerklaufwerk
+  (`onNetworkDrive`, Windows: UNC oder `GetDriveTypeW == DRIVE_REMOTE`).
+- Im Netzwerk-Modus: `projectDir` = `Projektordner` aus der ini oder `Dokumente\Arduino-Werkstatt\Projekte`
+  (`SHGetKnownFolderPath`, berücksichtigt Umleitungen); arduino-cli.yaml und Sketch in `scratchDir()` = `workDir()`
+  (TEMP je Benutzer, Ausweichorte `arduino-werkstatt-<user>` bzw. UserCacheDir).
+- Einrichten, Bibliotheken nachladen und Updates nur wenn `writable` (sonst `readOnlyMsg`).
+  `/api/tools/netprep` richtet alle Bibliotheken auf einmal ein (Knopf „Alles für das Netzwerk einrichten“).
+- `runningInstance()` übernimmt nur eine Werkstatt mit gleichem Ordner UND gleichem Benutzer.
+- Tests: tests/net1.py (als Benutzer ohne Schreibrechte), tests/net2.py (Lehrkraft mit Schreibrechten).

@@ -28,6 +28,7 @@ func registerSettings(mux *http.ServeMux) {
 	mux.HandleFunc("/api/info", apiInfo)
 	mux.HandleFunc("/api/cache/clear", apiCacheClear)
 	mux.HandleFunc("/api/tools/check", apiToolsCheck)
+	mux.HandleFunc("/api/tools/netprep", apiNetPrep)
 	mux.HandleFunc("/api/esp32/erase", apiEspErase)
 	mux.HandleFunc("/api/update/check", apiUpdateCheck)
 	mux.HandleFunc("/api/update/install", apiUpdateInstall)
@@ -55,6 +56,9 @@ func apiInfo(w http.ResponseWriter, r *http.Request) {
 		"readyEsp32": toolsReadyFor("esp32"),
 		"cacheMB":    dirSize(workDir()) >> 20,
 		"updateRepo": updateRepoName() != "" || os.Getenv("WERKSTATT_UPDATE_API") != "",
+		"netz":       netMode,
+		"schreibbar": writable,
+		"projekte":   projectDir,
 	})
 }
 
@@ -138,6 +142,44 @@ func apiToolsCheck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.line("##OK Alle Werkzeuge sind vollständig.")
+}
+
+// Für die Netzwerk-Version vorbereiten (Lehrkraft, mit Schreibrechten im Original-Ordner):
+// alle Bibliotheken, die sonst erst beim ersten Gebrauch nachgeladen würden, jetzt einrichten.
+func apiNetPrep(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Nur POST", 405)
+		return
+	}
+	s := newStream(w)
+	if !lock(s) {
+		return
+	}
+	defer unlock()
+	if !writable {
+		s.line("##FEHLER %s", readOnlyMsg)
+		return
+	}
+	if !toolsReadyFor("uno") || !toolsReadyFor("esp32") {
+		s.line("##FEHLER Bitte zuerst „Uno neu einrichten“ und „ESP32 neu einrichten“ ausführen (Internet nötig).")
+		return
+	}
+	s.line("##SCHRITT 1 Alle Bibliotheken einrichten (Internet nötig)")
+	want := append([]string{}, libraries...)
+	want = append(want, "ESP32Servo", nimbleLib)
+	for _, l := range lateLibraries {
+		want = append(want, l.lib)
+	}
+	if err := runCLI(s, append([]string{"lib", "install"}, want...)...); err != nil {
+		s.line("##FEHLER Einrichten fehlgeschlagen. Besteht eine Internetverbindung?")
+		return
+	}
+	s.line("##SCHRITT 2 Prüfen")
+	if err := runCLI(s, "version"); err != nil {
+		s.line("##FEHLER Das Übersetzungsprogramm startet nicht.")
+		return
+	}
+	s.line("##OK Fertig. Alle Bibliotheken sind eingerichtet – die Werkstatt kann jetzt schreibgeschützt im Netzwerk laufen (siehe LIESMICH, Abschnitt NETZWERK-VERSION).")
 }
 
 func cliOutput(args ...string) ([]byte, error) {
@@ -387,6 +429,10 @@ func apiUpdateInstall(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer unlock()
+	if !writable {
+		s.line("##FEHLER %s", readOnlyMsg)
+		return
+	}
 	var data []byte
 	if r.URL.Query().Get("from") == "github" {
 		s.line("##SCHRITT 1 Neue Version herunterladen")
@@ -496,7 +542,7 @@ func installZip(s *stream, data []byte) (string, error) {
 		rel := strings.TrimPrefix(n, prefix)
 		top := strings.SplitN(rel, "/", 2)[0]
 		// Nur Programmteile übernehmen – niemals Werkzeuge oder Projekte
-		if !(top == "app" || (!strings.Contains(rel, "/") && (strings.HasSuffix(strings.ToLower(rel), ".exe") || strings.HasSuffix(strings.ToLower(rel), ".txt") || strings.HasSuffix(strings.ToLower(rel), ".bat")))) {
+		if !(top == "app" || (!strings.Contains(rel, "/") && (strings.HasSuffix(strings.ToLower(rel), ".exe") || strings.HasSuffix(strings.ToLower(rel), ".txt") || strings.HasSuffix(strings.ToLower(rel), ".bat") || strings.EqualFold(rel, "werkstatt-vorlage.ini")))) { // werkstatt.ini selbst bleibt unberührt
 			continue
 		}
 		dst := filepath.Join(stage, filepath.FromSlash(rel))

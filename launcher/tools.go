@@ -71,11 +71,20 @@ func toolsDir() string { return filepath.Join(baseDir, "Werkzeuge") }
 func workDir() string {
 	h := fnv.New32a()
 	h.Write([]byte(strings.ToLower(baseDir)))
-	d := filepath.Join(os.TempDir(), "arduino-werkstatt", fmt.Sprintf("%08x", h.Sum32()))
-	if err := os.MkdirAll(d, 0o755); err != nil {
-		return toolsDir()
+	name := fmt.Sprintf("%08x", h.Sum32())
+	cands := []string{filepath.Join(os.TempDir(), "arduino-werkstatt", name)}
+	if u := userName(); u != "" { // falls der gemeinsame Ordner einem anderen Benutzer gehört
+		cands = append(cands, filepath.Join(os.TempDir(), "arduino-werkstatt-"+u, name))
 	}
-	return d
+	if c, err := os.UserCacheDir(); err == nil {
+		cands = append(cands, filepath.Join(c, "Arduino-Werkstatt", name))
+	}
+	for _, d := range cands {
+		if os.MkdirAll(d, 0o755) == nil && dirWritable(d) {
+			return d
+		}
+	}
+	return toolsDir()
 }
 
 func cliPath() string {
@@ -111,7 +120,7 @@ func boardManager() string {
 // auf jedem Rechner einen anderen Laufwerksbuchstaben haben kann.
 func configPath() string {
 	d := toolsDir()
-	p := filepath.Join(d, "arduino-cli.yaml")
+	p := filepath.Join(scratchDir(), "arduino-cli.yaml")
 	q := func(s string) string { return `"` + filepath.ToSlash(s) + `"` }
 	cfg := "directories:\n" +
 		"  data: " + q(filepath.Join(d, "arduino15")) + "\n" +
@@ -120,7 +129,7 @@ func configPath() string {
 		boardManager() +
 		"updater:\n  enable_notification: false\n" +
 		"metrics:\n  enabled: false\n"
-	_ = os.MkdirAll(d, 0o755)
+	_ = os.MkdirAll(filepath.Dir(p), 0o755)
 	_ = os.WriteFile(p, []byte(cfg), 0o644)
 	return p
 }
@@ -237,6 +246,10 @@ func apiInstall(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer unlock()
+	if !writable {
+		s.line("##FEHLER %s", readOnlyMsg)
+		return
+	}
 	fail := func(msg string, err error) {
 		if err != nil {
 			msg += ": " + err.Error()
@@ -598,7 +611,7 @@ func apiUpload(w http.ResponseWriter, r *http.Request) {
 	}
 	build := filepath.Join(workDir(), name)
 	export := filepath.Join(workDir(), "export-"+boardOf(fqbn))
-	sketch := filepath.Join(toolsDir(), "sketch", "werkstatt")
+	sketch := filepath.Join(scratchDir(), "sketch", "werkstatt")
 
 	if builtAlready(build, export, hash) {
 		if !stepShown {
@@ -624,6 +637,10 @@ func apiUpload(w http.ResponseWriter, r *http.Request) {
 		}
 		for _, l := range lateLibraries {
 			if strings.Contains(string(code), l.header) && !libInstalled(l.dir) {
+				if !writable {
+					s.line("##FEHLER Der %s fehlt in der Netzwerk-Version. Die Lehrkraft richtet ihn einmal im Original-Ordner ein (Einstellungen › „Alles für das Netzwerk einrichten“).", l.what)
+					return
+				}
 				s.line("##SCHRITT 1 %s einrichten (nur einmal nötig)", l.what)
 				if err := runCLI(s, "lib", "install", l.lib); err != nil {
 					s.line("##FEHLER Der %s konnte nicht installiert werden. Besteht eine Internetverbindung?", l.what)
@@ -633,6 +650,10 @@ func apiUpload(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if withBT && !nimbleInstalled() {
+			if !writable {
+				s.line("##FEHLER Der Bluetooth-Baustein fehlt in der Netzwerk-Version. Die Lehrkraft richtet ihn einmal im Original-Ordner ein (Einstellungen › „Alles für das Netzwerk einrichten“).")
+				return
+			}
 			s.line("##SCHRITT 1 Bluetooth-Baustein einrichten (nur einmal nötig)")
 			if err := runCLI(s, "lib", "install", nimbleLib); err != nil {
 				s.line("##FEHLER Der Bluetooth-Baustein konnte nicht installiert werden. Besteht eine Internetverbindung?")

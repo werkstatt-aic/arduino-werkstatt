@@ -244,6 +244,38 @@ EINSTELLUNGEN (Zahnrad oben rechts oder Datei > Einstellungen)
     beschleunigt das Übersetzen deutlich (Admin fragen).
   - Lehrkraft-Modus: eigene Aufgaben erstellen und verwalten.
 
+NETZWERK-VERSION (Tauschlaufwerk der Schule)
+  Die Werkstatt kann auch von einem Tauschlaufwerk starten, auf dem die
+  Schüler nur Leserechte haben. Jeder Rechner startet dann seine eigene
+  Werkstatt; viele Schüler gleichzeitig sind kein Problem.
+  - Projekte, Sicherungen und gelöste Aufgaben speichert die Werkstatt im
+    persönlichen Ordner: "Dokumente\Arduino-Werkstatt\Projekte" (auch wenn
+    "Dokumente" auf das Homelaufwerk umgeleitet ist). Anderer Ort: Datei
+    "werkstatt-vorlage.ini" in "werkstatt.ini" umbenennen und "Projektordner"
+    eintragen, z. B. H:\Arduino-Werkstatt.
+  - Zwischenspeicher zum Übersetzen: im TEMP-Ordner des Schülers.
+  - Die Netzwerk-Version schaltet sich selbst ein, wenn der Ordner
+    schreibgeschützt ist oder auf einem Netzwerklaufwerk liegt.
+  Einrichten (Lehrkraft, einmalig):
+  1. Werkstatt mit Schreibrechten starten (direkt auf dem Tauschlaufwerk
+     oder vorher z. B. auf dem Stick), unter Einstellungen "Uno neu
+     einrichten", "ESP32 neu einrichten" und "Alles für das Netzwerk
+     einrichten" (Internet nötig). Liegt der Ordner noch auf dem Stick:
+     danach den ganzen Ordner auf das Tauschlaufwerk kopieren.
+  2. Schülern nur Leserechte auf den Ordner geben. Einstellungen, Updates
+     und Einrichten sind für sie gesperrt.
+  3. Updates: Lehrkraft startet die Werkstatt mit Schreibrechten und sucht
+     wie gewohnt unter Einstellungen nach Updates. Am besten außerhalb des
+     Unterrichts, wenn keine Schüler die Werkstatt geöffnet haben.
+  Hinweise:
+  - Das erste Übersetzen dauert für jeden Schüler auf jedem Rechner einmal
+    länger (Uno etwa 20-40 s, ESP32 etwa 2-4 Minuten), danach geht es
+    schnell. Die Werkzeuge werden über das Netzwerk gelesen.
+  - Virenscanner-Ausnahme für den Werkstatt-Ordner und
+    %TEMP%\arduino-werkstatt beschleunigt das Übersetzen deutlich.
+  - Nicht für Terminalserver gedacht (mehrere Schüler am selben Rechner
+    gleichzeitig): dort könnten Schüler die Werkstatt anderer erreichen.
+
 NOCH NICHT ENTHALTEN (folgt)
   - Eigene Bauteile und Blöcke selbst hinzufügen
   - Schulversion mit Anmeldung und Klassenzimmermodus

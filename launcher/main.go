@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-const version = "0.12.17"
+const version = "0.13.0"
 
 var (
 	baseDir    string
@@ -35,6 +35,7 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "--dir" && len(os.Args) > 2 {
 		baseDir = os.Args[2]
 	}
+	setupMode()
 	cleanupAfterUpdate()
 	// Läuft die Werkstatt aus diesem Ordner schon? Dann nur ein weiteres Fenster öffnen,
 	// statt ein zweites Startprogramm zu starten (sonst überschreiben sich die Speicherstände).
@@ -49,8 +50,9 @@ func main() {
 		return
 	}
 	appDir := filepath.Join(baseDir, "app")
-	projectDir = filepath.Join(baseDir, "Projekte")
-	_ = os.MkdirAll(projectDir, 0o755)
+	if err := os.MkdirAll(projectDir, 0o755); err != nil && netMode {
+		fatal("Der Ordner für die Projekte kann nicht angelegt werden:\n" + projectDir + "\n\n" + err.Error())
+	}
 
 	ln, err := listen()
 	if err != nil {
@@ -62,7 +64,7 @@ func main() {
 	mux.Handle("/", noCache(http.FileServer(http.Dir(appDir))))
 	mux.HandleFunc("/api/ping", func(w http.ResponseWriter, r *http.Request) {
 		touch()
-		fmt.Fprintf(w, `{"ok":true,"version":%q,"folder":%q}`, version, baseDir)
+		fmt.Fprintf(w, `{"ok":true,"version":%q,"folder":%q,"user":%q,"netz":%t,"projekte":%q}`, version, baseDir, userName(), netMode, projectDir)
 	})
 	mux.HandleFunc("/api/list", apiList)
 	mux.HandleFunc("/api/load", apiLoad)
@@ -103,10 +105,11 @@ func runningInstance() string {
 		if err != nil {
 			continue
 		}
-		var info struct{ Folder string }
+		var info struct{ Folder, User string }
 		json.NewDecoder(io.LimitReader(resp.Body, 4096)).Decode(&info)
 		resp.Body.Close()
-		if info.Folder != "" && strings.EqualFold(filepath.Clean(info.Folder), filepath.Clean(baseDir)) {
+		// gleicher Ordner UND gleicher Benutzer (auf einem Rechner mit mehreren Anmeldungen nie fremde Werkstatt übernehmen)
+		if info.Folder != "" && strings.EqualFold(filepath.Clean(info.Folder), filepath.Clean(baseDir)) && strings.EqualFold(info.User, userName()) {
 			return url
 		}
 	}
@@ -386,4 +389,11 @@ func apiBackup(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(b)
+}
+
+func userName() string {
+	if u := os.Getenv("USERNAME"); u != "" {
+		return u
+	}
+	return os.Getenv("USER")
 }
