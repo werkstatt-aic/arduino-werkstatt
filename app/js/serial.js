@@ -44,7 +44,7 @@ const SerialLink = {
     if (!this.available) return false;
     try {
       // Auswahlfenster zeigt nur Anschlüsse mit Mikrocontroller (Umschalt+Klick: alle Anschlüsse)
-      if (!this.port || ask) this.port = (ask && !all && await this.autoPort()) || await navigator.serial.requestPort(all ? {} : { filters: this.USB_IDS.map(v => ({ usbVendorId: v })) });
+      if (!this.port || ask) this.port = (ask && !all && await this.autoPort()) || await this.picked(() => navigator.serial.requestPort(all ? {} : { filters: this.USB_IDS.map(v => ({ usbVendorId: v })) }));
       await this.port.open({ baudRate: this.baud() });
       if (BOARD === 'esp32') { try { await this.port.setSignals({ dataTerminalReady: false, requestToSend: false }); } catch (e) { /* egal */ } }
       this.connected = true; this.mode = 'usb';
@@ -62,6 +62,12 @@ const SerialLink = {
     }
   },
 
+  /* Auswahlfenster des Browsers: in der Prüfung nicht als „Werkstatt verlassen“ melden */
+  async picked(fn) {
+    if (typeof School !== 'undefined') School.picker = true;
+    try { return await fn(); } finally { setTimeout(() => { if (typeof School !== 'undefined') School.picker = false; }, 500); }
+  },
+
   /* Automatische Suche: Steckt genau ein Mikrocontroller (USB-Wandler CH340, CP210x, FTDI, Arduino, ESP32-S3),
      den Chrome schon einmal freigegeben hat, wird er ohne Auswahlfenster verbunden. Sonst fragt Chrome einmal nach. */
   async autoPort() {
@@ -76,7 +82,7 @@ const SerialLink = {
   async connectBt() {
     let dev;
     try {
-      dev = await navigator.bluetooth.requestDevice({ filters: [{ services: [BLE_UART.svc] }, { services: [BT_UUID.svc] }], optionalServices: [BLE_UART.svc] });
+      dev = await this.picked(() => navigator.bluetooth.requestDevice({ filters: [{ services: [BLE_UART.svc] }, { services: [BT_UUID.svc] }], optionalServices: [BLE_UART.svc] }));
       const srv = await dev.gatt.connect();
       let svc;
       try { svc = await srv.getPrimaryService(BLE_UART.svc); } catch (e) {

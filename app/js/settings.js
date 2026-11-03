@@ -27,7 +27,8 @@ const Settings = {
       <section class="set-sec">
         <h3>Programm</h3>
         <p class="set-line">Version <b>${esc(info.version || '?')}</b><span class="set-path" title="${esc(info.folder || '')}">${esc(info.folder || '')}</span></p>
-        ${info.netz ? `<div class="set-note good">Netzwerk-Version: Deine Projekte werden in deinem persönlichen Ordner gespeichert:<br><b>${esc(info.projekte || '')}</b></div>` : ''}
+        ${School.on ? `<div class="set-note good">Schulversion: Deine Projekte werden auf dem Schulserver gespeichert${School.who ? ` (Klasse ${esc(School.who.klasse)}, Tisch ${parseInt(School.who.tisch, 10)}, ${esc(School.who.vorname)})` : ''}.<br><b>${esc(School.server || '')}</b></div>`
+          : info.netz ? `<div class="set-note good">Netzwerk-Version: Deine Projekte werden in deinem persönlichen Ordner gespeichert:<br><b>${esc(info.projekte || '')}</b></div>` : ''}
         ${ro ? '<div class="set-note">Der Werkstatt-Ordner ist schreibgeschützt. Updates und das Einrichten der Werkzeuge macht die Lehrkraft im Original-Ordner.</div>' : ''}
         <div class="set-btns">
           <button class="btn small" type="button" id="setCheck" ${ro ? lock : info.updateRepo ? '' : 'disabled title="Die Update-Adresse ist noch nicht eingerichtet."'}>Nach Updates suchen</button>

@@ -18,10 +18,10 @@ var taskDir string
 
 func initTasks(mux *http.ServeMux) {
 	taskDir = filepath.Join(baseDir, "Aufgaben")
-	mux.HandleFunc("/api/tasks", apiTasks)
+	mux.HandleFunc("/api/tasks", tasksWithSchool(apiTasks))
 	mux.HandleFunc("/api/task-save", apiTaskSave)
 	mux.HandleFunc("/api/task-delete", apiTaskDelete)
-	mux.HandleFunc("/api/solved", apiSolved)
+	mux.HandleFunc("/api/solved", schoolOr("solved", apiSolved))
 }
 
 // Nur einfache Dateinamen mit Endung .aufgabe zulassen.

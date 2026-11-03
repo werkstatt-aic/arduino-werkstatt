@@ -316,6 +316,7 @@ class CircuitEditor {
     const t = e.target;
     const sim = this.app.sim.running;
     this.app.focusArea = 'circuit';
+    if (this.app.viewer && !sim) { this.select(null); this.startPan(e); return; } // Ansichtsmodus: nur verschieben
     const pinEl = t.closest('.pin');
     const knot = t.closest('.wire-knot');
     const wireEl = t.closest('.wire');

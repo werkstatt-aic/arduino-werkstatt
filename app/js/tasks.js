@@ -565,6 +565,7 @@ const TaskUi = {
   /* Auswahl der Aufgaben, nach Stufen sortiert */
   async dialog() {
     const app = this.app;
+    if (School.exam()) { app.toast('Während der Prüfung sind Aufgaben gesperrt.'); return; }
     await TaskStore.load(app);
     const teacher = TaskEditor.teacherMode();
     const card = t => {

@@ -1,0 +1,63 @@
+"""Schulversion Ende zu Ende: Schüler-Werkstatt (Startprogramm mit Schulserver) + Schulserver"""
+import json, urllib.request, urllib.parse, http.cookiejar, time
+from playwright.sync_api import sync_playwright
+S = 'http://127.0.0.1:8650'; W = 'http://127.0.0.1:8642/'
+cj = http.cookiejar.CookieJar(); op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+def L(path, body=None, raw_body=None):
+    data = raw_body if raw_body is not None else (json.dumps(body).encode() if body is not None else None)
+    req = urllib.request.Request(S + '/lehrer/api/' + path, data=data, method='POST' if data is not None else 'GET')
+    req.add_header('X-Werkstatt', '1'); req.add_header('Content-Type', 'application/json')
+    try: r = op.open(req).read().decode()
+    except urllib.error.HTTPError as e: return 'HTTP %d %s' % (e.code, e.read().decode())
+    return json.loads(r) if r[:1] in '[{' else r
+print('Einrichten:', L('setup', {'name': 'Uli Aichler', 'login': 'aichler', 'passwort': 'geheim123'}).get('name'))
+K = L('klasse-neu', {'name': '8a'})['id']; CODE = L('raum-oeffnen', {'klasse': K})['code']; print('Code', CODE)
+with sync_playwright() as p:
+    b = p.chromium.launch(); pg = b.new_page(viewport={'width': 1400, 'height': 900})
+    errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
+    pg.goto(W); pg.wait_for_timeout(1200)
+    print('Anmeldefenster:', pg.inner_text('#dlg h2'))
+    pg.fill('#dlgForm input[name=code]', '1111'); pg.select_option('#dlgForm select[name=tisch]', '03'); pg.fill('#dlgForm input[name=vor]', 'Lena')
+    pg.click('#dlg button[value=join]'); pg.wait_for_timeout(600); print('falscher Code:', pg.inner_text('#loginErr'))
+    pg.fill('#dlgForm input[name=code]', CODE); pg.click('#dlg button[value=join]'); pg.wait_for_timeout(1200)
+    print('Startfenster:', pg.inner_text('#dlg h2'), '| Tisch gesperrt:', pg.evaluate("()=>document.querySelector('#dlgForm select[name=tisch]').disabled"), '| Chip:', pg.inner_text('#schoolChip span'))
+    pg.fill('#dlgForm input[name=proj]', 'Ampel'); pg.click('#dlg button[value=new]'); pg.wait_for_timeout(1500)
+    pg.evaluate("()=>{App.circuit.addTemplate(365,430); App.circuit.renderAll(); App.changed();}"); pg.wait_for_timeout(4000)
+    room = L('raum?klasse=' + K); s0 = room['schueler'][0]
+    print('Lehrer sieht:', s0['vorname'], s0['tisch'], s0['projekt'], 'online' if s0['online'] else 'offline')
+    print('Projekte auf dem Server:', [x['file'] for x in L('schueler?klasse=' + K)[0]['projekte']])
+    # Beispiel und Aufgabe der Lehrkraft
+    proj = L('projekt?klasse=%s&schueler=03-Lena' % K)
+    print('Beispiel hochladen:', L('beispiel-hochladen?titel=Lehrer-Ampel', raw_body=json.dumps(proj).encode()))
+    task = pg.evaluate("()=>TaskStore.clean(BUILTIN_TASKS[0])"); task['title'] = 'Server-Aufgabe'
+    print('Aufgabe hochladen:', L('aufgabe-hochladen', raw_body=json.dumps(task).encode()))
+    pg.evaluate("()=>App.examplesDialog()"); pg.wait_for_timeout(800)
+    print('Beispiel-Dialog:', pg.inner_text('#dlgForm .start-sec'), '|', pg.locator('[data-srv]').count(), 'vom Server')
+    pg.click('#dlg button[value=cancel]'); pg.wait_for_timeout(300)
+    pg.evaluate("()=>TaskUi.dialog()"); pg.wait_for_timeout(800)
+    print('Server-Aufgabe im Dialog:', 'Server-Aufgabe' in pg.inner_text('#dlg'))
+    pg.keyboard.press('Escape'); pg.wait_for_timeout(300)
+    # Prüfung
+    print('Prüfung starten:', L('raum-modus', {'klasse': K, 'modus': 'pruefung', 'aufgabe': 'Baue eine Ampel mit Taster.'}))
+    pg.wait_for_timeout(5000)
+    print('Prüfungsmodus:', pg.evaluate("()=>document.body.classList.contains('exam-mode')"), '| Projekt:', pg.input_value('#projName'), '| Abgeben sichtbar:', pg.is_visible('#examBtn'), '| Datei-Menü sichtbar:', pg.is_visible('#fileBtn'))
+    print('Aufgabenstellung:', pg.inner_text('#examPanel .tp-goal'))
+    pg.evaluate("()=>App.examplesDialog()"); pg.wait_for_timeout(300); print('Beispiele gesperrt:', pg.evaluate("()=>!document.querySelector('#dlg').open"))
+    r = pg.evaluate("()=>{const e=new Event('paste',{cancelable:true,bubbles:true}); document.body.dispatchEvent(e); return e.defaultPrevented;}"); print('Einfügen gesperrt:', r)
+    pg.evaluate("()=>{Object.defineProperty(document,'hidden',{get:()=>true,configurable:true}); document.dispatchEvent(new Event('visibilitychange'));}"); pg.wait_for_timeout(1300)
+    pg.evaluate("()=>{Object.defineProperty(document,'hidden',{get:()=>false,configurable:true}); document.dispatchEvent(new Event('visibilitychange'));}"); pg.wait_for_timeout(500)
+    ev = L('raum?klasse=' + K)['schueler'][0]['ereignisse']; print('Lehrer sieht Verlassen:', [(e['art'], e.get('dauer')) for e in ev])
+    pg.evaluate("()=>{App.circuit.addTemplate(365,430); App.circuit.renderAll(); App.changed();}"); pg.wait_for_timeout(1500)
+    pg.screenshot(path='ss2_pruefung.png')
+    pg.click('#examBtn'); pg.wait_for_timeout(300); pg.click('#dlg button[value=ok]'); pg.wait_for_timeout(1500)
+    print('Overlay:', pg.is_visible('#examOverlay'), '| Lehrer: abgegeben', L('raum?klasse=' + K)['schueler'][0]['abgegeben'][:19])
+    pg.screenshot(path='ss2_abgegeben.png')
+    print('Abgaben:', [d['file'] for a in L('abgaben?klasse=' + K) for d in a['dateien']])
+    L('abgabe-zuruecknehmen', {'klasse': K, 'schueler': '03-Lena'}); pg.wait_for_timeout(4000)
+    print('nach Zurücknehmen Overlay:', pg.is_visible('#examOverlay'))
+    L('raum-modus', {'klasse': K, 'modus': 'normal', 'aufgabe': ''}); pg.wait_for_timeout(4000)
+    print('nach Prüfungsende:', pg.evaluate("()=>document.body.classList.contains('exam-mode')"), '| Datei-Menü:', pg.is_visible('#fileBtn'), '| Panel weg:', pg.locator('#examPanel').count() == 0)
+    pg.screenshot(path='ss2_leiste.png', clip={'x':0,'y':0,'width':1400,'height':60}); pg.click('#schoolLogout'); pg.wait_for_timeout(2000)
+    print('nach Abmelden:', pg.inner_text('#dlg h2'), '| Code-Feld:', pg.locator('#dlgForm input[name=code]').count())
+    print('Fehler:', errs)
+    b.close()

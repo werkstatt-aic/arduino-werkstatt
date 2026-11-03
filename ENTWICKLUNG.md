@@ -93,3 +93,16 @@ Umgebungsvariablen nur für Tests: `WERKSTATT_CLI_URL`, `WERKSTATT_UPDATE_API`, 
   `/api/tools/netprep` richtet alle Bibliotheken auf einmal ein (Knopf „Alles für das Netzwerk einrichten“).
 - `runningInstance()` übernimmt nur eine Werkstatt mit gleichem Ordner UND gleichem Benutzer.
 - Tests: tests/net1.py (als Benutzer ohne Schreibrechte), tests/net2.py (Lehrkraft mit Schreibrechten).
+
+## Schulversion (ab 0.14.0): Werkstatt-Schulserver
+- Eigenes Go-Programm `schulserver/` (Paket: `./bauen-schulserver.sh` → Windows + Linux amd64/arm64).
+  Daten als JSON-Dateien im Datenordner (`store.go`), Passwörter PBKDF2-SHA256, Lehrer-Sitzung per Cookie
+  (POST nur mit Kopfzeile `X-Werkstatt: 1`), Schüler-Token per Kopfzeile `X-Werkstatt-Token`.
+- Lehrer-Oberfläche: `schulserver/web/` (eingebettet), Großansicht = Werkstatt-App aus `app/` mit `?ansicht=<URL>`
+  (App: `VIEW_URL`, `viewerStart()`, Blockly `readOnly`, kein Speichern, Schaltung nur verschieben).
+- Werkstatt: `werkstatt.ini` → `Schulserver = …` (`launcher/school.go`): `/api/schule/{info,join,abmelden,state,event,abgabe,beispiele,beispiel}`,
+  Projekt-APIs und `solved` werden mit dem Token an `/api/s/…` weitergereicht, `/api/tasks` mischt Server-Aufgaben dazu.
+  Token bleibt im Startprogramm; Abmelden beim Schließen (pagehide/sendBeacon) bzw. nach 3 min ohne Lebenszeichen.
+- Oberfläche: `app/js/school.js` (Anmeldung, Zustand alle 3 s, Prüfungsmodus, Abgabe, Verlassen melden, Einfügen sperren).
+  Server erzwingt in der Prüfung: nur Projekte seit Prüfungsbeginn, keine Aufgaben/Beispiele.
+- Tests: tests/ss1.py (Lehrer-Oberfläche), ss2.py (Schüler-Werkstatt + Server Ende zu Ende), ss3.py (Rechte).

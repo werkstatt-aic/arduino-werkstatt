@@ -4,7 +4,11 @@
 const $ = s => document.querySelector(s);
 const FORMAT = 'arduino-werkstatt';
 
+// Ansichtsmodus (Großansicht der Lehrkraft im Schulserver): ?ansicht=<Adresse des Projekts>
+const VIEW_URL = new URLSearchParams(location.search).get('ansicht');
+
 const App = {
+  viewer: !!VIEW_URL,
   focusArea: 'circuit',
   undoStack: [],
   redoStack: [],
@@ -22,6 +26,7 @@ const App = {
     this.workspace = Blockly.inject('blockly', {
       toolbox: buildToolbox([]), renderer: 'werkstatt', media: 'lib/blockly/media/',
       zoom: { controls: true, wheel: true, startScale: 0.7, maxScale: 2, minScale: 0.3 },
+      readOnly: !!VIEW_URL,
       trashcan: true, move: { scrollbars: true, drag: true, wheel: false },
       grid: { spacing: 24, length: 2, colour: '#e3e5e2', snap: false },
     });
@@ -41,9 +46,36 @@ const App = {
 
     this.buildPartList();
     this.bindUi();
+    if (this.viewer) { document.body.classList.add('viewer-mode'); await this.viewerStart(); return; }
     this.launcher = await this.ping();
+    await School.init(this);
     await this.loadInitial();
     if (this.launcher) setInterval(() => this.ping(), 5000);
+  },
+
+  /* ---------- Ansichtsmodus: Projekt nur ansehen, laufend aktualisieren ---------- */
+  async viewerStart() {
+    let last = '';
+    const load = async first => {
+      let txt;
+      try { const r = await fetch(VIEW_URL, { cache: 'no-store' }); if (!r.ok) throw new Error(await r.text()); txt = await r.text(); }
+      catch (e) { if (first) { $('#projName').value = 'Noch kein Projekt gespeichert'; this.toast(String(e.message || e)); } return; }
+      if (txt === last) return;
+      last = txt;
+      const data = JSON.parse(txt);
+      const keep = !first && { view: Object.assign({}, this.circuit.view), mode: $('#main').classList.contains('mode-code') ? 'code' : 'parts', sim: this.sim.running, scroll: [this.workspace.scrollX, this.workspace.scrollY, this.workspace.scale] };
+      this.loadProject(data);
+      if (keep) {
+        this.setMode(keep.mode);
+        this.circuit.view = keep.view; this.circuit.applyView();
+        requestAnimationFrame(() => { this.workspace.setScale(keep.scroll[2]); this.workspace.scroll(keep.scroll[0], keep.scroll[1]); });
+        if (keep.sim) this.startSim();
+      } else requestAnimationFrame(() => this.circuit.fitView());
+      $('#saveState').textContent = 'nur Ansicht · Stand ' + new Date().toLocaleTimeString('de-DE');
+    };
+    $('#projName').readOnly = true;
+    await load(true);
+    setInterval(() => load(false), 3000);
   },
 
   /* ---------- Starthilfe vom Stick ---------- */
@@ -59,6 +91,9 @@ const App = {
 
   /* Startbildschirm: neues Projekt, zuletzt bearbeitet, anderes öffnen, ggf. Notfall-Rettung */
   async loadInitial() {
+    // Schulversion: zuerst mit Stundencode anmelden
+    if (School.on && !School.who) { this.loadProject(this.blankProject()); School.loginScreen(() => this.loadInitial()); return; }
+    if (School.on && !this.schoolPolling) { this.schoolPolling = true; School.startPolling(); }
     this.loadProject(this.blankProject());
     TaskStore.load(this).then(() => TaskUi.render());
     let list = [], last = '';
@@ -71,6 +106,8 @@ const App = {
     try { rescue = JSON.parse(localStorage.getItem('werkstatt.current') || 'null'); } catch (e) { rescue = null; }
     if (rescue && (!rescue.circuit || (!rescue.circuit.components.length && !/<block type="(?!ard_setup|ard_loop)/.test(rescue.blocks || '')))) rescue = null;
     if (rescue && this.launcher && list.some(p => p.file === this.fileFor(rescue.name || ''))) rescue = null;
+    // Schulversion (Gastkonten): nur den eigenen Entwurf anbieten, nie den eines anderen Schülers
+    if (rescue && School.on && !String(rescue.name || '').startsWith(`${School.who.tisch} – ${School.who.vorname} – `)) rescue = null;
     this.startScreen(list, last, rescue);
   },
 
@@ -87,11 +124,12 @@ const App = {
     pre = pre || {};
     let last = {};
     try { last = JSON.parse(localStorage.getItem('werkstatt.schueler') || '{}'); } catch (e) { last = {}; }
-    const tisch = pre.tisch || last.tisch || '', vor = pre.vor != null ? pre.vor : (last.vor || '');
+    let tisch = pre.tisch || last.tisch || '', vor = pre.vor != null ? pre.vor : (last.vor || '');
+    if (School.who) { tisch = School.who.tisch; vor = School.who.vorname; } // Schulversion: angemeldet
     const opts = '<option value="">–</option>' + Array.from({ length: 18 }, (_, i) => String(i + 1).padStart(2, '0')).map(n => `<option ${n === tisch ? 'selected' : ''}>${n}</option>`).join('');
     return `<div class="name3">
-        <label>Tisch-Nr.<select name="tisch">${opts}</select></label>
-        <label>Vorname<input type="text" name="vor" value="${esc(vor)}" spellcheck="false" autocomplete="off"></label>
+        <label>Tisch-Nr.<select name="tisch" ${School.who ? 'disabled title="Angemeldet – Tisch und Vorname stehen fest"' : ''}>${opts}</select></label>
+        <label>Vorname<input type="text" name="vor" value="${esc(vor)}" spellcheck="false" autocomplete="off" ${School.who ? 'readonly title="Angemeldet – Tisch und Vorname stehen fest"' : ''}></label>
         <label class="wide">Projekt<input type="text" name="proj" value="${esc(pre.proj || '')}" spellcheck="false" autocomplete="off" placeholder="z. B. Ampelschaltung"></label>
         <input type="hidden" name="n">
       </div>`;
@@ -256,7 +294,7 @@ const App = {
   changed() { this.ensureExtensions(); this.updateEmpty(); this.scheduleSave(); this.updateCodeText(); },
   changedSilently() { this.scheduleSave(); if (this.sim.running) this.sim.update(); },
   scheduleSave() {
-    if (this.loading) return;
+    if (this.loading || this.viewer) return;
     this.setSaveState('Wird gespeichert …');
     clearTimeout(this.saveTimer);
     this.saveTimer = setTimeout(() => this.save(), 800);
@@ -745,7 +783,7 @@ const App = {
       const xml = Blockly.Xml.workspaceToDom(this.workspace);
       Blockly.Events.disable();
       try { this.workspace.clear(); Blockly.Xml.domToWorkspace(xml, this.workspace); } finally { Blockly.Events.enable(); }
-      this.workspace.updateToolbox(buildToolbox(this.extensions));
+      if (!this.viewer) this.workspace.updateToolbox(buildToolbox(this.extensions));
       this.updateCommTab();
       this.markBoardBlocks();
       SerialLink.setUi();
@@ -762,11 +800,21 @@ const App = {
   /* Beispielprojekte: auswählen, dann wie ein neues Projekt benennen */
   async examplesDialog() {
     await this.refreshFiles();
+    if (School.exam()) { this.toast('Während der Prüfung sind Beispiele gesperrt.'); return; }
     const group = (b, t) => `<div class="start-sec">${t}</div>` + EXAMPLES.filter(e => e.board === b).map(e => `<button class="start-item ex" type="button" data-ex="${e.id}"><span><b>${esc(e.title)}</b><small>${esc(e.desc)}</small></span></button>`).join('');
-    this.dialog(`<h2>Beispiel öffnen</h2><p>Das Beispiel wird als <b>neues Projekt</b> angelegt – du kannst es danach frei verändern.</p>${group('uno', 'Arduino Uno')}${group('esp32', 'ESP32')}<div class="dlg-btns"><button class="btn" value="cancel">Abbrechen</button></div>`);
-    $('#dlgForm').addEventListener('click', e => {
-      const b = e.target.closest('[data-ex]'); if (!b) return;
-      const ex = EXAMPLES.find(x => x.id === b.dataset.ex);
+    // Schulversion: Beispiele der Lehrkraft vom Schulserver
+    const srv = await School.examples();
+    const srvGroup = srv.length ? `<div class="start-sec">Von deiner Lehrkraft</div>` + srv.map(e => `<button class="start-item ex" type="button" data-srv="${esc(e.id)}"><span><b>${esc(e.titel)}</b><small>${esc(e.beschreibung || '')}${e.board === 'esp32' ? ' (ESP32)' : ''}</small></span></button>`).join('') : '';
+    this.dialog(`<h2>Beispiel öffnen</h2><p>Das Beispiel wird als <b>neues Projekt</b> angelegt – du kannst es danach frei verändern.</p>${srvGroup}${group('uno', 'Arduino Uno')}${group('esp32', 'ESP32')}<div class="dlg-btns"><button class="btn" value="cancel">Abbrechen</button></div>`);
+    $('#dlgForm').addEventListener('click', async e => {
+      const b = e.target.closest('[data-ex], [data-srv]'); if (!b) return;
+      let ex = EXAMPLES.find(x => x.id === b.dataset.ex);
+      if (b.dataset.srv) {
+        const meta = srv.find(x => x.id === b.dataset.srv);
+        let data;
+        try { data = await (await this.api('schule/beispiel?id=' + encodeURIComponent(b.dataset.srv))).json(); } catch (er) { this.toast('Beispiel konnte nicht geladen werden: ' + er.message); return; }
+        ex = { title: meta.titel, board: data.board === 'esp32' ? 'esp32' : 'uno', ext: data.extensions || [], circuit: data.circuit || { components: [], wires: [] }, blocks: data.blocks };
+      }
       this.dialog(`<h2>${esc(ex.title)}</h2><p>Wie soll dein Projekt heißen?</p>${this.nameFields({ proj: ex.title })}<div class="dlg-btns"><button class="btn" value="cancel">Abbrechen</button><button class="btn primary" value="ok">Anlegen</button></div>`,
         (rv, f) => {
           if (rv !== 'ok' || !f.n.value) return;
@@ -800,6 +848,7 @@ const App = {
   },
 
   helpDialog() {
+    if (School.exam()) { this.toast('Während der Prüfung ist die Hilfe gesperrt.'); return; }
     const row = (k, t) => `<tr><td>${k}</td><td>${t}</td></tr>`;
     this.dialog(`<h2>Bedienung und Tastenkürzel</h2><div class="help">
       <h3>Schaltung</h3><table>
@@ -869,7 +918,7 @@ const App = {
 
   setExtensions(list, silent) {
     this.extensions = list.filter(x => EXTENSIONS[x]);
-    this.workspace.updateToolbox(buildToolbox(this.extensions));
+    if (!this.viewer) this.workspace.updateToolbox(buildToolbox(this.extensions));
     this.updateCommTab();
     this.filterParts();
     if (!silent) this.scheduleSave();
@@ -949,6 +998,7 @@ const App = {
 
   async fileAction(act) {
     $('#fileMenu').hidden = true;
+    if (School.exam() && act !== 'settings' && act !== 'image' && act !== 'print') { this.toast('Während der Prüfung ist das gesperrt.'); return; }
     if (act === 'new') {
       await this.refreshFiles();
       this.dialog(`<h2>Neues Projekt</h2>${this.nameFields()}<div class="dlg-btns"><button class="btn" value="cancel">Abbrechen</button><button class="btn primary" value="ok">Anlegen</button></div>`,
@@ -1028,7 +1078,9 @@ const App = {
       this.nameBefore = ok; this.scheduleSave();
     });
     $('#setBtn').onclick = () => Settings.open(this);
-    $('#adviceBtn').onclick = () => Advisor.open(this);
+    $('#adviceBtn').onclick = () => { if (School.exam()) this.toast('Während der Prüfung ist der Hilfe-Knopf gesperrt.'); else Advisor.open(this); };
+    $('#examBtn').onclick = () => School.submit();
+    $('#schoolLogout').onclick = () => School.logout();
     $('#fileBtn').onclick = e => { e.stopPropagation(); $('#fileMenu').hidden = !$('#fileMenu').hidden; };
     document.addEventListener('click', e => { if (!e.target.closest('.menu')) $('#fileMenu').hidden = true; });
     $('#fileMenu').addEventListener('click', e => { const b = e.target.closest('button'); if (b) this.fileAction(b.dataset.act); });
@@ -1057,7 +1109,7 @@ const App = {
     });
     window.addEventListener('keydown', e => {
       const inField = e.target.closest && e.target.closest('input, select, textarea, .blocklyHtmlInput');
-      if (inField || this.focusArea !== 'circuit') return;
+      if (inField || this.focusArea !== 'circuit' || this.viewer) return;
       if (e.key === 'Home' && !$('#dlg').open) { e.preventDefault(); this.circuit.fitView(); return; }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.stopImmediatePropagation(); e.shiftKey ? this.redo() : this.undo(); return; }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); e.stopImmediatePropagation(); this.redo(); return; }

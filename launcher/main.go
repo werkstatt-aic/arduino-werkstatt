@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-const version = "0.13.1"
+const version = "0.14.0"
 
 var (
 	baseDir    string
@@ -36,6 +36,7 @@ func main() {
 		baseDir = os.Args[2]
 	}
 	setupMode()
+	setupSchool()
 	cleanupAfterUpdate()
 	// Läuft die Werkstatt aus diesem Ordner schon? Dann nur ein weiteres Fenster öffnen,
 	// statt ein zweites Startprogramm zu starten (sonst überschreiben sich die Speicherstände).
@@ -66,17 +67,18 @@ func main() {
 		touch()
 		fmt.Fprintf(w, `{"ok":true,"version":%q,"folder":%q,"user":%q,"netz":%t,"projekte":%q}`, version, baseDir, userName(), netMode, projectDir)
 	})
-	mux.HandleFunc("/api/list", apiList)
-	mux.HandleFunc("/api/load", apiLoad)
-	mux.HandleFunc("/api/save", apiSave)
-	mux.HandleFunc("/api/rename", apiRename)
-	mux.HandleFunc("/api/backups", apiBackups)
-	mux.HandleFunc("/api/backup", apiBackup)
+	mux.HandleFunc("/api/list", schoolOr("list", apiList))
+	mux.HandleFunc("/api/load", schoolOr("load", apiLoad))
+	mux.HandleFunc("/api/save", schoolOr("save", apiSave))
+	mux.HandleFunc("/api/rename", schoolOr("rename", apiRename))
+	mux.HandleFunc("/api/backups", schoolOr("backups", apiBackups))
+	mux.HandleFunc("/api/backup", schoolOr("backup", apiBackup))
 	initTasks(mux)
-	mux.HandleFunc("/api/last", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/last", schoolOr("last", func(w http.ResponseWriter, r *http.Request) {
 		b, _ := os.ReadFile(filepath.Join(projectDir, ".zuletzt"))
 		w.Write(b)
-	})
+	}))
+	registerSchool(mux)
 	registerTools(mux)
 	registerSettings(mux)
 

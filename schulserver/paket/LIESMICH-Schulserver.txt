@@ -1,0 +1,75 @@
+WERKSTATT-SCHULSERVER (Version VERSION)
+=======================================
+
+Der Schulserver gehört zur Arduino-Werkstatt. Er verwaltet Lehrkräfte,
+Klassen und virtuelle Klassenzimmer. Die Schüler arbeiten weiter mit der
+Werkstatt auf ihren Rechnern (Netzwerk-Version vom Tauschlaufwerk);
+Übersetzen und Hochladen geschehen dort. Der Server speichert die Projekte,
+zeigt der Lehrkraft live, woran die Schüler arbeiten, und steuert den
+Prüfungsmodus.
+
+WAS DER SERVER KANN
+  - Anmeldung der Schüler ohne Schulnetz-Konto: Stundencode (an der Tafel)
+    + Tisch-Nr. (1-18) + Vorname. Funktioniert auch mit Gastkonten.
+  - Mehrere Lehrkräfte mit eigenem Zugang; jede sieht nur ihre Klassen.
+    Ein Verwalter-Zugang legt Lehrkräfte an und setzt Passwörter zurück.
+  - Klassen bleiben dauerhaft bestehen, die Projekte bleiben der Klasse
+    zugeordnet (Ordner daten\klassen\...).
+  - Klassenzimmer: Kachel-Übersicht der Tische 1-18, live. Klick auf einen
+    Schüler zeigt Schaltung und Programm groß (aktualisiert sich laufend,
+    Simulation möglich).
+  - Mehrere Klassenzimmer gleichzeitig, jedes mit eigenem Modus.
+  - Prüfungsmodus: Beispiele, Aufgaben, Hilfe, ältere Projekte und Einfügen
+    von außen sind gesperrt, Hochladen bleibt erlaubt. Jeder Schüler bekommt
+    ein neues Prüfungsprojekt, optional mit Aufgabenstellung. Knopf
+    "Abgeben"; die Lehrkraft sieht, wer abgegeben hat und wer die Werkstatt
+    verlassen hat (mit Uhrzeit und Dauer). Abgaben als ZIP herunterladen.
+  - Aufgaben (.aufgabe) und Beispiele (.awp) auf dem Server pflegen, ohne
+    neue Werkstatt-Version - für die eigenen Klassen oder für alle.
+
+EINRICHTEN (einmalig, Admin)
+  1. Ordner "Werkstatt-Schulserver" auf einen Rechner im Schulnetz kopieren,
+     der während des Unterrichts läuft (Windows oder Linux).
+  2. Starten:
+       Windows: "Werkstatt-Schulserver.exe"
+       Linux:   ./werkstatt-schulserver-linux-amd64  (bzw. -arm64)
+     Das Fenster zeigt die Adresse, z. B. http://192.168.1.10:8650/
+  3. Firewall: eingehende Verbindungen auf TCP-Port 8650 im Schulnetz
+     erlauben (Windows fragt beim ersten Start nach).
+  4. Im Browser die Adresse öffnen und den Verwalter-Zugang anlegen.
+     Danach unter "Lehrkräfte" die Zugänge der Kolleginnen und Kollegen.
+  5. In der Werkstatt auf dem Tauschlaufwerk (Netzwerk-Version) neben
+     "Arduino-Werkstatt starten.exe" eine Datei "werkstatt.ini" anlegen
+     (Vorlage: werkstatt-vorlage.ini) mit der Zeile
+       Schulserver = http://192.168.1.10:8650
+     Ab jetzt fragt die Werkstatt beim Start nach dem Stundencode.
+
+DAUERHAFT LAUFEN LASSEN
+  - Windows: Aufgabenplanung -> Aufgabe erstellen -> Trigger "Beim Start",
+    Aktion "Werkstatt-Schulserver.exe" starten, "Unabhängig von der
+    Benutzeranmeldung ausführen". Oder als Dienst mit NSSM.
+  - Linux (systemd), Datei /etc/systemd/system/werkstatt-schulserver.service:
+      [Unit]
+      Description=Werkstatt-Schulserver
+      After=network.target
+      [Service]
+      ExecStart=/opt/werkstatt-schulserver/werkstatt-schulserver-linux-amd64
+      WorkingDirectory=/opt/werkstatt-schulserver
+      Restart=always
+      User=werkstatt
+      [Install]
+      WantedBy=multi-user.target
+    dann: systemctl enable --now werkstatt-schulserver
+
+SICHERUNG
+  Alle Daten liegen im Ordner "daten" (einfache Dateien). Diesen Ordner
+  regelmäßig sichern. Gelöschte Klassen landen in daten\papierkorb.
+
+HINWEISE
+  - Der Server ist für das Schulnetz gedacht (http, ohne Verschlüsselung).
+    Nicht ins Internet freigeben.
+  - Leistung: Der Server übersetzt nichts; 3 Klassen mit je 18 Schülern
+    gleichzeitig sind für jeden Büro-PC kein Problem.
+  - Einstellungen (Port, Datenordner): schulserver.ini.
+  - Den Ordner "app" bei einem Werkstatt-Update durch den neuen ersetzen,
+    damit die Großansicht zur Werkstatt passt.

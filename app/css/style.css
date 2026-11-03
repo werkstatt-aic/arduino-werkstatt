@@ -359,3 +359,25 @@ input.bad { border-color: var(--err) !important; box-shadow: 0 0 0 2px var(--err
 /* Hilfe-Knopf fällt auf: leicht hellrot unterlegt */
 #adviceBtn { background: #fde3e1; border-color: #f0a8a2; color: #8f1d14; font-weight: 500; }
 #adviceBtn:hover { background: #fbd0cc; }
+
+/* Ansichtsmodus (Großansicht im Schulserver) */
+.viewer-mode .menu, .viewer-mode #undoBtn, .viewer-mode #redoBtn, .viewer-mode #adviceBtn, .viewer-mode #uploadBtn, .viewer-mode #btBtn, .viewer-mode #setBtn,
+.viewer-mode #extBtn, .viewer-mode #extBtnParts, .viewer-mode .zoom #helpBtn, .viewer-mode #taskPanel, .viewer-mode .brand-name { display: none !important; }
+.viewer-mode #boardSel { pointer-events: none; }
+.viewer-mode .main.mode-parts { grid-template-columns: 1fr; }
+.viewer-mode .main.mode-parts .parts { display: none; }
+.viewer-mode .projname { border-color: transparent; background: transparent; }
+
+/* Schulversion */
+.school-mode .brand-name { display: none; }
+.school-chip { display: inline-flex; align-items: center; gap: 6px; margin-left: 2px; padding: 2px 4px 2px 10px; border-radius: 99px; background: #e3f1f1; color: #0f6267; font-size: 13px; white-space: nowrap; }
+.school-chip .btn { padding: 2px 8px; }
+.school-login { grid-template-columns: 1fr 92px 1.4fr; }
+.exam-btn { background: #c62828; border-color: #c62828; color: #fff; font-weight: 600; }
+.exam-btn:hover { background: #a61f1f; }
+.exam-mode .menu, .exam-mode #adviceBtn, .exam-mode .zoom #helpBtn, .exam-mode #taskPanel, .exam-mode #schoolLogout { display: none !important; }
+.exam-mode .topbar { box-shadow: inset 0 -3px 0 #c62828; }
+.exam-panel { border-left-color: #c62828; }
+.exam-panel .tp-tag { background: #fdecea; color: #c62828; }
+.exam-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(240, 248, 241, .97); display: flex; align-items: center; justify-content: center; text-align: center; font-size: 18px; }
+.exam-overlay .big { font-size: 48px; font-weight: 700; color: #2e7d32; margin-bottom: 10px; }

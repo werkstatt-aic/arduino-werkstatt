@@ -276,9 +276,27 @@ NETZWERK-VERSION (Tauschlaufwerk der Schule)
   - Nicht für Terminalserver gedacht (mehrere Schüler am selben Rechner
     gleichzeitig): dort könnten Schüler die Werkstatt anderer erreichen.
 
+SCHULVERSION (mit Werkstatt-Schulserver)
+  Mit dem Werkstatt-Schulserver (eigenes Programm, Anleitung in dessen
+  LIESMICH-Schulserver.txt) wird die Netzwerk-Version zur Schulversion:
+  - In "werkstatt.ini" die Zeile "Schulserver = http://<Server>:8650"
+    eintragen. Beim Start fragt die Werkstatt dann nach Stundencode (von der
+    Tafel), Tisch-Nr. und Vorname - auch für Gastkonten.
+  - Projekte und gelöste Aufgaben liegen auf dem Server (bei der Klasse).
+    Übersetzen und Hochladen geschehen weiter auf dem Schülerrechner.
+  - Die Lehrkraft sieht im Browser alle Tische live und kann Projekte groß
+    ansehen. Beispiele und Aufgaben der Lehrkraft erscheinen unter
+    "Beispiel öffnen" bzw. "Aufgaben".
+  - Prüfungsmodus (von der Lehrkraft gestartet): neues Prüfungsprojekt,
+    rot markierte Leiste, Aufgabenstellung links oben, Knopf "Abgeben".
+    Gesperrt: Datei-Menü (ältere Projekte, Beispiele, Aufgaben), Hilfe-Knopf,
+    Bedienhilfe, Einfügen von außen. Hochladen bleibt erlaubt. Verlässt ein
+    Schüler das Werkstatt-Fenster, sieht die Lehrkraft das mit Uhrzeit.
+  - "Abmelden" oben links neben dem Namen. Beim Schließen des Fensters wird
+    automatisch abgemeldet (wichtig bei gemeinsam genutzten Gastkonten).
+
 NOCH NICHT ENTHALTEN (folgt)
   - Eigene Bauteile und Blöcke selbst hinzufügen
-  - Schulversion mit Anmeldung und Klassenzimmermodus
 
 NOTSTART
   Falls das Startprogramm gesperrt ist: "Notstart ohne Startprogramm.bat".

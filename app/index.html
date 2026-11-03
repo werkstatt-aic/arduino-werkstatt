@@ -11,7 +11,8 @@
 <header class="topbar">
   <div class="brand">
     <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#137a7f"/><path d="M9 12h14v8H9z" fill="none" stroke="#fff" stroke-width="2.4"/><path d="M12 9v3M16 9v3M20 9v3M12 20v3M16 20v3M20 20v3" stroke="#fff" stroke-width="2"/></svg>
-    <span>Arduino-Werkstatt</span>
+    <span class="brand-name">Arduino-Werkstatt</span>
+    <span id="schoolChip" class="school-chip" hidden><span></span><button class="btn ghost small" id="schoolLogout" title="Abmelden (z. B. wenn ein anderer Schüler an diesen Rechner kommt)">Abmelden</button></span>
   </div>
   <div class="filebox">
     <input id="projName" class="projname" value="Neues Projekt" spellcheck="false" title="Projektname (Muster: Nr – Vorname – Projekt)">
@@ -50,6 +51,7 @@
       <option value="esp32">ESP32</option>
     </select>
     <button class="btn primary" id="simBtn"><span class="ico">▶</span> <span class="lbl">Simulation starten</span></button>
+    <button class="btn exam-btn" id="examBtn" hidden title="Prüfung abgeben">✓ Abgeben</button>
     <button class="btn" id="adviceBtn" title="Hilfe: Schaltung und Programm prüfen lassen – Fehler, Hinweise und Tipps">Hilfe</button>
     <button class="btn" id="uploadBtn" title="Programm auf den Arduino übertragen">⇪ Hochladen</button>
     <button class="btn icon" id="btBtn" title="Per Bluetooth übertragen (ESP32)">ᛒ</button>
@@ -147,6 +149,7 @@
 <script src="js/export.js"></script>
 <script src="js/tasks.js"></script>
 <script src="js/advisor.js"></script>
+<script src="js/school.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

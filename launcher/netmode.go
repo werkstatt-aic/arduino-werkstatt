@@ -5,10 +5,13 @@
 //   - Einstellungen für arduino-cli, das Programm zum Übersetzen und der Zwischenspeicher
 //     liegen im TEMP-Ordner des Benutzers,
 //   - Werkzeuge, Aufgaben und das Programm selbst werden nur gelesen.
+//
 // Gesteuert über die Datei „werkstatt.ini“ neben der Startdatei (optional):
-//   Netzwerkmodus = auto | ja | nein     (auto: ein, wenn der Ordner schreibgeschützt ist oder
-//                                         auf einem Netzwerklaufwerk liegt)
-//   Projektordner = H:\Arduino-Werkstatt (Umgebungsvariablen wie %USERPROFILE% erlaubt)
+//
+//	Netzwerkmodus = auto | ja | nein     (auto: ein, wenn der Ordner schreibgeschützt ist oder
+//	                                      auf einem Netzwerklaufwerk liegt)
+//	Projektordner = H:\Arduino-Werkstatt (Umgebungsvariablen wie %USERPROFILE% erlaubt)
+//
 // Updates und das Einrichten der Werkzeuge sind möglich, sobald der Ordner beschreibbar ist
 // (Lehrkraft mit Schreibrechten); bei den Schülern sind sie gesperrt.
 package main

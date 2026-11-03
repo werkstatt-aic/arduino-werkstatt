@@ -288,7 +288,7 @@ const Uploader = {
     // Das Auswahlfenster muss direkt nach dem Klick kommen, deshalb zuerst den ESP32 wählen, dann übersetzen.
     let device;
     try {
-      device = await navigator.bluetooth.requestDevice({ filters: [{ services: [BT_UUID.svc] }], optionalServices: [BT_UUID.svc] });
+      device = await SerialLink.picked(() => navigator.bluetooth.requestDevice({ filters: [{ services: [BT_UUID.svc] }], optionalServices: [BT_UUID.svc] }));
     } catch (e) {
       if (e.name === 'NotFoundError') this.fail('Kein ESP32 ausgewählt. Ist er eingeschaltet und wurde er einmal per USB mit Bluetooth-Übertragung bespielt?');
       else this.fail('Bluetooth ist nicht verfügbar: ' + e.message + ' Ist Bluetooth am Computer eingeschaltet?');
