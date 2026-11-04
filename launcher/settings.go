@@ -59,7 +59,7 @@ func apiInfo(w http.ResponseWriter, r *http.Request) {
 		"netz":       netMode,
 		"schreibbar": writable,
 		"projekte":   projectDir,
-		"vollbild":   fullscreen(),
+		"fenster":    windowMode(),
 	})
 }
 

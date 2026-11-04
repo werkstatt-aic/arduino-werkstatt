@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-const version = "0.14.2"
+const version = "0.14.3"
 
 var (
 	baseDir    string
@@ -65,7 +65,7 @@ func main() {
 	mux.Handle("/", noCache(http.FileServer(http.Dir(appDir))))
 	mux.HandleFunc("/api/ping", func(w http.ResponseWriter, r *http.Request) {
 		touch()
-		fmt.Fprintf(w, `{"ok":true,"version":%q,"folder":%q,"user":%q,"netz":%t,"projekte":%q,"vollbild":%t}`, version, baseDir, userName(), netMode, projectDir, fullscreen())
+		fmt.Fprintf(w, `{"ok":true,"version":%q,"folder":%q,"user":%q,"netz":%t,"projekte":%q,"fenster":%q}`, version, baseDir, userName(), netMode, projectDir, windowMode())
 	})
 	mux.HandleFunc("/api/list", schoolOr("list", apiList))
 	mux.HandleFunc("/api/load", schoolOr("load", apiLoad))
@@ -284,10 +284,7 @@ func openBrowser(url string) {
 		}
 		for _, c := range candidates {
 			if _, err := os.Stat(c); err == nil {
-				args := []string{"--app=" + url, "--new-window", "--window-size=1400,900"}
-				if fullscreen() {
-					args = append(args, "--start-fullscreen")
-				}
+				args := append([]string{"--app=" + url, "--new-window"}, windowArgs()...)
 				if exec.Command(c, args...).Start() == nil {
 					return
 				}
@@ -300,10 +297,7 @@ func openBrowser(url string) {
 		if p, err := exec.LookPath(c); err == nil {
 			args := []string{url}
 			if strings.Contains(c, "chrom") {
-				args = []string{"--app=" + url}
-				if fullscreen() {
-					args = append(args, "--start-fullscreen")
-				}
+				args = append([]string{"--app=" + url}, windowArgs()...)
 			}
 			if exec.Command(p, args...).Start() == nil {
 				return

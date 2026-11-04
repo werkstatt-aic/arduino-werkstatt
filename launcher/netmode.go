@@ -107,13 +107,26 @@ func setupMode() {
 	}
 }
 
-// Vollbild beim Start (werkstatt.ini: Vollbild = ja/nein, Standard ja)
-func fullscreen() bool {
-	switch strings.ToLower(strings.TrimSpace(iniValues["vollbild"])) {
-	case "nein", "aus", "0", "false":
-		return false
+// Fenstergröße beim Start (werkstatt.ini: Fenster = maximiert | normal | vollbild, Standard maximiert)
+func windowMode() string {
+	switch strings.ToLower(strings.TrimSpace(iniValues["fenster"])) {
+	case "normal":
+		return "normal"
+	case "vollbild":
+		return "vollbild"
 	}
-	return true
+	return "maximiert"
+}
+
+// Startschalter für Chrome/Edge passend zu windowMode()
+func windowArgs() []string {
+	switch windowMode() {
+	case "normal":
+		return []string{"--window-size=1400,900"}
+	case "vollbild":
+		return []string{"--start-fullscreen"}
+	}
+	return []string{"--start-maximized"}
 }
 
 // Ort für Dateien, die die Werkstatt selbst schreibt (arduino-cli-Einstellungen, Programm zum Übersetzen)

@@ -51,7 +51,8 @@ const App = {
     await School.init(this);
     await this.loadInitial();
     if (this.launcher) setInterval(() => this.ping(), 5000);
-    if (this.wantFull) this.autoFullscreen();
+    if (this.winMode === 'maximiert') this.maximize();
+    else if (this.winMode === 'vollbild') this.autoFullscreen();
   },
 
   /* ---------- Vollbild ---------- */
@@ -68,6 +69,12 @@ const App = {
     if (document.fullscreenElement) { document.exitFullscreen().catch(() => {}); return; }
     if (this.isFull()) { this.toast('Vollbild beenden: Taste F11.'); return; }
     this.enterFull();
+  },
+  // Lief Chrome schon, ignoriert er --start-maximized: Fenster dann selbst auf die ganze Arbeitsfläche ziehen
+  maximize() {
+    if (navigator.webdriver) return;
+    if (outerWidth >= screen.availWidth - 8 && outerHeight >= screen.availHeight - 8) return;
+    try { window.moveTo(screen.availLeft || 0, screen.availTop || 0); window.resizeTo(screen.availWidth, screen.availHeight); } catch (e) { /* nicht erlaubt */ }
   },
   // Startete der Browser nicht im Vollbild (z. B. Chrome lief schon), beim ersten Klick nachholen
   autoFullscreen() {
@@ -106,7 +113,7 @@ const App = {
     if (location.protocol === 'file:') return false;
     try {
       const r = await fetch('api/ping', { cache: 'no-store' });
-      if (r.ok && this.wantFull === undefined) { try { this.wantFull = !!(await r.json()).vollbild; } catch (e) { this.wantFull = false; } }
+      if (r.ok && this.winMode === undefined) { try { this.winMode = (await r.json()).fenster || ''; } catch (e) { this.winMode = ''; } }
       return r.ok;
     } catch (e) { return false; }
   },
