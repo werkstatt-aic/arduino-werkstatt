@@ -57,6 +57,7 @@ button { font: inherit; color: inherit; }
 .empty-card p { margin: 0; line-height: 1.5; }
 .zoom { position: absolute; left: 12px; bottom: 12px; display: flex; gap: 4px; }
 .zoom .btn { background: rgba(255,255,255,.95); }
+#fullBtn.on svg path { d: path("M6 2v4H2M14 6h-4V2M10 14v-4h4M2 10h4v4"); }
 .zoom .zoom-fit { gap: 6px; padding: 6px 10px; font-size: 13px; }
 .hint { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); background: #263238; color: #fff; padding: 6px 12px; border-radius: 20px; font-size: 13px; pointer-events: none; opacity: 0; transition: opacity .15s; white-space: nowrap; }
 .hint.show { opacity: .92; }

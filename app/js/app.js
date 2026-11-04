@@ -51,6 +51,29 @@ const App = {
     await School.init(this);
     await this.loadInitial();
     if (this.launcher) setInterval(() => this.ping(), 5000);
+    if (this.wantFull) this.autoFullscreen();
+  },
+
+  /* ---------- Vollbild ---------- */
+  // Browser-Vollbild (F11 bzw. --start-fullscreen) oder Seiten-Vollbild?
+  isFull() { return !!document.fullscreenElement || (Math.abs(innerHeight - screen.height) < 4 && Math.abs(innerWidth - screen.width) < 4); },
+  async enterFull() {
+    try {
+      await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+      // Esc bleibt für die Werkstatt (Kabel abbrechen …); Vollbild beenden: Esc gedrückt halten, F11 oder Knopf
+      if (navigator.keyboard && navigator.keyboard.lock) navigator.keyboard.lock(['Escape']).catch(() => {});
+    } catch (e) { /* vom Browser abgelehnt */ }
+  },
+  toggleFull() {
+    if (document.fullscreenElement) { document.exitFullscreen().catch(() => {}); return; }
+    if (this.isFull()) { this.toast('Vollbild beenden: Taste F11.'); return; }
+    this.enterFull();
+  },
+  // Startete der Browser nicht im Vollbild (z. B. Chrome lief schon), beim ersten Klick nachholen
+  autoFullscreen() {
+    if (navigator.webdriver || this.isFull()) return;
+    const go = () => { window.removeEventListener('pointerdown', go, true); if (!this.isFull()) this.enterFull(); };
+    window.addEventListener('pointerdown', go, true);
   },
 
   /* ---------- Ansichtsmodus: Projekt nur ansehen, laufend aktualisieren ---------- */
@@ -81,7 +104,11 @@ const App = {
   /* ---------- Starthilfe vom Stick ---------- */
   async ping() {
     if (location.protocol === 'file:') return false;
-    try { const r = await fetch('api/ping', { cache: 'no-store' }); return r.ok; } catch (e) { return false; }
+    try {
+      const r = await fetch('api/ping', { cache: 'no-store' });
+      if (r.ok && this.wantFull === undefined) { try { this.wantFull = !!(await r.json()).vollbild; } catch (e) { this.wantFull = false; } }
+      return r.ok;
+    } catch (e) { return false; }
   },
   async api(path, opts) {
     const r = await fetch('api/' + path, opts);
@@ -866,6 +893,7 @@ const App = {
       ${row('Strg + Z / Strg + Y', 'Rückgängig / Wiederholen')}
       ${row('Kabel anklicken', 'Farbe wählen. Weiße Punkte an den Enden ziehen = umstecken. Am Kabel ziehen = neuer Knickpunkt, Knickpunkt ziehen = verschieben, Doppelklick auf Knickpunkt = entfernen.')}
       ${row('Mausrad', 'Vergrößern / Verkleinern')}
+      ${row('F11 oder ⛶ (unten links)', 'Vollbild ein/aus (im Vollbild auch: Esc gedrückt halten)')}
       ${row('Pos1 oder „Startansicht“', 'Ganze Schaltung ins Fenster einpassen (Knopf unten links)')}
       ${row('Freie Fläche ziehen', 'Ansicht verschieben (⤢ zeigt alles)')}
       </table>
@@ -1110,6 +1138,9 @@ const App = {
     window.addEventListener('resize', () => this.resizeBlockly());
     // Hilfe: Tastenkürzel und Bedienung (Knopf „?“, Taste F1 oder ?)
     $('#helpBtn').onclick = () => this.helpDialog();
+    $('#fullBtn').onclick = () => this.toggleFull();
+    const fullIcon = () => { const f = this.isFull(); $('#fullBtn').classList.toggle('on', f); $('#fullBtn').title = f ? 'Vollbild beenden (F11)' : 'Vollbild (F11)'; };
+    document.addEventListener('fullscreenchange', fullIcon); window.addEventListener('resize', fullIcon); fullIcon();
     window.addEventListener('keydown', e => {
       if ((e.key === 'F1' || (e.key === '?' && !(e.target.closest && e.target.closest('input, textarea, .blocklyHtmlInput')))) && !$('#dlg').open) { e.preventDefault(); this.helpDialog(); }
     });

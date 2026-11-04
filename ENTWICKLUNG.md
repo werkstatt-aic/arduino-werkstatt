@@ -111,3 +111,8 @@ Umgebungsvariablen nur für Tests: `WERKSTATT_CLI_URL`, `WERKSTATT_UPDATE_API`, 
 - `app/js/tour.js`: 14 Schritte mit Ausschnitt (`.tour-hole`, Schatten) und Karte; startet nach dem ersten geöffneten Projekt,
   gemerkt in localStorage `werkstatt.tour = fertig`. Nicht im Ansichts- und Prüfungsmodus, nicht bei `navigator.webdriver` (außer `?tour`).
   Wieder aufrufbar in der Bedienhilfe (Knopf `#tourAgain`). Test: tests/tour1.py.
+
+## Vollbild (ab 0.14.2)
+- Startprogramm öffnet Chrome/Edge mit `--start-fullscreen`, abschaltbar über werkstatt.ini `Vollbild = nein` (`fullscreen()` in netmode.go); `/api/ping` und `/api/info` melden `vollbild`.
+- Läuft Chrome schon, wird der Schalter ignoriert: dann holt `App.autoFullscreen()` das Vollbild beim ersten Klick nach (`requestFullscreen` + `navigator.keyboard.lock(['Escape'])`, damit Esc in der Werkstatt bleibt).
+- Knopf `#fullBtn` unten links; Browser-Vollbild (F11) erkennt `isFull()` an der Fenstergröße und verweist auf F11. Test: tests/full1.py.

@@ -107,6 +107,15 @@ func setupMode() {
 	}
 }
 
+// Vollbild beim Start (werkstatt.ini: Vollbild = ja/nein, Standard ja)
+func fullscreen() bool {
+	switch strings.ToLower(strings.TrimSpace(iniValues["vollbild"])) {
+	case "nein", "aus", "0", "false":
+		return false
+	}
+	return true
+}
+
 // Ort für Dateien, die die Werkstatt selbst schreibt (arduino-cli-Einstellungen, Programm zum Übersetzen)
 func scratchDir() string {
 	if netMode || !writable {

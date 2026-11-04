@@ -79,6 +79,9 @@ BEDIENUNG IN KÜRZE
     Strg+D = verdoppeln, Strg+Z = rückgängig. Ansicht verschieben: freie Stelle
     ziehen. Zoom: Mausrad. Knopf "Startansicht" unten links (oder Taste Pos1):
     ganze Schaltung ins Fenster einpassen. Alle Kürzel: Knopf "?" oder F1.
+  - Vollbild: Die Werkstatt startet im Vollbild. Beenden/Einschalten mit F11
+    oder dem Knopf unten links neben "?". Abschalten über werkstatt.ini
+    (Zeile "Vollbild = nein", Vorlage: werkstatt-vorlage.ini).
   - Einführungstour: erscheint beim ersten Start automatisch; jederzeit wieder
     über "?" (F1) > "Einführungstour starten".
   - Kabel anklicken: Farbe wählen; die weißen Punkte an den Enden ziehen, um
