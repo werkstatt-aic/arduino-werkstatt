@@ -693,22 +693,31 @@ const UNO_MCU = { kind: 'uno', gnd: 'GND_T', v5: '5V', v33: '3V3', sda: 'SDA', s
 
 /* Das Modul selbst (ohne Anschlüsse), damit es auch auf dem Expansion Board verwendet werden kann */
 function espModuleSvg(st, withHeaders) {
-  const led = st && st.led ? '#4aa3ff' : '#2a3b57';
-  const pwr = st && st.running ? '#ff4a3d' : '#5a2a28';
+  const led = st && st.led, run = st && st.running;
+  const res = (x, y, v) => `<rect x="${x}" y="${y}" width="${v ? 3 : 5}" height="${v ? 5 : 3}" fill="#151515"/><rect x="${x}" y="${y}" width="${v ? 3 : 1.1}" height="${v ? 1.1 : 3}" fill="#c9cdd1"/><rect x="${v ? x : x + 3.9}" y="${v ? y + 3.9 : y}" width="${v ? 3 : 1.1}" height="${v ? 1.1 : 3}" fill="#c9cdd1"/>`;
+  const cap = (x, y, v) => `<rect x="${x}" y="${y}" width="${v ? 3 : 5}" height="${v ? 5 : 3}" fill="#b98a5a"/><rect x="${x}" y="${y}" width="${v ? 3 : 1.1}" height="${v ? 1.1 : 3}" fill="#c9cdd1"/><rect x="${v ? x : x + 3.9}" y="${v ? y + 3.9 : y}" width="${v ? 3 : 1.1}" height="${v ? 1.1 : 3}" fill="#c9cdd1"/>`;
   let s = `<rect class="body" x="-30" y="-4" width="222" height="108" rx="4" fill="#202226" stroke="#0d0d0f"/>`;
+  s += `<rect x="-27" y="-1" width="216" height="102" rx="3" fill="none" stroke="#30333a" stroke-width=".8"/>`;
   if (withHeaders) { s += `<rect x="-5" y="-4" width="190" height="9" fill="#111"/><rect x="-5" y="95" width="190" height="9" fill="#111"/>`; }
-  // Antenne und Metallgehäuse des Funkmoduls
-  s += `<rect x="-26" y="29" width="138" height="42" rx="2" fill="#1d1d1f" stroke="#3a3a3a"/>`;
-  s += `<path d="M-22 34 h12 v6 h-8 v6 h8 v6 h-8 v6 h8 v6 h-12" fill="none" stroke="#c9a43a" stroke-width="1.8"/>`;
-  s += `<rect x="4" y="31" width="104" height="38" rx="2" fill="#c9cdd1" stroke="#8b9399"/><rect x="8" y="34" width="96" height="32" rx="1" fill="#d6dade"/>`;
-  s += `<text x="56" y="49" class="chip2" text-anchor="middle" style="font-size:7px;fill:#555">ESP-WROOM-32</text><text x="56" y="59" class="chip2" text-anchor="middle" style="font-size:5px;fill:#777">WiFi + Bluetooth</text>`;
-  // USB-Seriell-Wandler, Regler, Tasten, LEDs, USB-C
-  s += `<rect x="120" y="38" width="22" height="22" rx="1" fill="#141414"/><text x="131" y="51" class="chip2" text-anchor="middle" style="fill:#999">CP2102</text>`;
-  s += `<rect x="120" y="62" width="12" height="7" fill="#141414"/>`;
-  for (const [x, y, t] of [[164, 30, 'EN'], [164, 58, 'BOOT']]) s += `<rect x="${x}" y="${y}" width="15" height="12" rx="1" fill="#d9dde0" stroke="#8b9399"/><rect x="${x + 4}" y="${y + 3}" width="7" height="6" rx="1" fill="#2b2b2b"/><text x="${x - 2}" y="${y + 8}" class="silkpin" text-anchor="end">${t}</text>`;
-  s += `<rect x="152" y="45" width="6" height="4" rx="1" fill="${pwr}"/><rect x="152" y="52" width="6" height="4" rx="1" fill="${led}"/>`;
-  if (st && st.led) s += `<circle cx="155" cy="54" r="7" fill="#4aa3ff" opacity=".35"/>`;
-  s += `<rect x="182" y="36" width="20" height="28" rx="4" fill="#c8cdd1" stroke="#8b9399"/><rect x="194" y="42" width="6" height="16" rx="2" fill="#5f666c"/>`;
+  // Funkmodul ESP32-WROOM-32: Antennenbereich links, Metallgehäuse mit Aufdruck
+  s += `<rect x="-26" y="26" width="138" height="48" rx="2" fill="#1d1d1f" stroke="#3a3a3a"/>`;
+  s += `<path d="M-23 31 h11 v6 h-8 v6 h8 v6 h-8 v6 h8 v6 h-8 v6 h8 v2 h-11" fill="none" stroke="#c9a43a" stroke-width="1.6"/>`;
+  s += `<rect x="2" y="28" width="108" height="44" rx="2" fill="#c3c8cc" stroke="#8b9399"/><rect x="5" y="31" width="102" height="38" rx="1" fill="#d3d7db"/>`;
+  s += `<text x="58" y="42" class="chip2" text-anchor="middle" style="font-size:6.6px;fill:#444;font-weight:600">ESP32-WROOM-32</text>`;
+  s += `<text x="58" y="50" class="chip2" text-anchor="middle" style="font-size:4px;fill:#666">WiFi 2,4 GHz · Bluetooth</text>`;
+  s += `<rect x="10" y="54" width="12" height="12" fill="none" stroke="#777" stroke-width=".7"/><path d="M12 56h3v3h-3zM18 56h2.5v2.5h-2.5zM12 62h2.5v2.5h-2.5zM16 60h2v2h-2zM18.5 62.5h2v2h-2z" fill="#777"/>`;
+  s += `<text x="26" y="59" class="chip2" style="font-size:3.6px;fill:#777">FCC ID · CE</text><text x="26" y="65" class="chip2" style="font-size:3.6px;fill:#777">ESP32-D0WD</text>`;
+  // Spannungsregler AMS1117, USB-Seriell-Wandler CP2102, kleine Bauteile
+  s += `<rect x="116" y="28" width="16" height="4" fill="#9aa0a5"/><rect x="115" y="32" width="18" height="11" rx="1" fill="#141414"/><text x="124" y="39.5" class="chip2" text-anchor="middle" style="fill:#888;font-size:3.2px">AMS1117</text>`;
+  s += `<rect x="117" y="47" width="20" height="20" rx="1" fill="#141414"/><circle cx="120" cy="50" r="1" fill="#555"/><text x="127" y="59" class="chip2" text-anchor="middle" style="fill:#999">CP2102</text>`;
+  for (const [x, y, v] of [[138, 28, 0], [138, 34, 0], [140, 48, 1], [140, 58, 1], [117, 70, 0], [124, 70, 0]]) s += res(x, y, v);
+  for (const [x, y, v] of [[131, 70, 0], [146, 28, 0], [146, 70, 0], [140, 40, 0]]) s += cap(x, y, v);
+  // Tasten EN und BOOT, LEDs (rot = Strom, blau = D2), USB-Buchse
+  for (const [x, y, t, ty] of [[163, 30, 'EN', 47.5], [163, 58, 'BOOT', 55.5]]) s += `<rect x="${x}" y="${y}" width="15" height="12" rx="1" fill="#d9dde0" stroke="#8b9399"/><rect x="${x + 4}" y="${y + 3}" width="7" height="6" rx="1" fill="#2b2b2b"/><text x="${x + 7.5}" y="${ty}" class="chip2" text-anchor="middle" style="fill:#ddd;font-size:4px">${t}</text>`;
+  s += `<rect x="152" y="42" width="6" height="4" rx="1" fill="${run ? '#ff4a3d' : '#5a2a28'}"/>${run ? '<circle cx="155" cy="44" r="5" fill="#ff5a4a" opacity=".35"/>' : ''}`;
+  s += `<rect x="152" y="52" width="6" height="4" rx="1" fill="${led ? '#4aa3ff' : '#2a3b57'}"/>${led ? '<circle cx="155" cy="54" r="7" fill="#4aa3ff" opacity=".4"/>' : ''}`;
+  s += `<text x="155" y="40" class="chip2" text-anchor="middle" style="fill:#bbb">PWR</text><text x="155" y="61" class="chip2" text-anchor="middle" style="fill:#bbb">IO2</text>`;
+  s += `<rect x="180" y="36" width="22" height="28" rx="4" fill="#c8cdd1" stroke="#7d868c"/><rect x="182" y="38" width="18" height="24" rx="3" fill="#9aa1a7"/><rect x="190" y="41" width="9" height="18" rx="2.5" fill="#4d545a"/><rect x="192.5" y="44" width="4" height="12" rx="1" fill="#2e3338"/>`;
   return s;
 }
 function renderESP32(comp, st) {
@@ -826,14 +835,14 @@ function renderESP32C5(comp, st) {
   for (const [x, y, v] of [[104, 62, 0], [110, 62, 0], [113, 34, 0], [86, 52, 1]]) s += cap(x, y, v);
   // J5 (Strommessung)
   s += `<rect x="122" y="24" width="7" height="13" fill="#111"/><rect x="123.5" y="25.5" width="4" height="4" fill="#d7b43d"/><rect x="123.5" y="31.5" width="4" height="4" fill="#d7b43d"/><text x="125.5" y="42" class="chip2" text-anchor="middle" style="fill:#bbb">J5</text>`;
-  // Lade-LED, RGB-LED, dahinter RST – BAT – BOOT, ganz außen zwei USB-C-Buchsen
+  // Lade-LED; RST – BAT – BOOT; ganz außen zwei USB-C-Buchsen mit der RGB-LED dazwischen
   s += `<rect x="123" y="56" width="5" height="3" rx=".6" fill="#5a4a1c"/><text x="125.5" y="65" class="chip2" text-anchor="middle" style="fill:#bbb">CHG</text>`;
-  s += `<rect x="134" y="40" width="10" height="10" rx="1.5" fill="${on ? '#ffffff' : '#ecebe6'}" stroke="#999"/><circle cx="139" cy="45" r="3" fill="${on ? '#fffbe0' : '#c9c9c4'}"/>${on ? '<circle cx="139" cy="45" r="10" fill="#fff6c8" opacity=".55"/>' : ''}<text x="139" y="37" class="chip2" text-anchor="middle" style="fill:#bbb">RGB</text>`;
+  s += `<text x="141" y="45" class="chip2" text-anchor="middle" style="fill:#ddd;font-size:4.2px;font-weight:600" transform="rotate(-90 141 45)">ESP32-C5</text>`;
   s += btn(160, 14, 'RST', 31) + btn(160, 64, 'BOOT', 62);
   s += `<rect x="161" y="33" width="12" height="24" rx="1" fill="#f4f1e8" stroke="#b7b2a5"/><rect x="163" y="36" width="8" height="18" fill="#e2ddcf"/><rect x="165" y="39" width="2" height="4" fill="#c9a43a"/><rect x="165" y="47" width="2" height="4" fill="#c9a43a"/>`;
   s += `<text x="157" y="45" class="chip2" text-anchor="middle" style="fill:#ddd;font-size:4.2px" transform="rotate(-90 157 45)">BAT</text>`;
   s += usb(178, 6) + usb(178, 65);
-  s += `<text x="194" y="45" class="chip2" text-anchor="middle" style="fill:#ddd;font-size:4.2px;font-weight:600" transform="rotate(-90 194 45)">ESP32-C5</text>`;
+  s += `<rect x="184" y="39" width="12" height="12" rx="1.5" fill="${on ? '#ffffff' : '#ecebe6'}" stroke="#999"/><circle cx="190" cy="45" r="3.4" fill="${on ? '#fffbe0' : '#c9c9c4'}"/>${on ? '<circle cx="190" cy="45" r="11" fill="#fff6c8" opacity=".55"/>' : ''}<text x="190" y="57" class="chip2" text-anchor="middle" style="fill:#bbb">RGB</text>`;
   return s + labels();
 }
 

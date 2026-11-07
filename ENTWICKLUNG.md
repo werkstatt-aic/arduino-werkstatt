@@ -129,3 +129,4 @@ Umgebungsvariablen nur für Tests: `WERKSTATT_CLI_URL`, `WERKSTATT_UPDATE_API`, 
 - FQBN: `esp32:esp32:esp32c5:PartitionScheme=min_spiffs`, `esp8266:esp8266:nodemcuv2`. Startdatei: `chipOf()` (eigene build-/export-Ordner für den C5), Einrichtung `esp8266` mit Paketliste arduino.esp8266.com, Marker `bereit-esp8266.txt`.
 - Mit echtem Compiler geprüft (/root/ard, esp32 3.3.2, esp8266 3.1.2): alle Blöcke aller Erweiterungen (tests/alle_neu.py). Tests: c5_1.py, n8266_1.py, menu1.py.
 - 0.15.1: NodeMCU als Version 2 („Amica“, CP2102, RSV statt VU, 5 V an Vin) und ESP32-C5 mit Leistenabstand 0,9 Zoll (untere Pins y = 90); beide Zeichnungen detaillierter (C5: RGB-LED, dahinter RST – BAT – BOOT, J5, CHG/PWR-LED).
+- 0.15.2: ESP32-C5 mit RGB-LED zwischen den USB-C-Buchsen; klassischer ESP32 (auch auf dem Expansion Board) detaillierter: Modulaufdruck, AMS1117, CP2102, PWR-/IO2-LED, EN/BOOT, kleine Bauteile.
