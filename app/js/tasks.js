@@ -196,7 +196,7 @@ const TASK_CHECKS = {
       const vB = new Map(sim && sim.analogSeen || []);
       // Liest das Programm einen Analogeingang, muss sich dessen Wert mit dem Sensor ändern
       // (sonst z. B. Spannungsteiler vergessen – ein gleitender Mittelwert allein täuscht sonst eine Reaktion vor)
-      const max = BOARD === 'esp32' ? 4095 : 1023;
+      const max = BOARD === 'esp32' && !is8266() ? 4095 : 1023;
       const pins = [...vA.keys()].filter(k => vB.has(k));
       if (pins.length && pins.every(k => Math.abs(vA.get(k) - vB.get(k)) < max * 0.02)) {
         const k = pins[0], val = vA.get(k);
@@ -389,7 +389,7 @@ const TaskChecker = {
       const q = b => b < 0.05 ? 0 : b < 0.85 ? 1 : 2;
       switch (c.type) {
         case 'led': out.push(q(s.brightness)); break;
-        case 'uno': case 'esp32': case 'esp32exp': out.push(s.led ? 'L1' : 'L0'); break;
+        case 'uno': case 'esp32': case 'esp32exp': case 'esp32c5': case 'nodemcu': out.push(s.led ? 'L1' : 'L0'); break;
         case 'rgbled': out.push(s.rgb.map(q).join('')); break;
         case 'servo': out.push('s' + Math.round(s.angle / 15)); break;
         case 'motor': case 'gearmotor': case 'wheelL': case 'wheelR': out.push(s.running ? 'm' + s.dir : 'm0'); break;

@@ -118,3 +118,13 @@ Umgebungsvariablen nur für Tests: `WERKSTATT_CLI_URL`, `WERKSTATT_UPDATE_API`, 
 - Läuft Chrome schon, werden diese Schalter ignoriert: `App.maximize()` zieht das App-Fenster per `resizeTo` auf die Arbeitsfläche;
   bei „vollbild“ holt `App.autoFullscreen()` das Vollbild beim ersten Klick nach (`requestFullscreen` + `navigator.keyboard.lock(['Escape'])`).
 - Knopf `#fullBtn` unten links schaltet Vollbild ein/aus; Browser-Vollbild (F11) erkennt `isFull()` an der Fenstergröße. Test: tests/full1.py.
+
+## ESP32-C5 und ESP8266 (ab 0.15.0)
+- Intern bleibt `BOARD = 'esp32'` (ESP-Familie mit WLAN); dazu `ESP_CHIP` = `esp32` | `c5` | `8266` (blocks.js). Auswahl oben und Projektdatei:
+  `boardKey()` = `uno` | `esp32` | `esp32c5` | `esp8266`; gespeichert als `board: 'esp32', chip: …`. Hilfen: `isC5()`, `is8266()`, `hasBT()`, `boardName()`, `mcuKey(def.mcu)`.
+- Bauteile `esp32c5` (C5_MCU, Pinbelegung DevKitC-1 v1.2 = Waveshare ESP32-C5-WIFI6-KIT) und `nodemcu` (N_MCU, LoLin v3; Pin-IDs wie die Beschriftung D0 … D8, A0).
+- ESP8266: Feldwerte in den Blöcken sind die Konstanten `D5` usw. (im Code gültig, Simulation über `simPin()` in code_sim.js). Eingebaute LED invertiert (`ledInv`).
+  Kommunikation: ESP8266WiFi/ESP8266WebServer (`using WebServer = ESP8266WebServer`), Funk über espnow.h (COM_RADIO_8266). Bluetooth-Blöcke ausgeblendet, BT-Knopf und BT-Übertragung aus.
+  Feste Bibliotheksliste: WLAN-Header VOR Keypad.h (Keypad definiert CLOSED, das lwIP braucht).
+- FQBN: `esp32:esp32:esp32c5:PartitionScheme=min_spiffs`, `esp8266:esp8266:nodemcuv2`. Startdatei: `chipOf()` (eigene build-/export-Ordner für den C5), Einrichtung `esp8266` mit Paketliste arduino.esp8266.com, Marker `bereit-esp8266.txt`.
+- Mit echtem Compiler geprüft (/root/ard, esp32 3.3.2, esp8266 3.1.2): alle Blöcke aller Erweiterungen (tests/alle_neu.py). Tests: c5_1.py, n8266_1.py, menu1.py.

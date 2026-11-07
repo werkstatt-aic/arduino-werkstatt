@@ -30,7 +30,7 @@ const SerialLink = {
     const btn = document.querySelector('#serialConn'), bt = document.querySelector('#serialBt');
     if (!btn) return;
     btn.hidden = !this.available || (this.connected && this.mode === 'bt');
-    bt.hidden = !this.btAvailable || BOARD !== 'esp32' || (this.connected && this.mode === 'usb');
+    bt.hidden = !this.btAvailable || !hasBT() || (this.connected && this.mode === 'usb');
     btn.textContent = this.connected && this.mode === 'usb' ? 'USB trennen' : 'Per USB verbinden';
     bt.textContent = this.connected && this.mode === 'bt' ? 'Bluetooth trennen' : 'Per Bluetooth verbinden';
     btn.classList.toggle('primary', !this.connected);
@@ -49,7 +49,7 @@ const SerialLink = {
       if (BOARD === 'esp32') { try { await this.port.setSignals({ dataTerminalReady: false, requestToSend: false }); } catch (e) { /* egal */ } }
       this.connected = true; this.mode = 'usb';
       this.setUi();
-      this.app.serialWrite(`[Verbunden per USB mit dem echten ${BOARD === 'esp32' ? 'ESP32' : 'Arduino'}, ${this.baud()} Baud]\n`);
+      this.app.serialWrite(`[Verbunden per USB mit dem echten ${boardName()}, ${this.baud()} Baud]\n`);
       this.readLoop();
       return true;
     } catch (e) {

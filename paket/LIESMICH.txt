@@ -208,6 +208,30 @@ ESP32
     (etwa 1 GB). Klappt das Übertragen nicht, beim Hochladen die Taste "BOOT"
     auf dem ESP32 gedrückt halten, bis "Connecting..." verschwindet.
 
+  - Auch für Boards mit dem Modul ESP32-WROOM-32U (externe Antenne) "ESP32"
+    wählen. Ohne angeschraubte Antenne sind WLAN und Bluetooth sehr schwach.
+
+ESP32-C5 (z. B. Waveshare ESP32-C5-WIFI6-KIT oder Espressif ESP32-C5-DevKitC-1)
+  - Oben "ESP32-C5" wählen. WLAN (2,4 und 5 GHz), Bluetooth, Funk und alle
+    Blöcke funktionieren wie beim ESP32, nur die Anschlüsse sind andere:
+    D2-D6, D8-D10, D23, D24 (analog: D2-D6). I²C (LCD, OLED): SDA an D0, SCL
+    an D1. Die eingebaute LED ist eine RGB-LED (leuchtet weiß).
+  - Zum Hochladen die USB-C-Buchse "UART" benutzen (dort erscheinen auch die
+    Ausgaben im seriellen Monitor).
+  - Braucht das ESP32-Paket ab Version 3.3. Meldet die Werkstatt, dass es den
+    C5 nicht kennt: Einstellungen > "ESP32 neu einrichten".
+
+ESP8266 (NodeMCU)
+  - Oben "ESP8266" wählen. Eigene Einrichtung beim ersten Hochladen (etwa
+    300 MB, Internet nötig; in der Netzwerk-Version einmal von der Lehrkraft:
+    Einstellungen > "ESP8266 neu einrichten").
+  - Anschlüsse wie auf dem Board beschriftet: D0, D1, D2, D5-D8 (D8 nur als
+    Ausgang). I²C: SDA an D2, SCL an D1. Nur ein analoger Eingang: A0
+    (0-3,3 V, Werte 0-1023). Die eingebaute blaue LED hängt an D4.
+  - WLAN, eigene Webseite und Funk (auch zusammen mit ESP32) funktionieren.
+    Bluetooth gibt es nicht - diese Blöcke werden gar nicht angeboten.
+  - LCD mit 5 V: an "VU" anschließen (5 V vom USB).
+
 ÜBERTRAGEN PER BLUETOOTH (nur ESP32)
   1. Einmal per USB-Kabel hochladen und dabei "Bluetooth-Übertragung in das
      Programm einbauen" anhaken. Den Namen des ESP32 kann man dort ändern

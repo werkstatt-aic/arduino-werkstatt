@@ -89,7 +89,7 @@ const CommPanel = {
       <section><h4>WLAN</h4>${wifi}</section>
       <section><h4>Webseite <small>(so sieht sie im Browser aus)</small></h4>${web}</section>
       <section><h4>Funk${sim.radio ? ' – Gruppe ' + sim.radio.group : ''}</h4>${radio}</section>
-      <section><h4>Bluetooth${sim.bt ? ' – ' + esc(sim.bt.name) : ''}</h4>${bt}</section>
+      ${hasBT() ? `<section><h4>Bluetooth${sim.bt ? ' – ' + esc(sim.bt.name) : ''}</h4>${bt}</section>` : ''}
     </div>`;
     for (const k of keep) {
       const nu = box.querySelector(k.bt ? '.bt-in input' : '.radio-in:not(.bt-in) input');

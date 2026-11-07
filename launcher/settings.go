@@ -50,16 +50,17 @@ func dirSize(p string) int64 {
 func apiInfo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
-		"version":    version,
-		"folder":     baseDir,
-		"ready":      toolsReadyFor("uno"),
-		"readyEsp32": toolsReadyFor("esp32"),
-		"cacheMB":    dirSize(workDir()) >> 20,
-		"updateRepo": updateRepoName() != "" || os.Getenv("WERKSTATT_UPDATE_API") != "",
-		"netz":       netMode,
-		"schreibbar": writable,
-		"projekte":   projectDir,
-		"fenster":    windowMode(),
+		"version":      version,
+		"folder":       baseDir,
+		"ready":        toolsReadyFor("uno"),
+		"readyEsp32":   toolsReadyFor("esp32"),
+		"readyEsp8266": toolsReadyFor("esp8266"),
+		"cacheMB":      dirSize(workDir()) >> 20,
+		"updateRepo":   updateRepoName() != "" || os.Getenv("WERKSTATT_UPDATE_API") != "",
+		"netz":         netMode,
+		"schreibbar":   writable,
+		"projekte":     projectDir,
+		"fenster":      windowMode(),
 	})
 }
 
@@ -113,7 +114,7 @@ func apiToolsCheck(w http.ResponseWriter, r *http.Request) {
 	s.line("##SCHRITT 2 Mikrocontroller-Pakete prüfen")
 	out, _ := cliOutput("core", "list", "--format", "json")
 	missing := []string{}
-	for _, b := range []struct{ id, name, board string }{{"arduino:avr", "Arduino Uno", "uno"}, {"esp32:esp32", "ESP32", "esp32"}} {
+	for _, b := range []struct{ id, name, board string }{{"arduino:avr", "Arduino Uno", "uno"}, {"esp32:esp32", "ESP32", "esp32"}, {"esp8266:esp8266", "ESP8266 (NodeMCU)", "esp8266"}} {
 		has := bytes.Contains(out, []byte(`"`+b.id+`"`))
 		if toolsReadyFor(b.board) && !has {
 			missing = append(missing, "Paket "+b.name)
@@ -243,7 +244,7 @@ func apiEspErase(w http.ResponseWriter, r *http.Request) {
 		cmdName = "erase_flash"
 	}
 	s.line("##SCHRITT 1 ESP32 komplett löschen (%s)", port)
-	if err := runExe(s, nil, nil, tool, "--chip", "esp32", "--port", port, cmdName); err != nil {
+	if err := runExe(s, nil, nil, tool, "--chip", "auto", "--port", port, cmdName); err != nil {
 		s.line("##FEHLER Das Löschen hat nicht geklappt.")
 		return
 	}

@@ -7,7 +7,8 @@ function setupSimGenerator() {
   J.STATEMENT_PREFIX = 'await api.hl(%1);\n';
   J.INFINITE_LOOP_TRAP = 'await api.tick();\n';
   const v = (b, n, ord, def) => J.valueToCode(b, n, ord || J.ORDER_NONE) || def || '0';
-  const pin = (b, f) => `'D${b.getFieldValue(f || 'PIN')}'`;
+  const simPin = v => /^[A-Z]/.test(v) ? v : 'D' + v; // ESP8266: Werte heißen schon „D5“
+  const pin = (b, f) => `'${simPin(b.getFieldValue(f || 'PIN'))}'`;
   const vname = id => J.nameDB_.getName(id, Blockly.VARIABLE_CATEGORY_NAME);
   const col = h => `[${parseInt(h.slice(1, 3), 16)}, ${parseInt(h.slice(3, 5), 16)}, ${parseInt(h.slice(5, 7), 16)}]`;
   J['ard_setup'] = b => 'async function __setup() {\n' + J.statementToCode(b, 'DO') + '}\n';
@@ -68,7 +69,7 @@ function setupSimGenerator() {
   J['neo_fill'] = b => `await api.neoFill(${col(b.getFieldValue('C'))});\n`;
   J['neo_brightness'] = b => `await api.neoBrightness(${v(b, 'V')});\n`;
   J['neo_clear'] = () => 'await api.neoFill([0, 0, 0]);\n';
-  const kp = (b, cols) => `await api.kpInit(${cols}, [${[0, 1, 2, 3].map(i => `'D${b.getFieldValue('R' + i)}'`)}], [${Array.from({ length: cols }, (_, i) => `'D${b.getFieldValue('C' + i)}'`)}]);\n`;
+  const kp = (b, cols) => `await api.kpInit(${cols}, [${[0, 1, 2, 3].map(i => `'${simPin(b.getFieldValue('R' + i))}'`)}], [${Array.from({ length: cols }, (_, i) => `'${simPin(b.getFieldValue('C' + i))}'`)}]);\n`;
   J['kp_init3'] = b => kp(b, 3);
   J['kp_init4'] = b => kp(b, 4);
   J['kp_read'] = () => 'await api.kpRead();\n';

@@ -278,7 +278,7 @@ const App = {
     if (this.sim.running) this.stopSim();
     this.loading = true;
     $('#projName').value = data.name || 'Neues Projekt';
-    this.setBoard(data.board === 'esp32' ? 'esp32' : 'uno', true);
+    this.setBoard(data.board === 'esp32' ? (CHIP_KEY[data.chip] || 'esp32') : 'uno', true);
     // Bluetooth-Übertragung: Standardname aus Tisch-Nr. und Vorname im Projektnamen, z. B. „ESP-11-Lena“
     const np = this.nameParts(data.name), tr = s => String(s || '').replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').replace(/Ä/g, 'Ae').replace(/Ö/g, 'Oe').replace(/Ü/g, 'Ue');
     BT_OPT = Object.assign({ on: false, name: btName(np.tisch ? `ESP-${np.tisch}-${tr(np.vor)}` : 'ESP-Werkstatt') }, data.bt || {});
@@ -311,7 +311,7 @@ const App = {
 
   projectData() {
     return {
-      format: FORMAT, version: 1, name: $('#projName').value.trim() || 'Neues Projekt', board: BOARD,
+      format: FORMAT, version: 1, name: $('#projName').value.trim() || 'Neues Projekt', board: BOARD, chip: BOARD === 'esp32' ? ESP_CHIP : undefined,
       extensions: this.extensions.slice(), bt: Object.assign({}, BT_OPT), circuit: this.circuit.toJSON(), blocks: Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(this.workspace)), saved: new Date().toISOString(),
       ...this.taskData(),
     };
@@ -409,7 +409,7 @@ const App = {
     const mcus = this.project.components.filter(c => c.def.mcu);
     if (!mcus.length) { this.toast('Ziehe zuerst einen Mikrocontroller (Arduino Uno oder ESP32) auf die Werkbank.'); return; }
     if (mcus.length > 1) { this.toast('Es kann nur ein Mikrocontroller simuliert werden. Entferne den anderen.'); return; }
-    if (mcus[0].def.mcu.kind !== BOARD) { this.toast(`Die Auswahl oben passt nicht zum Mikrocontroller in der Schaltung.`); return; }
+    if (mcuKey(mcus[0].def.mcu) !== boardKey()) { this.toast(`Die Auswahl oben passt nicht zum Mikrocontroller in der Schaltung.`); return; }
     if (this.circuit.wiring) this.circuit.cancelWire();
     let code;
     try { code = generateSimCode(this.workspace); } catch (e) { this.toast('Fehler im Programm: ' + e.message); return; }
@@ -538,10 +538,10 @@ const App = {
     for (const cat in cats) {
       h += `<div class="part-cat" data-cat="${cat}">${cat}</div><div class="part-grid">`;
       for (const t of cats[cat]) {
-        const mc = BOARD === 'esp32' ? 'esp32exp' : 'uno', mn = BOARD === 'esp32' ? 'ESP32' : 'Arduino';
+        const mc = is8266() ? 'nodemcu' : isC5() ? 'esp32c5' : BOARD === 'esp32' ? 'esp32exp' : 'uno', mn = is8266() ? 'NodeMCU' : isC5() ? 'ESP32-C5' : BOARD === 'esp32' ? 'ESP32' : 'Arduino';
         if (t === 'template') h += `<div class="part" draggable="true" data-type="template" data-name="${mn.toLowerCase()} steckplatine vorlage">${stack(['breadboard', mc], 24)}<span>${mn} + Steckplatine</span></div>`;
         else if (t === 'template-lcd') h += `<div class="part" draggable="true" data-type="template-lcd" data-name="${mn.toLowerCase()} steckplatine lcd display vorlage">${stack(['lcd', 'breadboard', mc], 16)}<span>${mn} + Steckplatine + LCD</span></div>`;
-        else h += `<div class="part${WIDE.has(t) ? ' wide' : ''}" draggable="true" data-type="${t}" data-ext="${COMPONENTS[t].ext || ''}" data-mcu="${COMPONENTS[t].mcu ? COMPONENTS[t].mcu.kind : ''}" data-name="${COMPONENTS[t].name.toLowerCase()}">${componentIcon(t)}<span>${esc(NBSP_NAMES(COMPONENTS[t].label || COMPONENTS[t].name))}</span></div>`;
+        else h += `<div class="part${WIDE.has(t) ? ' wide' : ''}" draggable="true" data-type="${t}" data-ext="${COMPONENTS[t].ext || ''}" data-mcu="${COMPONENTS[t].mcu ? mcuKey(COMPONENTS[t].mcu) : ''}" data-name="${COMPONENTS[t].name.toLowerCase()}">${componentIcon(t)}<span>${esc(NBSP_NAMES(COMPONENTS[t].label || COMPONENTS[t].name))}</span></div>`;
       }
       h += '</div>';
     }
@@ -567,7 +567,7 @@ const App = {
     document.querySelectorAll('.part').forEach(p => {
       const ext = p.dataset.ext;
       const mcu = p.dataset.mcu;
-      const ok = (!ext || this.extensions.includes(ext)) && (!mcu || mcu === BOARD) && (!q || p.dataset.name.includes(q));
+      const ok = (!ext || this.extensions.includes(ext)) && (!mcu || mcu === boardKey()) && (!q || p.dataset.name.includes(q));
       p.style.display = ok ? '' : 'none';
     });
     document.querySelectorAll('.part-grid').forEach(g => {
@@ -579,7 +579,11 @@ const App = {
   updateEmpty() {
     const e = $('#emptyHint');
     e.hidden = this.project.components.length > 0;
-    if (!e.hidden) e.querySelector('p').innerHTML = BOARD === 'esp32'
+    if (!e.hidden) e.querySelector('p').innerHTML = is8266()
+      ? 'Ziehe den <b>ESP8266 NodeMCU</b> aus der Bauteilleiste rechts hierher. Mit der Vorlage <b>NodeMCU + Steckplatine</b> ist beides schon verbunden.'
+      : isC5()
+      ? 'Ziehe den <b>ESP32-C5</b> aus der Bauteilleiste rechts hierher. Mit der Vorlage <b>ESP32-C5 + Steckplatine</b> ist beides schon verbunden.'
+      : BOARD === 'esp32'
       ? 'Ziehe den <b>ESP32</b> aus der Bauteilleiste rechts hierher. Mit der Vorlage <b>ESP32 + Steckplatine</b> ist beides schon verbunden.'
       : 'Ziehe den <b>Arduino Uno</b> aus der Bauteilleiste rechts hierher. Mit der Vorlage <b>Arduino + Steckplatine</b> ist beides schon verbunden.';
   },
@@ -652,6 +656,16 @@ const App = {
         case 'esp32exp':
           h += `<label>Jumper „JUMP“ (Spannung an den V-Pins)</label><select data-prop="jump" ${dis}><option value="3.3" ${String(c.props.jump) !== '5' ? 'selected' : ''}>3,3 V</option><option value="5" ${String(c.props.jump) === '5' ? 'selected' : ''}>5 V</option></select>`;
           h += '<div class="note">Die USB-Buchsen am Board liefern nur Strom. Zum Hochladen das Kabel in die Buchse am ESP32 stecken.</div>';
+          h += '<div class="note">Zeige mit der Maus auf einen Anschluss, um seine Bezeichnung zu sehen.</div>';
+          break;
+        case 'nodemcu':
+          h += '<div class="note">Der ESP8266 hat WLAN, aber <b>kein Bluetooth</b>. Nur ein analoger Eingang (A0, 0 – 3,3 V), Messwerte 0 – 1023.</div>';
+          h += '<div class="note">Die eingebaute blaue LED hängt an D4 und leuchtet, wenn D4 NIEDRIG ist – der Block „integrierte LED“ berücksichtigt das.</div>';
+          h += '<div class="note">Zeige mit der Maus auf einen Anschluss, um seine Bezeichnung zu sehen.</div>';
+          break;
+        case 'esp32c5':
+          h += '<div class="note">Zum Hochladen das Kabel in die Buchse <b>„UART“</b> (USB-Seriell-Wandler) stecken – dort erscheinen auch die Ausgaben im seriellen Monitor.</div>';
+          h += '<div class="note">Die eingebaute LED ist eine RGB-LED an D27; der Block „eingebaute LED“ lässt sie weiß leuchten.</div>';
           h += '<div class="note">Zeige mit der Maus auf einen Anschluss, um seine Bezeichnung zu sehen.</div>';
           break;
         case 'esp32':
@@ -813,8 +827,11 @@ const App = {
 
   /* Mikrocontroller umschalten: Blöcke neu laden, damit die Anschluss-Listen passen */
   setBoard(b, silent) {
-    const changed = b !== BOARD;
-    BOARD = b;
+    const changed = b !== boardKey();
+    const chip = Object.keys(CHIP_KEY).find(k => CHIP_KEY[k] === b);
+    BOARD = chip ? 'esp32' : 'uno';
+    ESP_CHIP = chip || 'esp32';
+    b = boardKey();
     $('#boardSel').value = b;
     if (this.project) this.updateEmpty();
     if (!changed) return;
@@ -831,8 +848,8 @@ const App = {
       this.updateCodeText();
       this.scheduleSave();
       const mcu = this.project.components.find(c => c.def.mcu);
-      if (mcu && mcu.def.mcu.kind !== b) this.toast(`Achtung: In der Schaltung steckt noch ein ${mcu.def.mcu.kind === 'esp32' ? 'ESP32' : 'Arduino Uno'}.`);
-      else this.toast(`Mikrocontroller: ${b === 'esp32' ? 'ESP32' : 'Arduino Uno'}. Prüfe die Anschlüsse in deinen Blöcken.`);
+      if (mcu && mcuKey(mcu.def.mcu) !== b) this.toast(`Achtung: In der Schaltung steckt noch ein ${boardName(mcuKey(mcu.def.mcu))}.`);
+      else this.toast(`Mikrocontroller: ${boardName(b)}. Prüfe die Anschlüsse in deinen Blöcken.`);
     } else if (this.partsBuilt) { this.buildPartList(); }
   },
 
@@ -843,7 +860,7 @@ const App = {
     const group = (b, t) => `<div class="start-sec">${t}</div>` + EXAMPLES.filter(e => e.board === b).map(e => `<button class="start-item ex" type="button" data-ex="${e.id}"><span><b>${esc(e.title)}</b><small>${esc(e.desc)}</small></span></button>`).join('');
     // Schulversion: Beispiele der Lehrkraft vom Schulserver
     const srv = await School.examples();
-    const srvGroup = srv.length ? `<div class="start-sec">Von deiner Lehrkraft</div>` + srv.map(e => `<button class="start-item ex" type="button" data-srv="${esc(e.id)}"><span><b>${esc(e.titel)}</b><small>${esc(e.beschreibung || '')}${e.board === 'esp32' ? ' (ESP32)' : ''}</small></span></button>`).join('') : '';
+    const srvGroup = srv.length ? `<div class="start-sec">Von deiner Lehrkraft</div>` + srv.map(e => `<button class="start-item ex" type="button" data-srv="${esc(e.id)}"><span><b>${esc(e.titel)}</b><small>${esc(e.beschreibung || '')}${e.board === 'esp32' ? (e.chip === 'c5' ? ' (ESP32-C5)' : ' (ESP32)') : ''}</small></span></button>`).join('') : '';
     this.dialog(`<h2>Beispiel öffnen</h2><p>Das Beispiel wird als <b>neues Projekt</b> angelegt – du kannst es danach frei verändern.</p>${srvGroup}${group('uno', 'Arduino Uno')}${group('esp32', 'ESP32')}<div class="dlg-btns"><button class="btn" value="cancel">Abbrechen</button></div>`);
     $('#dlgForm').addEventListener('click', async e => {
       const b = e.target.closest('[data-ex], [data-srv]'); if (!b) return;
@@ -852,12 +869,12 @@ const App = {
         const meta = srv.find(x => x.id === b.dataset.srv);
         let data;
         try { data = await (await this.api('schule/beispiel?id=' + encodeURIComponent(b.dataset.srv))).json(); } catch (er) { this.toast('Beispiel konnte nicht geladen werden: ' + er.message); return; }
-        ex = { title: meta.titel, board: data.board === 'esp32' ? 'esp32' : 'uno', ext: data.extensions || [], circuit: data.circuit || { components: [], wires: [] }, blocks: data.blocks };
+        ex = { title: meta.titel, board: data.board === 'esp32' ? 'esp32' : 'uno', chip: data.chip, ext: data.extensions || [], circuit: data.circuit || { components: [], wires: [] }, blocks: data.blocks };
       }
       this.dialog(`<h2>${esc(ex.title)}</h2><p>Wie soll dein Projekt heißen?</p>${this.nameFields({ proj: ex.title })}<div class="dlg-btns"><button class="btn" value="cancel">Abbrechen</button><button class="btn primary" value="ok">Anlegen</button></div>`,
         (rv, f) => {
           if (rv !== 'ok' || !f.n.value) return;
-          this.loadProject({ format: FORMAT, version: 1, name: f.n.value, board: ex.board, extensions: ex.ext || [], circuit: JSON.parse(JSON.stringify(ex.circuit)), blocks: ex.blocks });
+          this.loadProject({ format: FORMAT, version: 1, name: f.n.value, board: ex.board, chip: ex.chip, extensions: ex.ext || [], circuit: JSON.parse(JSON.stringify(ex.circuit)), blocks: ex.blocks });
           this.fileName = null; this.save();
           this.toast(`Beispiel „${ex.title}“ geöffnet.`);
         });
@@ -932,7 +949,8 @@ const App = {
     if (!this.workspace) return;
     for (const b of this.workspace.getAllBlocks(false)) {
       if (!/^com_/.test(b.type)) continue;
-      b.setWarningText(BOARD === 'esp32' ? null : 'Dieser Block geht nur mit dem ESP32. Beim Arduino Uno wird er übersprungen.');
+      b.setWarningText(BOARD !== 'esp32' ? 'Dieser Block geht nur mit dem ESP32. Beim Arduino Uno wird er übersprungen.'
+        : (!hasBT() && /^com_bt_/.test(b.type)) ? 'Der ESP8266 hat kein Bluetooth – dieser Block wird übersprungen.' : null);
     }
   },
 
@@ -940,12 +958,14 @@ const App = {
   updateCommTab() {
     const on = BOARD === 'esp32' && this.extensions.includes('comm');
     $('#tabComm').hidden = !on;
+    $('#tabComm').textContent = hasBT() ? 'WLAN, Funk & Bluetooth' : 'WLAN & Funk';
+    $('#btBtn').hidden = is8266(); // der ESP8266 hat kein Bluetooth
     if (!on && $('#tabComm').classList.contains('on')) this.showBottom('msgs');
   },
 
-  onMcuAdded(kind, hadOther) {
+  onMcuAdded(key, hadOther) {
     if (hadOther) { this.toast('Es kann nur ein Mikrocontroller simuliert werden. Entferne den anderen.'); return; }
-    if (kind !== BOARD) this.setBoard(kind);
+    if (key !== boardKey()) this.setBoard(key);
   },
 
   /* Ältere Projekte: Erweiterungen einschalten, deren Bauteile oder Blöcke schon verwendet werden
@@ -1140,7 +1160,7 @@ const App = {
       e.target.value = '';
     });
     $('#uploadBtn').onclick = () => Uploader.openUsb(this);
-    $('#btBtn').onclick = () => { if (BOARD !== 'esp32') { this.toast('Übertragen per Bluetooth geht nur mit dem ESP32.'); return; } Uploader.mode = 'bt'; Uploader.open(this); };
+    $('#btBtn').onclick = () => { if (is8266()) { this.toast('Der ESP8266 hat kein Bluetooth. Bitte per USB-Kabel hochladen.'); return; } if (BOARD !== 'esp32') { this.toast('Übertragen per Bluetooth geht nur mit dem ESP32.'); return; } Uploader.mode = 'bt'; Uploader.open(this); };
     this.bindProps();
     window.addEventListener('resize', () => this.resizeBlockly());
     // Hilfe: Tastenkürzel und Bedienung (Knopf „?“, Taste F1 oder ?)

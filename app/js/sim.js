@@ -94,7 +94,7 @@ class Simulator {
         check();
       },
       async digitalWrite(pin, v) { check(); S.outputs[pin] = { v: v ? S.m().logic : 0, duty: 1 }; S.update(); },
-      async builtinLed(v) { check(); S.outputs[S.m().led] = { v: v ? S.m().logic : 0, duty: 1 }; S.update(); },
+      async builtinLed(v) { check(); const M = S.m(); S.outputs[M.led] = { v: (M.ledInv ? !v : v) ? M.logic : 0, duty: 1 }; S.update(); },
       async analogWrite(pin, val) {
         check();
         val = Math.max(0, Math.min(255, Math.round(Number(val) || 0)));
@@ -560,7 +560,7 @@ class Simulator {
     const lvl = key => Math.min(1, (this.ledI[key] || 0) / LED_FULL);
     for (const c of this.project.components) {
       switch (c.type) {
-        case 'uno': case 'esp32': case 'esp32exp': { const lo = this.outputs[c.def.mcu.led]; const on = !!(lo && lo.v > 0); states[c.id] = { running: true, pin13: on, led: on }; break; }
+        case 'uno': case 'esp32': case 'esp32exp': case 'esp32c5': case 'nodemcu': { const lo = this.outputs[c.def.mcu.led]; const on = c.def.mcu.ledInv ? !!(lo && lo.v === 0) : !!(lo && lo.v > 0); states[c.id] = { running: true, pin13: on, led: on }; break; }
         case 'led': states[c.id] = { brightness: lvl(c.id), broken: this.broken.has(c.id) }; break;
         case 'rgbled': states[c.id] = { rgb: ['R', 'G', 'B'].map(p => this.broken.has(c.id + ':' + p) ? 0 : lvl(c.id + ':' + p)), broken: ['R', 'G', 'B'].some(p => this.broken.has(c.id + ':' + p)) }; break;
         case 'button': case 'button2': case 'pushbutton': states[c.id] = { pressed: this.pressed.has(c.id) }; break;

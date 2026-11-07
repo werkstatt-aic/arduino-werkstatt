@@ -80,7 +80,7 @@ const Export = {
       h2{font-size:15px;margin:18px 0 8px;border-bottom:1px solid #ccc;padding-bottom:3px} img{max-width:100%;max-height:85vh;display:block}
       pre{font:11px/1.45 Consolas,monospace;white-space:pre-wrap;background:#f6f6f6;padding:10px;border-radius:6px} .leer{color:#888}
       .seite{break-before:page} @media print{body{margin:0}}</style></head><body>
-      <h1>${esc(name)}</h1><div class="meta">Arduino-Werkstatt · ${BOARD === 'esp32' ? 'ESP32' : 'Arduino Uno'} · ${new Date().toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' })}</div>
+      <h1>${esc(name)}</h1><div class="meta">Arduino-Werkstatt · ${boardName()} · ${new Date().toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' })}</div>
       <h2>Schaltung</h2>${img(circ)}
       <h2 class="seite">Programm (Blöcke)</h2>${img(blocks)}
       <h2 class="seite">Programm (C++)</h2><pre>${esc(code)}</pre>

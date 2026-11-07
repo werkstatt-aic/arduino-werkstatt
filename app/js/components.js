@@ -688,7 +688,7 @@ function espPinLabel(id, short) {
 }
 const ESP_PINS = (kind, dy) => ESP_TOP.map(([id, sh], i) => ({ id, x: i * 10, y: 0, kind, label: espPinLabel(id, sh), short: sh }))
   .concat(ESP_BOT.map(([id, sh], i) => ({ id, x: i * 10, y: 100, kind, label: espPinLabel(id, sh), short: sh })));
-const ESP_MCU = { kind: 'esp32', gnd: 'GND1', v5: '5V', v33: '3V3', sda: 'D21', scl: 'D22', logic: 3.3, adcMax: 4095, vref: 3.3, led: 'D2', pwm: null };
+const ESP_MCU = { kind: 'esp32', chip: 'esp32', gnd: 'GND1', v5: '5V', v33: '3V3', sda: 'D21', scl: 'D22', logic: 3.3, adcMax: 4095, vref: 3.3, led: 'D2', pwm: null };
 const UNO_MCU = { kind: 'uno', gnd: 'GND_T', v5: '5V', v33: '3V3', sda: 'SDA', scl: 'SCL', logic: 5, adcMax: 1023, vref: 5, led: 'D13', pwm: ['D3', 'D5', 'D6', 'D9', 'D10', 'D11'] };
 
 /* Das Modul selbst (ohne Anschlüsse), damit es auch auf dem Expansion Board verwendet werden kann */
@@ -778,6 +778,96 @@ function renderESP32Exp(comp, st) {
   return s;
 }
 
+/* ---------- ESP32-C5 (Espressif ESP32-C5-DevKitC-1 und Waveshare ESP32-C5-WIFI6-KIT, je 2 × 16 Pins) ---------- */
+/* Waagrecht gezeichnet wie der ESP32: Antenne links, USB rechts. Oben die Leiste J3, unten J1 (Pinbelegung ab Board-Version 1.2). */
+const C5_HINT = {
+  D0: 'SDA (I²C)', D1: 'SCL (I²C), analog', D2: 'analog', D3: 'analog', D4: 'analog', D5: 'analog', D6: 'analog',
+  D7: 'Boot-Pin – besser nicht benutzen', D25: 'Boot-Pin – besser nicht benutzen', D26: 'Boot-Pin – besser nicht benutzen', D28: 'Boot-Pin – nicht benutzen',
+  D27: 'eingebaute RGB-LED, Boot-Pin – nicht benutzen', D11: 'TX – USB-Verbindung', D12: 'RX – USB-Verbindung',
+  D13: 'USB direkt (D–) – nicht benutzen', D14: 'USB direkt (D+) – nicht benutzen', NC2: 'GPIO15 – bei Modulen mit PSRAM belegt', RST: 'Neustart (Reset)',
+};
+const C5_TOP = [['GND1', 'G'], ['D11', 'TX'], ['D12', 'RX'], ['D24', '24'], ['D23', '23'], ['NC2', 'NC'], ['D27', '27'], ['D4', '4'], ['D5', '5'], ['NC3', 'NC'],
+  ['D28', '28'], ['GND2', 'G'], ['D14', '14'], ['D13', '13'], ['GND3', 'G'], ['NC4', 'NC']];
+const C5_BOT = [['3V3', '3V3'], ['RST', 'RST'], ['D2', '2'], ['D3', '3'], ['D0', '0'], ['D1', '1'], ['D6', '6'], ['D7', '7'], ['D8', '8'], ['D9', '9'],
+  ['D10', '10'], ['D26', '26'], ['D25', '25'], ['5V', '5V'], ['GND4', 'G'], ['NC1', 'NC']];
+function c5PinLabel(id, short) {
+  const base = /^D\d+$/.test(id) ? `${id} (GPIO ${id.slice(1)})` : /^GND/.test(id) ? 'GND' : /^NC/.test(id) ? 'nicht verbunden' : short;
+  return C5_HINT[id] ? `${base} – ${C5_HINT[id]}` : base;
+}
+const C5_PINS = C5_TOP.map(([id, sh], i) => ({ id, x: i * 10, y: 0, kind: 'leg', label: c5PinLabel(id, sh), short: sh }))
+  .concat(C5_BOT.map(([id, sh], i) => ({ id, x: i * 10, y: 100, kind: 'leg', label: c5PinLabel(id, sh), short: sh })));
+const C5_MCU = { kind: 'esp32', chip: 'c5', gnd: 'GND4', v5: '5V', v33: '3V3', sda: 'D0', scl: 'D1', logic: 3.3, adcMax: 4095, vref: 3.3, led: 'D27', pwm: null };
+function renderESP32C5(comp, st) {
+  const on = st && st.led, run = st && st.running;
+  let s = `<rect class="body" x="-30" y="-4" width="222" height="108" rx="4" fill="#1f2a3a" stroke="#0d121a"/>`;
+  s += `<rect x="-5" y="-4" width="160" height="9" fill="#111"/><rect x="-5" y="95" width="160" height="9" fill="#111"/>`;
+  // Funkmodul mit Antenne
+  s += `<rect x="-26" y="26" width="128" height="48" rx="2" fill="#1d1d1f" stroke="#3a3a3a"/>`;
+  s += `<path d="M-22 32 h12 v6 h-8 v6 h8 v6 h-8 v6 h8 v6 h-8 v6 h12" fill="none" stroke="#c9a43a" stroke-width="1.8"/>`;
+  s += `<rect x="4" y="29" width="94" height="42" rx="2" fill="#c9cdd1" stroke="#8b9399"/><rect x="8" y="32" width="86" height="36" rx="1" fill="#d6dade"/>`;
+  s += `<text x="51" y="48" class="chip2" text-anchor="middle" style="font-size:6.5px;fill:#555">ESP32-C5-WROOM-1</text><text x="51" y="58" class="chip2" text-anchor="middle" style="font-size:5px;fill:#777">WiFi 6 (2,4 + 5 GHz) · BLE</text>`;
+  // USB-Seriell-Wandler, Tasten, RGB-LED, zwei USB-C-Buchsen
+  s += `<rect x="112" y="40" width="18" height="18" rx="1" fill="#141414"/>`;
+  for (const [x, y, t] of [[138, 18, 'RST'], [138, 70, 'BOOT']]) s += `<rect x="${x}" y="${y}" width="14" height="11" rx="1" fill="#d9dde0" stroke="#8b9399"/><rect x="${x + 4}" y="${y + 3}" width="6" height="5" rx="1" fill="#2b2b2b"/><text x="${x + 7}" y="${y + (y < 50 ? -2 : 18)}" class="silkpin" text-anchor="middle">${t}</text>`;
+  s += `<rect x="140" y="45" width="9" height="9" rx="1.5" fill="${on ? '#fff' : '#e8e8e8'}" stroke="#999"/><circle cx="144.5" cy="49.5" r="2.6" fill="${on ? '#fffbe0' : '#bbb'}"/>`;
+  if (on) s += `<circle cx="144.5" cy="49.5" r="9" fill="#fff6c8" opacity=".55"/>`;
+  s += `<rect x="128" y="62" width="5" height="4" rx="1" fill="${run ? '#ff4a3d' : '#5a2a28'}"/>`;
+  s += `<rect x="168" y="14" width="26" height="22" rx="5" fill="#c8cdd1" stroke="#8b9399"/><rect x="180" y="19" width="10" height="12" rx="3" fill="#5f666c"/><text x="164" y="27" class="silkpin" text-anchor="end">USB</text>`;
+  s += `<rect x="168" y="64" width="26" height="22" rx="5" fill="#c8cdd1" stroke="#8b9399"/><rect x="180" y="69" width="10" height="12" rx="3" fill="#5f666c"/><text x="164" y="77" class="silkpin" text-anchor="end">UART</text>`;
+  for (const p of comp.def.pins) {
+    const ty = p.y < 50 ? 12 : 88;
+    s += `<text x="${p.x}" y="${ty}" class="silkpin" text-anchor="${p.y < 50 ? 'end' : 'start'}" transform="rotate(-90 ${p.x} ${ty})" dy="2">${esc(p.short)}</text>`;
+    s += pinRect(p);
+  }
+  return s;
+}
+
+/* ---------- ESP8266 NodeMCU (Version 3 „LoLin“ mit CH340, passt auch für Version 2 mit CP2102) ---------- */
+/* Waagrecht gezeichnet: Antenne links, USB rechts. Pin-IDs wie die Beschriftung auf dem Board (D0 … D8, A0). */
+const N_HINT = {
+  D0: 'GPIO16 – kein PWM', D1: 'GPIO5 – SCL (I²C)', D2: 'GPIO4 – SDA (I²C)', D3: 'GPIO0 – Boot-Pin (FLASH-Taste) – besser nicht benutzen',
+  D4: 'GPIO2 – eingebaute blaue LED, Boot-Pin – besser nicht benutzen', D5: 'GPIO14', D6: 'GPIO12', D7: 'GPIO13', D8: 'GPIO15 – Boot-Pin: beim Start NIEDRIG (nur als Ausgang)',
+  RX: 'GPIO3 – USB-Verbindung', TX: 'GPIO1 – USB-Verbindung', A0: 'einziger analoger Eingang (0 – 3,3 V)', '5V': 'VU – 5 V vom USB-Anschluss', VIN: 'Eingang 5 – 9 V',
+  SD3: 'Flash-Speicher – nicht benutzen', SD2: 'Flash-Speicher – nicht benutzen', SD1: 'Flash-Speicher – nicht benutzen', SD0: 'Flash-Speicher – nicht benutzen',
+  CMD: 'Flash-Speicher – nicht benutzen', CLK: 'Flash-Speicher – nicht benutzen', EN: 'Freigabe (EN)', RST: 'Neustart (Reset)',
+};
+const N_TOP = [['D0', 'D0'], ['D1', 'D1'], ['D2', 'D2'], ['D3', 'D3'], ['D4', 'D4'], ['3V3', '3V'], ['GND1', 'G'], ['D5', 'D5'], ['D6', 'D6'], ['D7', 'D7'], ['D8', 'D8'],
+  ['RX', 'RX'], ['TX', 'TX'], ['GND2', 'G'], ['3V3b', '3V']];
+const N_BOT = [['A0', 'A0'], ['GND3', 'G'], ['5V', 'VU'], ['SD3', 'S3'], ['SD2', 'S2'], ['SD1', 'S1'], ['CMD', 'SC'], ['SD0', 'S0'], ['CLK', 'SK'], ['GND4', 'G'], ['3V3c', '3V'],
+  ['EN', 'EN'], ['RST', 'RST'], ['GND5', 'G'], ['VIN', 'VIN']];
+function nPinLabel(id, short) {
+  const base = /^GND/.test(id) ? 'GND' : /^3V3/.test(id) ? '3,3 V' : id;
+  return N_HINT[id] ? `${base} – ${N_HINT[id]}` : base;
+}
+const N_PINS = N_TOP.map(([id, sh], i) => ({ id, x: i * 10, y: 0, kind: 'leg', label: nPinLabel(id, sh), short: sh }))
+  .concat(N_BOT.map(([id, sh], i) => ({ id, x: i * 10, y: 100, kind: 'leg', label: nPinLabel(id, sh), short: sh })));
+const N_MCU = { kind: 'esp32', chip: '8266', gnd: 'GND1', v5: '5V', v33: '3V3', sda: 'D2', scl: 'D1', logic: 3.3, adcMax: 1023, vref: 3.3, led: 'D4', ledInv: true,
+  pwm: ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8'] };
+function renderNodeMCU(comp, st) {
+  const on = st && st.led;
+  let s = `<rect class="body" x="-34" y="-4" width="226" height="108" rx="5" fill="#1b1b1d" stroke="#000"/>`;
+  for (const [x, y] of [[-27, 3], [-27, 97], [185, 3], [185, 97]]) s += `<circle cx="${x}" cy="${y}" r="4" fill="#efe9d8" stroke="#888"/><circle cx="${x}" cy="${y}" r="2" fill="#1b1b1d"/>`;
+  s += `<rect x="-5" y="-4" width="150" height="9" fill="#111"/><rect x="-5" y="95" width="150" height="9" fill="#111"/>`;
+  // ESP-12E: Antenne (Leiterbahn) links, Metallgehäuse, blaue LED
+  s += `<rect x="-30" y="22" width="112" height="56" rx="2" fill="#151515" stroke="#333"/>`;
+  s += `<path d="M-26 28 h10 v8 h-6 v8 h6 v8 h-6 v8 h6 v8 h-10" fill="none" stroke="#c9a43a" stroke-width="1.8"/>`;
+  s += `<rect x="-6" y="25" width="84" height="50" rx="2" fill="#c9cdd1" stroke="#8b9399"/><rect x="-2" y="28" width="76" height="44" rx="1" fill="#d6dade"/>`;
+  s += `<text x="36" y="47" class="chip2" text-anchor="middle" style="font-size:7px;fill:#555">ESP8266MOD</text><text x="36" y="57" class="chip2" text-anchor="middle" style="font-size:5px;fill:#777">WiFi 2,4 GHz</text>`;
+  s += `<rect x="-14" y="66" width="5" height="4" rx="1" fill="${on ? '#4aa3ff' : '#2a3b57'}"/>`;
+  if (on) s += `<circle cx="-11.5" cy="68" r="7" fill="#4aa3ff" opacity=".35"/>`;
+  // Spannungsregler, USB-Seriell-Wandler, Tasten, Micro-USB
+  s += `<rect x="92" y="26" width="16" height="20" rx="1" fill="#141414"/><rect x="94" y="22" width="12" height="4" fill="#9aa0a5"/>`;
+  s += `<rect x="114" y="38" width="30" height="24" rx="1" fill="#141414"/><text x="129" y="52" class="chip2" text-anchor="middle" style="fill:#999">CH340</text>`;
+  for (const [x, y, t] of [[160, 12, 'RST'], [160, 74, 'FLASH']]) s += `<rect x="${x}" y="${y}" width="14" height="12" rx="1" fill="#d9dde0" stroke="#8b9399"/><rect x="${x + 4}" y="${y + 3}" width="6" height="6" rx="1" fill="#2b2b2b"/><text x="${x + 7}" y="${y + (y < 50 ? -2 : 19)}" class="silkpin" text-anchor="middle">${t}</text>`;
+  s += `<rect x="176" y="38" width="20" height="24" rx="2" fill="#c8cdd1" stroke="#8b9399"/><rect x="186" y="43" width="7" height="14" rx="1" fill="#5f666c"/>`;
+  for (const p of comp.def.pins) {
+    const ty = p.y < 50 ? 12 : 88;
+    s += `<text x="${p.x}" y="${ty}" class="silkpin" text-anchor="${p.y < 50 ? 'end' : 'start'}" transform="rotate(-90 ${p.x} ${ty})" dy="2">${esc(p.short)}</text>`;
+    s += pinRect(p);
+  }
+  return s;
+}
+
 /* ---------- Katalog ---------- */
 const L = (id, x, label) => ({ id, x, y: 0, kind: 'leg', label: label || id });
 const S = (id, x, y, label) => ({ id, x, y, kind: 'socket', label: label || id });
@@ -788,6 +878,10 @@ const COMPONENTS = {
     internal: [['GND1', 'GND2', 'GND3']], fixed: true, mcu: ESP_MCU },
   esp32exp: { name: 'ESP32 auf Expansion Board', category: 'Grundlagen', pins: EXP_PINS, render: renderESP32Exp, bbox: [-70, -74, 250, 174], props: { jump: '3.3' },
     internal: expInternal, fixed: true, mcu: ESP_MCU },
+  esp32c5: { name: 'ESP32-C5', category: 'Grundlagen', pins: C5_PINS, render: renderESP32C5, bbox: [-30, -4, 194, 104], props: {},
+    internal: [['GND1', 'GND2', 'GND3', 'GND4']], fixed: true, mcu: C5_MCU },
+  nodemcu: { name: 'ESP8266 NodeMCU', category: 'Grundlagen', pins: N_PINS, render: renderNodeMCU, bbox: [-34, -4, 196, 104], props: {},
+    internal: [['GND1', 'GND2', 'GND3', 'GND4', 'GND5'], ['3V3', '3V3b', '3V3c']], fixed: true, mcu: N_MCU },
   breadboard: { name: 'Steckplatine', category: 'Grundlagen', pins: bbPins, render: renderBreadboard, bbox: [0, 0, 330, 200], props: {}, isBreadboard: true, fixed: true },
   resistor: { name: 'Widerstand', category: 'Grundlagen', render: renderResistor, bbox: [0, -6, 40, 6],
     pins: [L('1', 0, 'Anschluss 1'), L('2', 40, 'Anschluss 2')], props: { ohm: 1000 } },

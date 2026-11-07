@@ -23,10 +23,10 @@ import (
 )
 
 var (
-	toolsMu      sync.Mutex
-	toolsBusy    bool
-	toolsKind    string // "pre" = Vorübersetzen im Hintergrund
-	withEspIndex bool   // ESP32-Paketliste nur während der ESP32-Einrichtung verwenden
+	toolsMu   sync.Mutex
+	toolsBusy bool
+	toolsKind string // "pre" = Vorübersetzen im Hintergrund
+	withIndex string // zusätzliche Paketliste (ESP32 oder ESP8266) nur während der Einrichtung verwenden
 )
 
 // Bibliotheken, die die Blöcke benötigen (Abhängigkeiten installiert arduino-cli selbst).
@@ -48,11 +48,12 @@ func libInstalled(dir string) bool {
 }
 
 const esp32Index = "https://espressif.github.io/arduino-esp32/package_esp32_index.json"
+const esp8266Index = "https://arduino.esp8266.com/stable/package_esp8266com_index.json"
 
-// Marker-Datei je Mikrocontroller: "uno" oder "esp32"
+// Marker-Datei je Mikrocontroller: "uno", "esp32" oder "esp8266"
 func markerFile(board string) string {
-	if board == "esp32" {
-		return filepath.Join(toolsDir(), "bereit-esp32.txt")
+	if board == "esp32" || board == "esp8266" {
+		return filepath.Join(toolsDir(), "bereit-"+board+".txt")
 	}
 	return filepath.Join(toolsDir(), "bereit.txt")
 }
@@ -61,7 +62,18 @@ func boardOf(fqbn string) string {
 	if strings.HasPrefix(fqbn, "esp32:") {
 		return "esp32"
 	}
+	if strings.HasPrefix(fqbn, "esp8266:") {
+		return "esp8266"
+	}
 	return "uno"
+}
+
+// Chip innerhalb der ESP32-Familie (eigene Zwischenordner, sonst wird beim Wechsel alles neu übersetzt)
+func chipOf(fqbn string) string {
+	if strings.HasPrefix(fqbn, "esp32:esp32:esp32c5") {
+		return "esp32c5"
+	}
+	return boardOf(fqbn)
 }
 
 func toolsDir() string { return filepath.Join(baseDir, "Werkzeuge") }
@@ -110,8 +122,8 @@ func cliURL() string {
 }
 
 func boardManager() string {
-	if withEspIndex {
-		return "board_manager:\n  additional_urls:\n    - " + esp32Index + "\n"
+	if withIndex != "" {
+		return "board_manager:\n  additional_urls:\n    - " + withIndex + "\n"
 	}
 	return "board_manager:\n  additional_urls: []\n"
 }
@@ -154,7 +166,7 @@ func nimbleInstalled() bool {
 func registerTools(mux *http.ServeMux) {
 	mux.HandleFunc("/api/tools", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"ready": toolsReady(), "readyEsp32": toolsReadyFor("esp32"), "os": runtime.GOOS})
+		json.NewEncoder(w).Encode(map[string]any{"ready": toolsReady(), "readyEsp32": toolsReadyFor("esp32"), "readyEsp8266": toolsReadyFor("esp8266"), "os": runtime.GOOS})
 	})
 	mux.HandleFunc("/api/tools/install", apiInstall)
 	mux.HandleFunc("/api/ports", apiPorts)
@@ -265,8 +277,15 @@ func apiInstall(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	board := r.URL.Query().Get("board")
-	withEspIndex = board == "esp32"
-	defer func() { withEspIndex = false }()
+	switch board {
+	case "esp32":
+		withIndex = esp32Index
+	case "esp8266":
+		withIndex = esp8266Index
+	default:
+		board = "uno"
+	}
+	defer func() { withIndex = "" }()
 	s.line("##SCHRITT 2 Liste der Arduino-Pakete laden")
 	if err := runCLI(s, "core", "update-index"); err != nil {
 		fail("Die Paketliste konnte nicht geladen werden. Besteht eine Internetverbindung?", nil)
@@ -280,6 +299,12 @@ func apiInstall(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		libs = append(append([]string{}, libraries...), "ESP32Servo", nimbleLib)
+	} else if board == "esp8266" {
+		s.line("##SCHRITT 3 Paket für den ESP8266 (NodeMCU) installieren (dauert einige Minuten)")
+		if err := runCLI(s, "core", "install", "esp8266:esp8266"); err != nil {
+			fail("Das ESP8266-Paket konnte nicht installiert werden.", nil)
+			return
+		}
 	} else {
 		s.line("##SCHRITT 3 Paket für Arduino Uno installieren (dauert etwas)")
 		if err := runCLI(s, "core", "install", "arduino:avr"); err != nil {
@@ -447,11 +472,16 @@ func parsePorts(out []byte) []portInfo {
 			p.Board, p.Fqbn = e.Boards[0].Name, e.Boards[0].Fqbn
 		}
 		vid := strings.ToLower(e.Port.Props["vid"])
+		pid := strings.ToLower(e.Port.Props["pid"])
 		switch {
 		case p.Board != "":
 			p.Label = p.Board
+		case vid == "0x1a86" && (pid == "0x55d4" || pid == "0x55d3" || pid == "0x55d5" || pid == "0x55d8"):
+			p.Label = "ESP32 (CH9102/CH343)"
 		case vid == "0x1a86":
-			p.Label = "Arduino-Nachbau (CH340)"
+			p.Label = "Arduino-Nachbau, NodeMCU oder ESP32 (CH340)"
+		case vid == "0x303a":
+			p.Label = "ESP32 (USB direkt am Chip)"
 		case vid == "0x10c4":
 			p.Label = "ESP32 (CP2102)"
 		case vid == "0x0403":
@@ -495,6 +525,10 @@ func sanitizeFQBNUncached(s *stream, fqbn string) (string, bool) {
 	hideWindow(cmd)
 	out, err := cmd.Output()
 	if err != nil {
+		if chipOf(base) == "esp32c5" {
+			s.line("##FEHLER Das installierte ESP32-Paket kennt den ESP32-C5 noch nicht (nötig ist Version 3.3 oder neuer). Einstellungen › „ESP32 neu einrichten“ lädt die aktuelle Version.")
+			return "", false
+		}
 		s.line("Hinweis: Zusatzeinstellungen konnten nicht geprüft werden, es gelten die Standardwerte.")
 		return base, false
 	}
@@ -531,7 +565,7 @@ func sanitizeFQBNUncached(s *stream, fqbn string) (string, bool) {
 
 // Liefert das zuletzt übersetzte Programm als .bin-Datei (für die Übertragung per Bluetooth).
 func apiFirmware(w http.ResponseWriter, r *http.Request) {
-	dir := filepath.Join(workDir(), "export-"+boardOf(r.URL.Query().Get("fqbn")))
+	dir := filepath.Join(workDir(), "export-"+chipOf(r.URL.Query().Get("fqbn")))
 	p := filepath.Join(dir, "werkstatt.ino.bin")
 	b, err := os.ReadFile(p)
 	if err != nil {
@@ -599,18 +633,21 @@ func apiUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fqbn = sanitizeFQBN(s, fqbn)
+	if fqbn == "" {
+		return
+	}
 	withBT := strings.Contains(string(code), "NimBLEDevice.h")
 	// Eigener Zwischenordner für Programme mit Bluetooth: Beim Wechsel zwischen
 	// mit/ohne Bluetooth muss so nicht jedes Mal alles neu übersetzt werden.
-	name := "build-" + boardOf(fqbn)
+	name := "build-" + chipOf(fqbn)
 	if withBT {
 		name += "-bt"
 	}
-	if strings.Contains(string(code), "<WiFi.h>") { // Kommunikation (WLAN, Webseite, Funk)
+	if strings.Contains(string(code), "<WiFi.h>") || strings.Contains(string(code), "<ESP8266WiFi.h>") { // Kommunikation (WLAN, Webseite, Funk)
 		name += "-net"
 	}
 	build := filepath.Join(workDir(), name)
-	export := filepath.Join(workDir(), "export-"+boardOf(fqbn))
+	export := filepath.Join(workDir(), "export-"+chipOf(fqbn))
 	sketch := filepath.Join(scratchDir(), "sketch", "werkstatt")
 
 	if builtAlready(build, export, hash) {

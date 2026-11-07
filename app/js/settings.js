@@ -40,11 +40,12 @@ const Settings = {
       </section>
       <section class="set-sec">
         <h3>Werkzeuge zum Hochladen</h3>
-        <p class="set-line">Arduino Uno: ${yes(info.ready)}<br>ESP32: ${yes(info.readyEsp32)}<br>Zwischenspeicher: ${info.cacheMB != null ? info.cacheMB + ' MB' : '?'}</p>
+        <p class="set-line">Arduino Uno: ${yes(info.ready)}<br>ESP32: ${yes(info.readyEsp32)}<br>ESP8266 (NodeMCU): ${yes(info.readyEsp8266)}<br>Zwischenspeicher: ${info.cacheMB != null ? info.cacheMB + ' MB' : '?'}</p>
         <div class="set-btns">
           <button class="btn small" type="button" id="setTools">Werkzeuge prüfen</button>
           <button class="btn small" type="button" data-setup="uno" ${lock}>Uno neu einrichten</button>
           <button class="btn small" type="button" data-setup="esp32" ${lock}>ESP32 neu einrichten</button>
+          <button class="btn small" type="button" data-setup="esp8266" ${lock}>ESP8266 neu einrichten</button>
           ${ro ? '' : '<button class="btn small" type="button" id="setNet" title="Alle Bibliotheken jetzt einrichten, damit die Werkstatt danach schreibgeschützt (Tauschlaufwerk) laufen kann">Alles für das Netzwerk einrichten</button>'}
           <button class="btn small" type="button" id="setCache">Zwischenspeicher leeren</button>
         </div>
@@ -105,7 +106,7 @@ const Settings = {
     try { ports = await (await fetch('api/ports', { cache: 'no-store' })).json(); } catch (e) { ports = []; }
     if (!ports.length) { sel.innerHTML = '<option value="">kein Gerät gefunden</option>'; return; }
     sel.innerHTML = ports.map(p => `<option value="${esc(p.port)}">${esc(p.port)} – ${esc(p.label)}</option>`).join('');
-    const best = ports.find(p => /esp32|cp210/i.test(p.label)) || ports.find(p => !/kein USB/.test(p.label)) || ports[0];
+    const best = ports.find(p => /esp32|cp210|ch9102|ch343/i.test(p.label)) || ports.find(p => !/kein USB/.test(p.label)) || ports[0];
     sel.value = best.port;
   },
 

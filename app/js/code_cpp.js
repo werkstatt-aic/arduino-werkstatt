@@ -173,7 +173,7 @@ Arduino.finish = function () {
     vars.push(`${listType(v.getId())} ${n}[${size}] = {0}; // Liste „${v.name}“\nint ${n}_anzahl = ${size};`);
   }
   let out = '';
-  const bt = BOARD === 'esp32' && BT_OPT.on;
+  const bt = hasBT() && BT_OPT.on;
   if (bt) {
     this.includes_.bt = '#include <NimBLEDevice.h>\n#include <Update.h>';
     this.helpers_ = Object.assign({ bt: btReceiverCode(btName(BT_OPT.name)) }, this.helpers_);
@@ -235,6 +235,8 @@ Arduino.scrub_ = function (block, code, thisOnly) {
   A['ard_wait_until'] = b => `while (!(${v(b, 'C', A.ORDER_NONE, 'true')})) {\n  delay(10); // warten, bis die Bedingung erfüllt ist\n}\n`;
   A['ard_millis'] = b => [b.getFieldValue('U') === 'S' ? '(millis() / 1000.0)' : 'millis()', A.ORDER_ATOMIC];
   A['ard_builtin_led'] = b => {
+    if (is8266()) { mode('LED_BUILTIN', 'OUTPUT'); return `digitalWrite(LED_BUILTIN, ${b.getFieldValue('V') === 'HIGH' ? 'LOW' : 'HIGH'}); // eingebaute blaue LED (leuchtet bei NIEDRIG)\n`; }
+    if (isC5()) { mode('LED_BUILTIN', 'OUTPUT'); return `digitalWrite(LED_BUILTIN, ${b.getFieldValue('V')}); // eingebaute RGB-LED (leuchtet weiß)\n`; }
     if (BOARD === 'esp32') { mode('2', 'OUTPUT'); return `digitalWrite(2, ${b.getFieldValue('V')}); // eingebaute blaue LED\n`; }
     mode('LED_BUILTIN', 'OUTPUT'); return `digitalWrite(LED_BUILTIN, ${b.getFieldValue('V')});\n`;
   };
@@ -242,7 +244,7 @@ Arduino.scrub_ = function (block, code, thisOnly) {
   A['ard_analog_write'] = b => { mode(pinNum(b), 'OUTPUT'); return `analogWrite(${pinNum(b)}, ${v(b, 'V')});\n`; };
   A['ard_servo'] = b => {
     const p = pinNum(b);
-    A.includes_.servo = BOARD === 'esp32' ? '#include <ESP32Servo.h>' : '#include <Servo.h>';
+    A.includes_.servo = BOARD === 'esp32' && !is8266() ? '#include <ESP32Servo.h>' : '#include <Servo.h>';
     A.globals_['servo' + p] = `Servo servo_${p};`;
     A.setupPre_['servo' + p] = `servo_${p}.attach(${p}, 500, 2500);`;
     return `servo_${p}.write(${v(b, 'DEG')});\n`;
@@ -368,7 +370,7 @@ void schrittmotor(int in1, int in2, int in3, int in4, long schritte, float upm)
   const apin = b => b.getFieldValue('PIN').replace(/^D/, '');
   A['ard_analog_read'] = b => [`analogRead(${apin(b)})`, A.ORDER_ATOMIC];
   A['ard_tmp36'] = b => {
-    const c = BOARD === 'esp32' ? `((analogReadMilliVolts(${apin(b)}) / 1000.0 - 0.5) * 100.0)` : `((analogRead(${apin(b)}) * 5.0 / 1023.0 - 0.5) * 100.0)`;
+    const c = is8266() ? `((analogRead(A0) * 3.3 / 1023.0 - 0.5) * 100.0)` : BOARD === 'esp32' ? `((analogReadMilliVolts(${apin(b)}) / 1000.0 - 0.5) * 100.0)` : `((analogRead(${apin(b)}) * 5.0 / 1023.0 - 0.5) * 100.0)`;
     return [b.getFieldValue('UNIT') === 'C' ? c : `(${c} * 9.0 / 5.0 + 32.0)`, A.ORDER_ATOMIC];
   };
   A['ard_ultrasonic'] = b => {
@@ -673,10 +675,57 @@ bool funkEmpfangen()
   funkNeu = false;
   return true;
 }`;
+  // ESP8266: ESP-NOW hat eine andere Schnittstelle (espnow.h)
+  const COM_RADIO_8266 = String.raw`// Funk zwischen ESP8266 und ESP32 (ESP-NOW, ohne WLAN-Router)
+uint8_t funkGruppe = 1;
+volatile bool funkNeu = false;
+char funkPuffer[201];
+String funkText = "";
+
+void funkEmpfang(uint8_t *mac, uint8_t *daten, uint8_t n)
+{
+  if (n < 1 || daten[0] != funkGruppe || funkNeu) return;
+  n = n - 1;
+  if (n > 200) n = 200;
+  memcpy(funkPuffer, daten + 1, n);
+  funkPuffer[n] = 0;
+  funkNeu = true;
+}
+
+void funkEinrichten(int gruppe)
+{
+  funkGruppe = gruppe;
+  if (WiFi.getMode() == WIFI_OFF) WiFi.mode(WIFI_STA);
+  esp_now_init();
+  esp_now_set_self_role(ESP_NOW_ROLE_COMBO);
+  esp_now_register_recv_cb(funkEmpfang);
+  uint8_t alle[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+  esp_now_add_peer(alle, ESP_NOW_ROLE_COMBO, 0, NULL, 0);
+}
+
+void funkSenden(const String &text)
+{
+  uint8_t puffer[201];
+  int n = text.length();
+  if (n > 199) n = 199;
+  puffer[0] = funkGruppe;
+  memcpy(puffer + 1, text.c_str(), n);
+  uint8_t alle[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+  esp_now_send(alle, puffer, n + 1);
+}
+
+bool funkEmpfangen()
+{
+  if (!funkNeu) return false;
+  funkText = String(funkPuffer);
+  funkNeu = false;
+  return true;
+}`;
+  const WIFI_H = () => is8266() ? '#include <ESP8266WiFi.h>' : '#include <WiFi.h>';
   const usb = () => { A.setupPre_.serial = 'Serial.begin(115200);'; A.helpers_.usb = COM_USB; };
-  const wifi = () => { A.includes_.wifi = '#include <WiFi.h>'; A.helpers_.wifi = COM_WIFI; };
-  const web = () => { A.includes_.wifi = '#include <WiFi.h>'; A.includes_.web = '#include <WebServer.h>'; A.helpers_.web = COM_WEB; };
-  const radio = () => { A.includes_.wifi = '#include <WiFi.h>'; A.includes_.radio = '#include <esp_now.h>'; A.helpers_.radio = COM_RADIO; };
+  const wifi = () => { A.includes_.wifi = WIFI_H(); A.helpers_.wifi = COM_WIFI; };
+  const web = () => { A.includes_.wifi = WIFI_H(); A.includes_.web = is8266() ? '#include <ESP8266WebServer.h>\nusing WebServer = ESP8266WebServer;' : '#include <WebServer.h>'; A.helpers_.web = COM_WEB; };
+  const radio = () => { A.includes_.wifi = WIFI_H(); A.includes_.radio = is8266() ? '#include <espnow.h>' : '#include <esp_now.h>'; A.helpers_.radio = is8266() ? COM_RADIO_8266 : COM_RADIO; };
   const str = (b, n) => `String(${v(b, n, A.ORDER_NONE, '""')})`;
   A['com_usb_avail'] = () => { usb(); return ['usbEmpfangen()', A.ORDER_ATOMIC]; };
   A['com_usb_text'] = () => { usb(); return ['usbText', A.ORDER_ATOMIC]; };
@@ -779,8 +828,8 @@ bool btEmpfangen()
   for (const k of Object.keys(A).filter(k => /^com_/.test(k))) {
     const gen = A[k];
     A[k] = b => {
-      if (BOARD === 'esp32') return gen(b);
-      return b.outputConnection ? ['0', A.ORDER_ATOMIC] : '// (Block nur mit dem ESP32 möglich)\n';
+      if (BOARD === 'esp32' && (hasBT() || !/^com_bt_/.test(k))) return gen(b);
+      return b.outputConnection ? ['0', A.ORDER_ATOMIC] : (is8266() ? '// (Bluetooth gibt es beim ESP8266 nicht)\n' : '// (Block nur mit dem ESP32 möglich)\n');
     };
   }
 

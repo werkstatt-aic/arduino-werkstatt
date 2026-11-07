@@ -5,8 +5,18 @@ const COL = {
   ctrl: '#ffab19', loop: '#e08e0b', logic: '#4aa7c2', math: '#59c059', vars: '#ff8c1a', func: '#d65cd6',
   out: '#4c97ff', inp: '#9966ff', show: '#0fa39a', neo: '#7a5cd6', kp: '#cf4f8f', mm: '#3a9a5b', mmi: '#6cc48a', mmc: '#c8742a', com: '#1e88a8', comu: '#6b7c8c', comw: '#3b6fb6', comf: '#c0563f', comb: '#2d5fa8', oled: '#3a64b0', list: '#e8603c', mot: '#5b7fa6', step: '#4a6c92',
 };
-/* Gewählter Mikrocontroller: 'uno' oder 'esp32' */
+/* Gewählter Mikrocontroller: 'uno' oder 'esp32' (ESP-Familie mit WLAN); bei 'esp32' zusätzlich der Chip:
+   'esp32' (klassischer ESP32), 'c5' (ESP32-C5) oder '8266' (ESP8266 NodeMCU – ohne Bluetooth) */
 let BOARD = 'uno';
+let ESP_CHIP = 'esp32';
+const isC5 = () => BOARD === 'esp32' && ESP_CHIP === 'c5';
+const is8266 = () => BOARD === 'esp32' && ESP_CHIP === '8266';
+const hasBT = () => BOARD === 'esp32' && ESP_CHIP !== '8266';
+/* Schlüssel für die Auswahl oben und Anzeigename */
+const CHIP_KEY = { esp32: 'esp32', c5: 'esp32c5', 8266: 'esp8266' };
+const boardKey = () => BOARD === 'esp32' ? CHIP_KEY[ESP_CHIP] : 'uno';
+const boardName = k => ({ uno: 'Arduino Uno', esp32: 'ESP32', esp32c5: 'ESP32-C5', esp8266: 'ESP8266 (NodeMCU)' })[k || boardKey()];
+const mcuKey = m => m.kind === 'esp32' ? CHIP_KEY[m.chip || 'esp32'] : 'uno';
 /* Bluetooth-Übertragung (nur ESP32): wird pro Projekt eingestellt */
 let BT_OPT = { on: false, name: 'ESP-Werkstatt' };
 const BT_UUID = { svc: '8e4f0001-6a1b-4c5e-9d2a-7765726b7374', ctrl: '8e4f0002-6a1b-4c5e-9d2a-7765726b7374', data: '8e4f0003-6a1b-4c5e-9d2a-7765726b7374' };
@@ -19,15 +29,26 @@ const UNO_ANALOG = ['A0', 'A1', 'A2', 'A3'].map(p => [p, p]); // ohne A4/A5 (I²
 /* ESP32: nur unkritische Pins. Weggelassen: Boot-Pins (0, 2, 5, 12, 15), TX0/RX0 (1, 3), Flash-Pins (6–11)
    und D21/D22 (I²C: SDA/SCL). 34, 35, 36 (VP), 39 (VN) gibt es nur als Eingang. Analog nur ADC1 (funktioniert auch mit WLAN). */
 const ESP_SAFE = [4, 13, 14, 16, 17, 18, 19, 23, 25, 26, 27, 32, 33];
+/* ESP32-C5: weggelassen D0/D1 (I²C SDA/SCL), Boot-Pins D7, D25–D28 (D27: RGB-LED), TX/RX (D11/D12), USB (D13/D14),
+   D15 (bei PSRAM belegt). Analog nur ADC1: D2–D6 (D1 ist SCL). */
+const C5_SAFE = [2, 3, 4, 5, 6, 8, 9, 10, 23, 24];
+/* ESP8266 NodeMCU: Anschlüsse heißen wie auf dem Board (D0 … D8, im Code die Konstanten D0 … D8).
+   Weggelassen: D3/D4 (Boot-Pins, D4 = eingebaute LED), RX/TX, SD-Pins. D8 nur als Ausgang (muss beim Start NIEDRIG sein). */
+const N_OUT = [['D0', 'D0'], ['D1 (SCL)', 'D1'], ['D2 (SDA)', 'D2'], ['D5', 'D5'], ['D6', 'D6'], ['D7', 'D7'], ['D8', 'D8']];
+const N_IN = N_OUT.filter(o => o[1] !== 'D8');
 const espLab = n => 'D' + n + (n === 36 ? ' (VP)' : n === 39 ? ' (VN)' : '');
 const PIN = {
-  out: () => BOARD === 'esp32' ? ESP_SAFE.map(n => [espLab(n), String(n)]) : UNO_DIGITAL,
-  inp: () => BOARD === 'esp32' ? ESP_SAFE.concat([34, 35, 36, 39]).sort((a, b) => a - b).map(n => [espLab(n), String(n)]) : UNO_DIGITAL,
+  out: () => is8266() ? N_OUT : isC5() ? C5_SAFE.map(n => ['D' + n, String(n)]) : BOARD === 'esp32' ? ESP_SAFE.map(n => [espLab(n), String(n)]) : UNO_DIGITAL,
+  inp: () => is8266() ? N_IN : isC5() ? C5_SAFE.map(n => ['D' + n, String(n)]) : BOARD === 'esp32' ? ESP_SAFE.concat([34, 35, 36, 39]).sort((a, b) => a - b).map(n => [espLab(n), String(n)]) : UNO_DIGITAL,
   pwm: () => PIN.out(), // bewusst alle Anschlüsse: die Schüler sollen selbst einen PWM-Anschluss (~) wählen
-  ana: () => BOARD === 'esp32' ? [32, 33, 34, 35, 36, 39].map(n => [espLab(n), 'D' + n]) : UNO_ANALOG,
+  ana: () => is8266() ? [['A0', 'A0']] : isC5() ? [2, 3, 4, 5, 6].map(n => ['D' + n, 'D' + n]) : BOARD === 'esp32' ? [32, 33, 34, 35, 36, 39].map(n => [espLab(n), 'D' + n]) : UNO_ANALOG,
 };
 /* Startwerte im Werkzeugkasten je nach Mikrocontroller */
-const DEF = () => BOARD === 'esp32'
+const DEF = () => is8266()
+  ? { dw: 'D5', dr: 'D6', pwm: 'D5', servo: 'D6', tone: 'D7', ana: 'A0', trig: 'D5', echo: 'D6', neo: 'D7', mA: 'D5', mB: 'D6', car: ['D5', 'D6', 'D7', 'D8'], dht: 'D5', st: ['D5', 'D6', 'D7', 'D8'], max: 1023, kpR: ['D0', 'D1', 'D2', 'D5'], kpC: ['D6', 'D7', 'D8', 'D0'] }
+  : isC5()
+  ? { dw: '4', dr: '5', pwm: '4', servo: '6', tone: '4', ana: 'D2', trig: '23', echo: '24', neo: '4', mA: '8', mB: '9', car: ['4', '5', '6', '8'], dht: '4', st: ['4', '5', '6', '8'], max: 4095, kpR: ['2', '3', '4', '5'], kpC: ['6', '8', '9', '10'] }
+  : BOARD === 'esp32'
   ? { dw: '4', dr: '4', pwm: '4', servo: '13', tone: '4', ana: 'D32', trig: '18', echo: '19', neo: '4', mA: '25', mB: '26', car: ['25', '26', '27', '14'], dht: '4', st: ['25', '26', '27', '14'], max: 4095, kpR: ['13', '14', '27', '26'], kpC: ['25', '33', '32', '23'] }
   : { dw: '2', dr: '2', pwm: '3', servo: '3', tone: '8', ana: 'A0', trig: '7', echo: '8', neo: '6', mA: '5', mB: '6', car: ['5', '6', '3', '11'], dht: '2', st: ['8', '9', '10', '11'], max: 1023, kpR: ['9', '8', '7', '6'], kpC: ['5', '4', '3', '2'] };
 const HIGHLOW = [['HOCH', 'HIGH'], ['NIEDRIG', 'LOW']];
@@ -109,7 +130,7 @@ function registerRenderer() {
 }
 
 /* Hinweis, an welchen Pins SDA und SCL liegen (wird beim Erzeugen des Blocks passend zum Mikrocontroller eingesetzt) */
-const i2cText = () => BOARD === 'esp32' ? '(SDA an D21, SCL an D22)' : '(SDA an A4, SCL an A5)';
+const i2cText = () => is8266() ? '(SDA an D2, SCL an D1)' : isC5() ? '(SDA an D0, SCL an D1)' : BOARD === 'esp32' ? '(SDA an D21, SCL an D22)' : '(SDA an A4, SCL an A5)';
 function defineBlocks() {
   setupBlocklyMessages();
   registerRenderer();
@@ -402,20 +423,20 @@ function buildToolbox(ext) {
     <block type="com_web_show"><value name="V">${num(0)}</value></block>
     <block type="com_web_button"></block>
     <block type="com_web_slider"></block>
-    <label text="Funk zwischen ESP32"></label>
+    <label text="Funk zwischen ESP32/ESP8266 (ohne Router)"></label>
     <block type="com_radio_init"><field name="G">${g}</field></block>
     <block type="com_radio_send"><value name="V">${txt('Hallo')}</value></block>
     <block type="com_radio_avail"></block>
     <block type="com_radio_text"></block>
     <block type="com_radio_num"></block>
-    <label text="Bluetooth (Handy-App oder serieller Monitor)"></label>
+${hasBT() ? `    <label text="Bluetooth (Handy-App oder serieller Monitor)"></label>
     <block type="com_bt_init"><value name="N">${txt('ESP-' + String(g).padStart(2, '0'))}</value></block>
     <block type="com_bt_send"><value name="V">${txt('Hallo')}</value></block>
     <block type="com_bt_conn"></block>
     <block type="com_bt_avail"></block>
     <block type="com_bt_text"></block>
     <block type="com_bt_num"></block>
-  </category>`;
+` : ''}  </category>`;
   }
   return x + '</xml>';
 }

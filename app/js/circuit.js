@@ -80,7 +80,7 @@ class CircuitEditor {
     this.renderAll();
     this.select({ kind: 'comp', id: c.id });
     this.app.changed();
-    if (def.mcu) this.app.onMcuAdded(def.mcu.kind, others.length > 0);
+    if (def.mcu) this.app.onMcuAdded(mcuKey(def.mcu), others.length > 0);
     return c;
   }
 
@@ -88,11 +88,19 @@ class CircuitEditor {
     this.app.pushUndo();
     const bx = Math.round((x - 165) / 10) * 10, by = Math.round((y - (withLcd ? 180 : 230)) / 10) * 10;
     const bb = makeComp('breadboard', bx, by, 0, {}, this.newId('c'));
-    const esp = BOARD === 'esp32';
-    const uno = esp ? makeComp('esp32exp', bx + 80, by + 320, 0, {}, this.newId('c')) : makeComp('uno', bx + 10, by + 260, 0, {}, this.newId('c'));
+    const c5 = isC5(), n8 = is8266(), esp = BOARD === 'esp32' && !c5 && !n8;
+    const uno = n8 ? makeComp('nodemcu', bx + 90, by + 250, 0, {}, this.newId('c')) : c5 ? makeComp('esp32c5', bx + 90, by + 250, 0, {}, this.newId('c')) : esp ? makeComp('esp32exp', bx + 80, by + 320, 0, {}, this.newId('c')) : makeComp('uno', bx + 10, by + 260, 0, {}, this.newId('c'));
     this.project.components.push(bb, uno);
     const w = (a, b, color, pts) => this.project.wires.push({ id: this.newId('w'), a, b, color, pts: pts || [] });
-    if (esp) {
+    if (n8) {
+      // NodeMCU direkt unter der Steckplatine: 3,3 V und GND (obere Leiste) auf die Stromleisten
+      w({ c: uno.id, p: '3V3' }, { c: bb.id, p: 'bp-1' }, 'rot', [[uno.x + 50, uno.y - 15], [bx - 20, uno.y - 15], [bx - 20, by + 190]]);
+      w({ c: uno.id, p: 'GND1' }, { c: bb.id, p: 'bm-2' }, 'schwarz', [[uno.x + 60, uno.y - 25], [bx - 30, uno.y - 25], [bx - 30, by + 180]]);
+    } else if (c5) {
+      // ESP32-C5 direkt unter der Steckplatine: 3,3 V und GND auf die Stromleisten
+      w({ c: uno.id, p: '3V3' }, { c: bb.id, p: 'bp-1' }, 'rot', [[uno.x, uno.y + 125], [bx - 20, uno.y + 125], [bx - 20, by + 190]]);
+      w({ c: uno.id, p: 'GND1' }, { c: bb.id, p: 'bm-2' }, 'schwarz', [[uno.x, uno.y - 20], [bx - 30, uno.y - 20], [bx - 30, by + 180]]);
+    } else if (esp) {
       // Stromleiste des Expansion Boards: 3,3 V und GND auf die Steckplatine
       w({ c: uno.id, p: 'P3V3a' }, { c: bb.id, p: 'bp-1' }, 'rot', [[uno.x + 270, uno.y + 10], [uno.x + 270, by + 225], [bx - 20, by + 225], [bx - 20, by + 190]]);
       w({ c: uno.id, p: 'PGa' }, { c: bb.id, p: 'bm-2' }, 'schwarz', [[uno.x + 280, uno.y + 70], [uno.x + 280, by + 235], [bx - 30, by + 235], [bx - 30, by + 180]]);
@@ -106,7 +114,9 @@ class CircuitEditor {
       const lcd = makeComp('lcd', bx + 100, by - 110, 0, {}, this.newId('c'));
       this.project.components.push(lcd);
       w({ c: lcd.id, p: 'GND' }, { c: bb.id, p: 'tm-2' }, 'schwarz', [[bx + 30, by - 110]]);
-      if (esp) w({ c: lcd.id, p: 'VCC' }, { c: uno.id, p: 'P5Va' }, 'rot', [[bx - 45, by - 100], [bx - 45, by + 245], [uno.x + 290, by + 245], [uno.x + 290, uno.y + 40]]); // LCD braucht 5 V
+      if (n8) w({ c: lcd.id, p: 'VCC' }, { c: uno.id, p: '5V' }, 'rot', [[bx - 45, by - 100], [bx - 45, uno.y + 135], [uno.x + 20, uno.y + 135]]); // LCD braucht 5 V (VU)
+      else if (c5) w({ c: lcd.id, p: 'VCC' }, { c: uno.id, p: '5V' }, 'rot', [[bx - 45, by - 100], [bx - 45, uno.y + 135], [uno.x + 130, uno.y + 135]]); // LCD braucht 5 V
+      else if (esp) w({ c: lcd.id, p: 'VCC' }, { c: uno.id, p: 'P5Va' }, 'rot', [[bx - 45, by - 100], [bx - 45, by + 245], [uno.x + 290, by + 245], [uno.x + 290, uno.y + 40]]); // LCD braucht 5 V
       else w({ c: lcd.id, p: 'VCC' }, { c: bb.id, p: 'tp-3' }, 'rot', [[bx + 40, by - 100]]);
     }
     this.renderAll();
@@ -179,7 +189,7 @@ class CircuitEditor {
       this.renderComp(c, g);
     }
     // Arduino nach unten, damit Kleinteile darüber liegen
-    for (const g of [...this.L.comp.querySelectorAll('.comp-uno, .comp-esp32, .comp-esp32exp')]) this.L.comp.prepend(g);
+    for (const g of [...this.L.comp.querySelectorAll('.comp-uno, .comp-esp32, .comp-esp32exp, .comp-esp32c5, .comp-nodemcu')]) this.L.comp.prepend(g);
     this.renderWires();
     this.renderSelection();
     this.markInsertions();

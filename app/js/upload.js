@@ -6,6 +6,10 @@ const ESP_FIXED_INCLUDES = '// Von der Arduino-Werkstatt ergänzt: feste Bibliot
   ['Wire', 'LiquidCrystal_I2C', 'ESP32Servo', 'Adafruit_NeoPixel', 'Keypad', 'Adafruit_GFX', 'Adafruit_SSD1306',
    'Adafruit_ADS1X15', 'Adafruit_INA219'].map(n => `#include <${n}.h>\n`).join('');
 
+const ESP8266_FIXED_INCLUDES = '// Von der Arduino-Werkstatt ergänzt: feste Bibliotheksliste (schnelleres Übersetzen)\n' +
+  ['Wire', 'LiquidCrystal_I2C', 'Servo', 'Adafruit_NeoPixel', 'Keypad', 'Adafruit_GFX', 'Adafruit_SSD1306',
+   'Adafruit_ADS1X15', 'Adafruit_INA219'].map(n => `#include <${n}.h>\n`).join('');
+
 const Uploader = {
   async streamLines(url, opts, onLine) {
     const r = await fetch(url, opts);
@@ -50,8 +54,8 @@ const Uploader = {
     }
     let info = { ready: false };
     try { info = await (await fetch('api/tools', { cache: 'no-store' })).json(); } catch (e) { /* alte Version */ }
-    const esp = BOARD === 'esp32';
-    if (esp ? info.readyEsp32 : info.ready) this.showUpload(); else this.showSetup(esp ? 'esp32' : 'uno');
+    const esp = BOARD === 'esp32', n8 = is8266();
+    if (n8 ? info.readyEsp8266 : esp ? info.readyEsp32 : info.ready) this.showUpload(); else this.showSetup(n8 ? 'esp8266' : esp ? 'esp32' : 'uno');
   },
   openUsb(app) { this.mode = 'usb'; return this.open(app);
   },
@@ -59,7 +63,20 @@ const Uploader = {
   showSetup(board) {
     const d = document.querySelector('#dlg');
     this.setupBoard = board;
-    const esp = board === 'esp32';
+    const esp = board === 'esp32', n8 = board === 'esp8266';
+    if (n8) {
+      this.app.dialog(`<h2>Werkzeuge einrichten für den ESP8266 (NodeMCU)</h2>
+      <p>Zum Übertragen braucht die Werkstatt einmalig das Paket für den <b>ESP8266</b> (etwa 300 MB, einige Minuten) und die Bibliotheken für LCD, NeoPixel, Tastenfeld, Messmodule, OLED und DHT.</p>
+      <p>Dafür ist <b>einmal eine Internetverbindung</b> nötig. Alles landet im Ordner <b>„Werkzeuge“</b> neben der Startdatei.</p>
+      <div class="up-steps" id="upSteps" hidden></div>
+      <div class="up-bar" id="upBar" hidden><div></div></div>
+      <div class="up-msg" id="upMsg"></div>
+      <details class="up-log" id="upLogBox" hidden><summary>Details anzeigen</summary><pre id="upLog"></pre></details>
+      <div class="dlg-btns"><button class="btn" value="cancel" id="upClose">Schließen</button><button class="btn primary" type="button" id="upGo">Jetzt einrichten</button></div>`);
+      document.querySelector('#upGo').onclick = () => this.runSetup();
+      d.oncancel = e => { if (this.busy) e.preventDefault(); };
+      return;
+    }
     this.app.dialog(`<h2>Werkzeuge einrichten${esp ? ' für den ESP32' : ''}</h2>
       <p>Zum Übertragen braucht die Werkstatt einmalig das offizielle Arduino-Übersetzungsprogramm, das Paket für den ${esp ? '<b>ESP32</b>' : 'Arduino Uno'} und die Bibliotheken für LCD, Servo, NeoPixel, Tastenfeld, Messmodule, OLED und DHT-Sensor.</p>
       <p>Dafür ist <b>einmal eine Internetverbindung</b> nötig (${esp ? 'etwa 1 GB, das ESP32-Paket ist groß. Das dauert eine Weile' : 'etwa 250 MB, einige Minuten'}). Alles landet im Ordner <b>„Werkzeuge“</b> neben der Startdatei. Diesen Ordner kann man danach auf andere Sticks kopieren, dann ist dort keine Einrichtung mehr nötig.</p>
@@ -135,14 +152,15 @@ const Uploader = {
 
   showUpload() {
     const d = document.querySelector('#dlg');
-    const esp = BOARD === 'esp32';
-    const fq = esp ? 'esp32:esp32:esp32:PartitionScheme=min_spiffs' : 'arduino:avr:uno';
+    const bt = hasBT(), n8 = is8266();
+    const fq = n8 ? 'esp8266:esp8266:nodemcuv2' : BOARD === 'esp32' ? `esp32:esp32:${isC5() ? 'esp32c5' : 'esp32'}:PartitionScheme=min_spiffs` : 'arduino:avr:uno';
+    const esp = bt; // Bluetooth-Teile nur bei ESP32-Chips
     this.mode = this.mode === 'bt' && esp ? 'bt' : 'usb';
-    this.app.dialog(`<h2>${esp ? 'Auf den ESP32 übertragen' : 'Auf den Arduino übertragen'}</h2>
+    this.app.dialog(`<h2>Auf den ${n8 ? 'ESP8266' : BOARD === 'esp32' ? boardName() : 'Arduino'} übertragen</h2>
       ${esp ? `<div class="seg small up-mode"><button type="button" data-mode="usb">USB-Kabel</button><button type="button" data-mode="bt">Bluetooth</button></div>` : ''}
       <div id="upUsb">
         <div class="up-row">
-          <label>Mikrocontroller <select id="upBoard" disabled><option value="${fq}">${esp ? 'ESP32' : 'Arduino Uno'}</option></select></label>
+          <label>Mikrocontroller <select id="upBoard" disabled><option value="${fq}">${esc(boardName())}</option></select></label>
           <label>Anschluss <select id="upPort"><option value="">wird gesucht …</option></select></label>
           <button class="btn small" type="button" id="upRefresh" title="Anschlüsse neu suchen">↻</button>
         </div>
@@ -203,18 +221,22 @@ const Uploader = {
     if (!ports.length) {
       sel.innerHTML = '<option value="">kein Arduino gefunden</option>';
       hint.className = 'up-hint warn';
-      hint.textContent = BOARD === 'esp32'
+      hint.textContent = is8266()
+        ? 'Stecke den NodeMCU per USB-Kabel an. Wird er nicht gefunden, fehlt eventuell der Treiber „CH340“ (Version 3) bzw. „CP210x“ (Version 2). Manche Kabel können nur laden und keine Daten übertragen.'
+        : isC5()
+        ? 'Stecke das USB-Kabel in die Buchse „UART“ am ESP32-C5. Wird er nicht gefunden, fehlt eventuell der Treiber „CH343“ (WCH) bzw. „CP210x“. Manche Kabel können nur laden und keine Daten übertragen.'
+        : BOARD === 'esp32'
         ? 'Stecke das USB-Kabel direkt in die Buchse am ESP32, nicht in die Buchsen am Expansion Board (die liefern nur Strom). Wird der ESP32 nicht gefunden, fehlt eventuell der Treiber „CP210x“ (Silicon Labs). Manche Kabel können nur laden und keine Daten übertragen.'
         : 'Stecke den Arduino per USB an. Wird er auch dann nicht gefunden, fehlt bei Nachbauten oft der Treiber „CH340“ (Windows lädt ihn meist automatisch über Windows Update).';
       return;
     }
     sel.innerHTML = ports.map(p => `<option value="${esc(p.port)}">${esc(p.port)} – ${esc(p.label)}</option>`).join('');
-    const want = BOARD === 'esp32' ? /esp32|cp210/i : /arduino|ch340/i;
+    const want = is8266() ? /ch340|cp210|esp/i : BOARD === 'esp32' ? /esp32|cp210|ch9102|ch343/i : /arduino|ch340/i;
     const best = ports.find(p => p.port === prev) || ports.find(p => want.test(p.label)) || ports.find(p => !/kein USB/.test(p.label)) || ports[0];
     sel.value = best.port;
     const usb = ports.filter(p => !/kein USB/.test(p.label));
     hint.className = 'up-hint'; hint.textContent = usb.length > 1 ? 'Mehrere USB-Geräte gefunden. Prüfe, ob der richtige Anschluss gewählt ist.' : '';
-    if (BOARD === 'esp32' && !ports.some(p => /esp32|cp210/i.test(p.label))) { hint.className = 'up-hint warn'; hint.textContent = 'Kein ESP32 erkannt. Das USB-Kabel muss direkt in die Buchse am ESP32, nicht ins Expansion Board.'; }
+    if (BOARD === 'esp32' && !ports.some(p => /esp32|cp210|ch340|ch9102|ch343/i.test(p.label))) { hint.className = 'up-hint warn'; hint.textContent = is8266() ? 'Kein NodeMCU erkannt. Prüfe das USB-Kabel.' : isC5() ? 'Kein ESP32-C5 erkannt. Das USB-Kabel gehört in die Buchse „UART“.' : 'Kein ESP32 erkannt. Das USB-Kabel muss direkt in die Buchse am ESP32, nicht ins Expansion Board.'; }
   },
 
   async runUpload() {
@@ -258,7 +280,10 @@ const Uploader = {
       // ESP32: immer dieselben Bibliotheken einbinden. Sonst übersetzt arduino-cli bei jedem
       // Wechsel der Bibliotheken (anderes Projekt) alle Bibliotheken neu – das dauert lange.
       // Nicht benutzte Teile entfernt der Linker wieder.
-      if (BOARD === 'esp32') {
+      if (is8266()) {
+        const net = c.includes('<ESP8266WiFi.h>') ? '#include <ESP8266WiFi.h>\n#include <ESP8266WebServer.h>\n#include <espnow.h>\n' : '';
+        c = net + ESP8266_FIXED_INCLUDES + c; // WLAN zuerst: Keypad.h definiert CLOSED, das die WLAN-Bibliothek (lwIP) selbst braucht
+      } else if (BOARD === 'esp32') {
         // WLAN-Teile nur, wenn das Programm sie nutzt: sie machen das Programm um gut 500 KB größer
         const net = c.includes('<WiFi.h>') ? '#include <WiFi.h>\n#include <WebServer.h>\n#include <esp_now.h>\n' : '';
         c = ESP_FIXED_INCLUDES + net + (c.includes('<NimBLEDevice.h>') ? '#include <NimBLEDevice.h>\n#include <Update.h>\n' : '') + c;

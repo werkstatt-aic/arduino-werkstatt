@@ -17,13 +17,13 @@ const Advisor = {
 
     /* ---------- Grundgerüst ---------- */
     if (!mcu) {
-      add('tip', `Zieh zuerst die Vorlage „${BOARD === 'esp32' ? 'ESP32' : 'Arduino'} + Steckplatine“ aus der Bauteilleiste auf die Werkbank. Dann sind Mikrocontroller und Steckplatine schon verbunden.`);
-    } else if (mcu.def.mcu.kind !== BOARD) {
-      add('error', `In der Schaltung steckt ein ${mcu.def.mcu.kind === 'esp32' ? 'ESP32' : 'Arduino Uno'}, oben ist aber „${BOARD === 'esp32' ? 'ESP32' : 'Arduino Uno'}“ ausgewählt.`, { comp: mcu.id });
+      add('tip', `Zieh zuerst die Vorlage „${is8266() ? 'NodeMCU' : isC5() ? 'ESP32-C5' : BOARD === 'esp32' ? 'ESP32' : 'Arduino'} + Steckplatine“ aus der Bauteilleiste auf die Werkbank. Dann sind Mikrocontroller und Steckplatine schon verbunden.`);
+    } else if (mcuKey(mcu.def.mcu) !== boardKey()) {
+      add('error', `In der Schaltung steckt ein ${boardName(mcuKey(mcu.def.mcu))}, oben ist aber „${boardName()}“ ausgewählt.`, { comp: mcu.id });
     }
 
     const nl = buildNetlist(P);
-    const M = mcu ? mcu.def.mcu : (BOARD === 'esp32' ? ESP_MCU : UNO_MCU);
+    const M = mcu ? mcu.def.mcu : (is8266() ? N_MCU : isC5() ? C5_MCU : BOARD === 'esp32' ? ESP_MCU : UNO_MCU);
     const net = (c, p) => nl.net(c.id, p);
     const mnet = p => mcu ? nl.net(mcu.id, p) : -1;
     const n5 = mnet(M.v5), n33 = mnet(M.v33), g = mnet(M.gnd);
@@ -108,7 +108,7 @@ const Advisor = {
       }
       const unused = new Map(); // Bauteil → nicht benutzte Anschlüsse
       for (const p of ioPins) {
-        if (used.has(p) || (i2c && /^(A4|A5|D21|D22)$/.test(p))) continue;
+        if (used.has(p) || (i2c && (/^(A4|A5)$/.test(p) || p === M.sda || p === M.scl))) continue;
         const n = mnet(p), att = others(n, mcu).map(compOf).filter(c => c && !c.def.isBreadboard && c.type !== 'resistor');
         if (n === n5 || n === g || !att.length) continue;
         if (!unused.has(att[0])) unused.set(att[0], []);
