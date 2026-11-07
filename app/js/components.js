@@ -795,77 +795,103 @@ function c5PinLabel(id, short) {
   return C5_HINT[id] ? `${base} – ${C5_HINT[id]}` : base;
 }
 const C5_PINS = C5_TOP.map(([id, sh], i) => ({ id, x: i * 10, y: 0, kind: 'leg', label: c5PinLabel(id, sh), short: sh }))
-  .concat(C5_BOT.map(([id, sh], i) => ({ id, x: i * 10, y: 100, kind: 'leg', label: c5PinLabel(id, sh), short: sh })));
+  .concat(C5_BOT.map(([id, sh], i) => ({ id, x: i * 10, y: 90, kind: 'leg', label: c5PinLabel(id, sh), short: sh })));
 const C5_MCU = { kind: 'esp32', chip: 'c5', gnd: 'GND4', v5: '5V', v33: '3V3', sda: 'D0', scl: 'D1', logic: 3.3, adcMax: 4095, vref: 3.3, led: 'D27', pwm: null };
 function renderESP32C5(comp, st) {
   const on = st && st.led, run = st && st.running;
-  let s = `<rect class="body" x="-30" y="-4" width="222" height="108" rx="4" fill="#1f2a3a" stroke="#0d121a"/>`;
-  s += `<rect x="-5" y="-4" width="160" height="9" fill="#111"/><rect x="-5" y="95" width="160" height="9" fill="#111"/>`;
-  // Funkmodul mit Antenne
-  s += `<rect x="-26" y="26" width="128" height="48" rx="2" fill="#1d1d1f" stroke="#3a3a3a"/>`;
-  s += `<path d="M-22 32 h12 v6 h-8 v6 h8 v6 h-8 v6 h8 v6 h-8 v6 h12" fill="none" stroke="#c9a43a" stroke-width="1.8"/>`;
-  s += `<rect x="4" y="29" width="94" height="42" rx="2" fill="#c9cdd1" stroke="#8b9399"/><rect x="8" y="32" width="86" height="36" rx="1" fill="#d6dade"/>`;
-  s += `<text x="51" y="48" class="chip2" text-anchor="middle" style="font-size:6.5px;fill:#555">ESP32-C5-WROOM-1</text><text x="51" y="58" class="chip2" text-anchor="middle" style="font-size:5px;fill:#777">WiFi 6 (2,4 + 5 GHz) · BLE</text>`;
-  // USB-Seriell-Wandler, Tasten, RGB-LED, zwei USB-C-Buchsen
-  s += `<rect x="112" y="40" width="18" height="18" rx="1" fill="#141414"/>`;
-  for (const [x, y, t] of [[138, 18, 'RST'], [138, 70, 'BOOT']]) s += `<rect x="${x}" y="${y}" width="14" height="11" rx="1" fill="#d9dde0" stroke="#8b9399"/><rect x="${x + 4}" y="${y + 3}" width="6" height="5" rx="1" fill="#2b2b2b"/><text x="${x + 7}" y="${y + (y < 50 ? -2 : 18)}" class="silkpin" text-anchor="middle">${t}</text>`;
-  s += `<rect x="140" y="45" width="9" height="9" rx="1.5" fill="${on ? '#fff' : '#e8e8e8'}" stroke="#999"/><circle cx="144.5" cy="49.5" r="2.6" fill="${on ? '#fffbe0' : '#bbb'}"/>`;
-  if (on) s += `<circle cx="144.5" cy="49.5" r="9" fill="#fff6c8" opacity=".55"/>`;
-  s += `<rect x="128" y="62" width="5" height="4" rx="1" fill="${run ? '#ff4a3d' : '#5a2a28'}"/>`;
-  s += `<rect x="168" y="14" width="26" height="22" rx="5" fill="#c8cdd1" stroke="#8b9399"/><rect x="180" y="19" width="10" height="12" rx="3" fill="#5f666c"/><text x="164" y="27" class="silkpin" text-anchor="end">USB</text>`;
-  s += `<rect x="168" y="64" width="26" height="22" rx="5" fill="#c8cdd1" stroke="#8b9399"/><rect x="180" y="69" width="10" height="12" rx="3" fill="#5f666c"/><text x="164" y="77" class="silkpin" text-anchor="end">UART</text>`;
-  for (const p of comp.def.pins) {
-    const ty = p.y < 50 ? 12 : 88;
-    s += `<text x="${p.x}" y="${ty}" class="silkpin" text-anchor="${p.y < 50 ? 'end' : 'start'}" transform="rotate(-90 ${p.x} ${ty})" dy="2">${esc(p.short)}</text>`;
-    s += pinRect(p);
-  }
-  return s;
+  const res = (x, y, v) => `<rect x="${x}" y="${y}" width="${v ? 3 : 5}" height="${v ? 5 : 3}" fill="#151515"/><rect x="${x}" y="${y}" width="${v ? 3 : 1.1}" height="${v ? 1.1 : 3}" fill="#c9cdd1"/><rect x="${v ? x : x + 3.9}" y="${v ? y + 3.9 : y}" width="${v ? 3 : 1.1}" height="${v ? 1.1 : 3}" fill="#c9cdd1"/>`;
+  const cap = (x, y, v) => `<rect x="${x}" y="${y}" width="${v ? 3 : 5}" height="${v ? 5 : 3}" fill="#b98a5a"/><rect x="${x}" y="${y}" width="${v ? 3 : 1.1}" height="${v ? 1.1 : 3}" fill="#c9cdd1"/><rect x="${v ? x : x + 3.9}" y="${v ? y + 3.9 : y}" width="${v ? 3 : 1.1}" height="${v ? 1.1 : 3}" fill="#c9cdd1"/>`;
+  const hole = (x, y) => `<circle cx="${x}" cy="${y}" r="3.4" fill="#d8c27a" stroke="#8a7a3a" stroke-width=".6"/><circle cx="${x}" cy="${y}" r="1.8" fill="#0d0e10"/>`;
+  const labels = () => comp.def.pins.map(p => { const ty = p.y < 45 ? 11 : 79; return `<text x="${p.x}" y="${ty}" class="silkpin" text-anchor="${p.y < 45 ? 'end' : 'start'}" transform="rotate(-90 ${p.x} ${ty})" dy="2">${esc(p.short)}</text>` + pinRect(p); }).join('');
+  const btn = (x, y, t, ty) => `<rect x="${x}" y="${y}" width="13" height="12" rx="1.2" fill="#e3e6e8" stroke="#8b9399"/><circle cx="${x + 6.5}" cy="${y + 6}" r="3.4" fill="#2b2b2b"/><text x="${x + 6.5}" y="${ty}" class="chip2" text-anchor="middle" style="fill:#ddd;font-size:4.2px">${t}</text>`;
+  const usb = (x, y) => `<rect x="${x}" y="${y}" width="24" height="19" rx="4" fill="#c8cdd1" stroke="#7d868c"/><rect x="${x + 2}" y="${y + 2}" width="20" height="15" rx="3" fill="#9aa1a7"/><rect x="${x + 10}" y="${y + 4.5}" width="11" height="10" rx="3" fill="#4d545a"/><rect x="${x + 13}" y="${y + 7.5}" width="6" height="4" rx="1" fill="#2e3338"/>`;
+  let s = `<rect class="body" x="-30" y="-6" width="232" height="102" rx="4" fill="#1d1f24" stroke="#08090b"/>`;
+  s += `<rect x="-27" y="-3" width="226" height="96" rx="3" fill="none" stroke="#2c3038" stroke-width=".8"/>`;
+  s += hole(-23, 2) + hole(-23, 88) + hole(195, 2) + hole(195, 88);
+  s += `<rect x="-5" y="-4" width="160" height="9" fill="#111"/><rect x="-5" y="85" width="160" height="9" fill="#111"/>`;
+  // Funkmodul ESP32-C5-WROOM-1: Antennenbereich links, Metallgehäuse rechts
+  s += `<rect x="-27" y="20" width="106" height="50" rx="2" fill="#24262a" stroke="#3b3f45"/>`;
+  s += `<path d="M-24 25 h9 v6 h-6 v6 h6 v6 h-6 v6 h6 v6 h-6 v6 h6 v4 h-9" fill="none" stroke="#b8923a" stroke-width="1.5"/>`;
+  s += `<rect x="-10" y="22" width="87" height="46" rx="2" fill="#c3c8cc" stroke="#8b9399"/><rect x="-7" y="25" width="81" height="40" rx="1" fill="#d3d7db"/>`;
+  s += `<text x="33" y="36" class="chip2" text-anchor="middle" style="font-size:6.2px;fill:#444;font-weight:600">ESP32-C5-WROOM-1</text>`;
+  s += `<text x="33" y="44" class="chip2" text-anchor="middle" style="font-size:4px;fill:#666">WiFi 6 · 2,4 + 5 GHz · BLE 5</text>`;
+  s += `<rect x="-2" y="49" width="12" height="12" fill="none" stroke="#777" stroke-width=".7"/><path d="M0 51h3v3h-3zM6 51h2.5v2.5h-2.5zM0 57h2.5v2.5h-2.5zM4 55h2v2h-2zM6.5 57.5h2v2h-2z" fill="#777"/>`;
+  s += `<text x="14" y="54" class="chip2" style="font-size:3.6px;fill:#777">FCC ID · CE</text><text x="14" y="60" class="chip2" style="font-size:3.6px;fill:#777">N16R8</text>`;
+  // DC/DC-Wandler mit Spule, Power-LED, USB-Seriell-Wandler, Quarz, kleine Bauteile
+  s += `<rect x="86" y="20" width="13" height="13" rx="1.5" fill="#3a3d42"/><circle cx="92.5" cy="26.5" r="3.8" fill="#55595f"/><rect x="102" y="21" width="7" height="9" rx="1" fill="#151515"/>`;
+  s += `<rect x="86" y="37" width="5" height="3" rx=".6" fill="${run ? '#ff3d2e' : '#5a2a28'}"/>${run ? '<circle cx="88.5" cy="38.5" r="4.5" fill="#ff5a4a" opacity=".35"/>' : ''}<text x="93" y="40" class="chip2" style="fill:#bbb">PWR</text>`;
+  s += `<rect x="96" y="44" width="16" height="16" rx="1" fill="#141414"/><circle cx="99" cy="47" r=".9" fill="#555"/><text x="104" y="53.5" class="chip2" text-anchor="middle" style="fill:#888;font-size:3px">USB-UART</text>`;
+  s += `<rect x="84" y="62" width="9" height="5" rx="1" fill="#c9cdd1"/><rect x="85.5" y="63" width="6" height="3" fill="#8b9399"/>`;
+  for (const [x, y, v] of [[86, 44, 1], [90, 44, 1], [113, 21, 0], [113, 27, 0], [115, 46, 1], [115, 54, 1], [97, 62, 0]]) s += res(x, y, v);
+  for (const [x, y, v] of [[104, 62, 0], [110, 62, 0], [113, 34, 0], [86, 52, 1]]) s += cap(x, y, v);
+  // J5 (Strommessung)
+  s += `<rect x="122" y="24" width="7" height="13" fill="#111"/><rect x="123.5" y="25.5" width="4" height="4" fill="#d7b43d"/><rect x="123.5" y="31.5" width="4" height="4" fill="#d7b43d"/><text x="125.5" y="42" class="chip2" text-anchor="middle" style="fill:#bbb">J5</text>`;
+  // Lade-LED, RGB-LED, dahinter RST – BAT – BOOT, ganz außen zwei USB-C-Buchsen
+  s += `<rect x="123" y="56" width="5" height="3" rx=".6" fill="#5a4a1c"/><text x="125.5" y="65" class="chip2" text-anchor="middle" style="fill:#bbb">CHG</text>`;
+  s += `<rect x="134" y="40" width="10" height="10" rx="1.5" fill="${on ? '#ffffff' : '#ecebe6'}" stroke="#999"/><circle cx="139" cy="45" r="3" fill="${on ? '#fffbe0' : '#c9c9c4'}"/>${on ? '<circle cx="139" cy="45" r="10" fill="#fff6c8" opacity=".55"/>' : ''}<text x="139" y="37" class="chip2" text-anchor="middle" style="fill:#bbb">RGB</text>`;
+  s += btn(160, 14, 'RST', 31) + btn(160, 64, 'BOOT', 62);
+  s += `<rect x="161" y="33" width="12" height="24" rx="1" fill="#f4f1e8" stroke="#b7b2a5"/><rect x="163" y="36" width="8" height="18" fill="#e2ddcf"/><rect x="165" y="39" width="2" height="4" fill="#c9a43a"/><rect x="165" y="47" width="2" height="4" fill="#c9a43a"/>`;
+  s += `<text x="157" y="45" class="chip2" text-anchor="middle" style="fill:#ddd;font-size:4.2px" transform="rotate(-90 157 45)">BAT</text>`;
+  s += usb(178, 6) + usb(178, 65);
+  s += `<text x="194" y="45" class="chip2" text-anchor="middle" style="fill:#ddd;font-size:4.2px;font-weight:600" transform="rotate(-90 194 45)">ESP32-C5</text>`;
+  return s + labels();
 }
 
-/* ---------- ESP8266 NodeMCU (Version 3 „LoLin“ mit CH340, passt auch für Version 2 mit CP2102) ---------- */
+/* ---------- ESP8266 NodeMCU Version 2 („Amica“, CP2102, Leistenabstand 0,9 Zoll) ---------- */
 /* Waagrecht gezeichnet: Antenne links, USB rechts. Pin-IDs wie die Beschriftung auf dem Board (D0 … D8, A0). */
 const N_HINT = {
   D0: 'GPIO16 – kein PWM', D1: 'GPIO5 – SCL (I²C)', D2: 'GPIO4 – SDA (I²C)', D3: 'GPIO0 – Boot-Pin (FLASH-Taste) – besser nicht benutzen',
   D4: 'GPIO2 – eingebaute blaue LED, Boot-Pin – besser nicht benutzen', D5: 'GPIO14', D6: 'GPIO12', D7: 'GPIO13', D8: 'GPIO15 – Boot-Pin: beim Start NIEDRIG (nur als Ausgang)',
-  RX: 'GPIO3 – USB-Verbindung', TX: 'GPIO1 – USB-Verbindung', A0: 'einziger analoger Eingang (0 – 3,3 V)', '5V': 'VU – 5 V vom USB-Anschluss', VIN: 'Eingang 5 – 9 V',
+  RX: 'GPIO3 – USB-Verbindung', TX: 'GPIO1 – USB-Verbindung', A0: 'einziger analoger Eingang (0 – 3,3 V)', '5V': 'Vin – etwa 5 V vom USB-Anschluss (oder Eingang 5 – 9 V)', RSV1: 'nicht benutzt', RSV2: 'nicht benutzt',
   SD3: 'Flash-Speicher – nicht benutzen', SD2: 'Flash-Speicher – nicht benutzen', SD1: 'Flash-Speicher – nicht benutzen', SD0: 'Flash-Speicher – nicht benutzen',
   CMD: 'Flash-Speicher – nicht benutzen', CLK: 'Flash-Speicher – nicht benutzen', EN: 'Freigabe (EN)', RST: 'Neustart (Reset)',
 };
-const N_TOP = [['D0', 'D0'], ['D1', 'D1'], ['D2', 'D2'], ['D3', 'D3'], ['D4', 'D4'], ['3V3', '3V'], ['GND1', 'G'], ['D5', 'D5'], ['D6', 'D6'], ['D7', 'D7'], ['D8', 'D8'],
-  ['RX', 'RX'], ['TX', 'TX'], ['GND2', 'G'], ['3V3b', '3V']];
-const N_BOT = [['A0', 'A0'], ['GND3', 'G'], ['5V', 'VU'], ['SD3', 'S3'], ['SD2', 'S2'], ['SD1', 'S1'], ['CMD', 'SC'], ['SD0', 'S0'], ['CLK', 'SK'], ['GND4', 'G'], ['3V3c', '3V'],
-  ['EN', 'EN'], ['RST', 'RST'], ['GND5', 'G'], ['VIN', 'VIN']];
+const N_TOP = [['D0', 'D0'], ['D1', 'D1'], ['D2', 'D2'], ['D3', 'D3'], ['D4', 'D4'], ['3V3', '3V3'], ['GND1', 'GND'], ['D5', 'D5'], ['D6', 'D6'], ['D7', 'D7'], ['D8', 'D8'],
+  ['RX', 'RX'], ['TX', 'TX'], ['GND2', 'GND'], ['3V3b', '3V3']];
+const N_BOT = [['A0', 'A0'], ['RSV1', 'RSV'], ['RSV2', 'RSV'], ['SD3', 'SD3'], ['SD2', 'SD2'], ['SD1', 'SD1'], ['CMD', 'CMD'], ['SD0', 'SD0'], ['CLK', 'CLK'], ['GND4', 'GND'], ['3V3c', '3V3'],
+  ['EN', 'EN'], ['RST', 'RST'], ['GND5', 'GND'], ['5V', 'Vin']];
 function nPinLabel(id, short) {
-  const base = /^GND/.test(id) ? 'GND' : /^3V3/.test(id) ? '3,3 V' : id;
+  const base = /^GND/.test(id) ? 'GND' : /^3V3/.test(id) ? '3,3 V' : /^RSV/.test(id) ? 'RSV' : id === '5V' ? 'Vin' : id;
   return N_HINT[id] ? `${base} – ${N_HINT[id]}` : base;
 }
 const N_PINS = N_TOP.map(([id, sh], i) => ({ id, x: i * 10, y: 0, kind: 'leg', label: nPinLabel(id, sh), short: sh }))
-  .concat(N_BOT.map(([id, sh], i) => ({ id, x: i * 10, y: 100, kind: 'leg', label: nPinLabel(id, sh), short: sh })));
+  .concat(N_BOT.map(([id, sh], i) => ({ id, x: i * 10, y: 90, kind: 'leg', label: nPinLabel(id, sh), short: sh })));
 const N_MCU = { kind: 'esp32', chip: '8266', gnd: 'GND1', v5: '5V', v33: '3V3', sda: 'D2', scl: 'D1', logic: 3.3, adcMax: 1023, vref: 3.3, led: 'D4', ledInv: true,
   pwm: ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8'] };
 function renderNodeMCU(comp, st) {
   const on = st && st.led;
-  let s = `<rect class="body" x="-34" y="-4" width="226" height="108" rx="5" fill="#1b1b1d" stroke="#000"/>`;
-  for (const [x, y] of [[-27, 3], [-27, 97], [185, 3], [185, 97]]) s += `<circle cx="${x}" cy="${y}" r="4" fill="#efe9d8" stroke="#888"/><circle cx="${x}" cy="${y}" r="2" fill="#1b1b1d"/>`;
-  s += `<rect x="-5" y="-4" width="150" height="9" fill="#111"/><rect x="-5" y="95" width="150" height="9" fill="#111"/>`;
-  // ESP-12E: Antenne (Leiterbahn) links, Metallgehäuse, blaue LED
-  s += `<rect x="-30" y="22" width="112" height="56" rx="2" fill="#151515" stroke="#333"/>`;
-  s += `<path d="M-26 28 h10 v8 h-6 v8 h6 v8 h-6 v8 h6 v8 h-10" fill="none" stroke="#c9a43a" stroke-width="1.8"/>`;
-  s += `<rect x="-6" y="25" width="84" height="50" rx="2" fill="#c9cdd1" stroke="#8b9399"/><rect x="-2" y="28" width="76" height="44" rx="1" fill="#d6dade"/>`;
-  s += `<text x="36" y="47" class="chip2" text-anchor="middle" style="font-size:7px;fill:#555">ESP8266MOD</text><text x="36" y="57" class="chip2" text-anchor="middle" style="font-size:5px;fill:#777">WiFi 2,4 GHz</text>`;
-  s += `<rect x="-14" y="66" width="5" height="4" rx="1" fill="${on ? '#4aa3ff' : '#2a3b57'}"/>`;
-  if (on) s += `<circle cx="-11.5" cy="68" r="7" fill="#4aa3ff" opacity=".35"/>`;
-  // Spannungsregler, USB-Seriell-Wandler, Tasten, Micro-USB
-  s += `<rect x="92" y="26" width="16" height="20" rx="1" fill="#141414"/><rect x="94" y="22" width="12" height="4" fill="#9aa0a5"/>`;
-  s += `<rect x="114" y="38" width="30" height="24" rx="1" fill="#141414"/><text x="129" y="52" class="chip2" text-anchor="middle" style="fill:#999">CH340</text>`;
-  for (const [x, y, t] of [[160, 12, 'RST'], [160, 74, 'FLASH']]) s += `<rect x="${x}" y="${y}" width="14" height="12" rx="1" fill="#d9dde0" stroke="#8b9399"/><rect x="${x + 4}" y="${y + 3}" width="6" height="6" rx="1" fill="#2b2b2b"/><text x="${x + 7}" y="${y + (y < 50 ? -2 : 19)}" class="silkpin" text-anchor="middle">${t}</text>`;
-  s += `<rect x="176" y="38" width="20" height="24" rx="2" fill="#c8cdd1" stroke="#8b9399"/><rect x="186" y="43" width="7" height="14" rx="1" fill="#5f666c"/>`;
-  for (const p of comp.def.pins) {
-    const ty = p.y < 50 ? 12 : 88;
-    s += `<text x="${p.x}" y="${ty}" class="silkpin" text-anchor="${p.y < 50 ? 'end' : 'start'}" transform="rotate(-90 ${p.x} ${ty})" dy="2">${esc(p.short)}</text>`;
-    s += pinRect(p);
-  }
-  return s;
+  const res = (x, y, v) => `<rect x="${x}" y="${y}" width="${v ? 3 : 5}" height="${v ? 5 : 3}" fill="#151515"/><rect x="${x}" y="${y}" width="${v ? 3 : 1.1}" height="${v ? 1.1 : 3}" fill="#c9cdd1"/><rect x="${v ? x : x + 3.9}" y="${v ? y + 3.9 : y}" width="${v ? 3 : 1.1}" height="${v ? 1.1 : 3}" fill="#c9cdd1"/>`;
+  const cap = (x, y, v) => `<rect x="${x}" y="${y}" width="${v ? 3 : 5}" height="${v ? 5 : 3}" fill="#b98a5a"/><rect x="${x}" y="${y}" width="${v ? 3 : 1.1}" height="${v ? 1.1 : 3}" fill="#c9cdd1"/><rect x="${v ? x : x + 3.9}" y="${v ? y + 3.9 : y}" width="${v ? 3 : 1.1}" height="${v ? 1.1 : 3}" fill="#c9cdd1"/>`;
+  const hole = (x, y) => `<circle cx="${x}" cy="${y}" r="3.4" fill="#d8c27a" stroke="#8a7a3a" stroke-width=".6"/><circle cx="${x}" cy="${y}" r="1.8" fill="#0d0e10"/>`;
+  const labels = () => comp.def.pins.map(p => { const ty = p.y < 45 ? 11 : 79; return `<text x="${p.x}" y="${ty}" class="silkpin" text-anchor="${p.y < 45 ? 'end' : 'start'}" transform="rotate(-90 ${p.x} ${ty})" dy="2">${esc(p.short)}</text>` + pinRect(p); }).join('');
+  const btn = (x, y, t, ty) => `<rect x="${x}" y="${y}" width="12" height="11" rx="1" fill="#e3e6e8" stroke="#8b9399"/><rect x="${x + 3}" y="${y + 2.5}" width="6" height="6" rx="1" fill="#2b2b2b"/><text x="${x + 6}" y="${ty}" class="chip2" text-anchor="middle" style="fill:#ddd;font-size:4.2px">${t}</text>`;
+  let s = `<rect class="body" x="-46" y="-6" width="222" height="102" rx="4" fill="#1a1a1c" stroke="#000"/>`;
+  s += `<rect x="-43" y="-3" width="216" height="96" rx="3" fill="none" stroke="#2b2b2e" stroke-width=".8"/>`;
+  s += hole(-39, 3) + hole(-39, 87) + hole(169, 3) + hole(169, 87);
+  s += `<rect x="-5" y="-4" width="150" height="9" fill="#111"/><rect x="-5" y="85" width="150" height="9" fill="#111"/>`;
+  // ESP-12E: Leiterplatte mit Antenne links, Metallgehäuse, blaue LED am Rand
+  s += `<rect x="-44" y="18" width="104" height="52" rx="1.5" fill="#1f1f22" stroke="#3a3a3e"/>`;
+  s += `<path d="M-41 23 h11 v6 h-8 v6 h8 v6 h-8 v6 h8 v6 h-8 v6 h8 v4 h-11" fill="none" stroke="#c9a43a" stroke-width="1.5"/>`;
+  s += `<rect x="-24" y="20" width="80" height="48" rx="1.5" fill="#c3c8cc" stroke="#8b9399"/><rect x="-21" y="23" width="74" height="42" rx="1" fill="#d3d7db"/>`;
+  s += `<circle cx="-11" cy="33" r="6" fill="none" stroke="#666" stroke-width="1"/><text x="-11" y="35" class="chip2" text-anchor="middle" style="font-size:4.5px;fill:#555;font-weight:700">Wi</text>`;
+  s += `<text x="20" y="33" class="chip2" text-anchor="middle" style="font-size:5.4px;fill:#444;font-weight:600">ESP8266MOD</text>`;
+  s += `<text x="20" y="41" class="chip2" text-anchor="middle" style="font-size:3.8px;fill:#666">ISM 2,4 GHz · 802.11b/g/n</text>`;
+  s += `<text x="20" y="48" class="chip2" text-anchor="middle" style="font-size:3.8px;fill:#666">PA +25 dBm</text><text x="-17" y="59" class="chip2" style="font-size:5px;fill:#555;font-weight:700">FC CE</text>`;
+  s += `<rect x="56" y="62" width="3" height="5" rx=".6" fill="${on ? '#4aa3ff' : '#2a3b57'}"/>`;
+  if (on) s += `<circle cx="57.5" cy="64.5" r="7" fill="#4aa3ff" opacity=".4"/>`;
+  // Spannungsregler AMS1117, Tantal-Kondensator, Diode, CP2102, kleine Bauteile
+  s += `<rect x="67" y="19" width="18" height="5" fill="#9aa0a5"/><rect x="66" y="24" width="20" height="13" rx="1" fill="#141414"/><text x="76" y="32.5" class="chip2" text-anchor="middle" style="fill:#888">AMS1117</text>`;
+  for (const x of [69, 75, 81]) s += `<rect x="${x}" y="37" width="2.5" height="3.5" fill="#9aa0a5"/>`;
+  s += `<rect x="92" y="20" width="12" height="7" rx="1" fill="#e7a23a" stroke="#9a6514" stroke-width=".6"/><rect x="92" y="20" width="2.5" height="7" fill="#7a4a10"/>`;
+  s += `<rect x="92" y="31" width="9" height="5" rx="1" fill="#141414"/><rect x="92" y="31" width="2" height="5" fill="#bbb"/>`;
+  s += `<rect x="100" y="42" width="20" height="20" rx="1" fill="#141414"/><circle cx="103" cy="45" r="1" fill="#555"/><text x="110" y="54" class="chip2" text-anchor="middle" style="fill:#999">CP2102</text>`;
+  for (const [x, y, v] of [[66, 46, 1], [71, 46, 1], [76, 46, 1], [81, 46, 1], [66, 56, 0], [86, 58, 0], [108, 22, 0], [124, 44, 1], [124, 52, 1], [130, 20, 0]]) s += res(x, y, v);
+  for (const [x, y, v] of [[66, 63, 0], [74, 63, 0], [92, 44, 1], [92, 54, 1], [108, 30, 0], [130, 26, 0]]) s += cap(x, y, v);
+  // zwei Tasten neben der Micro-USB-Buchse
+  s += btn(150, 13, 'RST', 31) + btn(150, 66, 'FLASH', 63);
+  s += `<rect x="156" y="33" width="22" height="24" rx="2" fill="#c8cdd1" stroke="#7d868c"/><path d="M162 38 h14 v14 h-14 l-2 -3 v-8 z" fill="#5f666c"/><rect x="165" y="42" width="9" height="6" rx="1" fill="#3a3f44"/>`;
+  s += `<text x="140" y="45" class="chip2" text-anchor="middle" style="fill:#ddd;font-size:4px;font-weight:600" transform="rotate(-90 140 45)">NodeMCU V2</text>`;
+  return s + labels();
 }
 
 /* ---------- Katalog ---------- */
@@ -878,10 +904,10 @@ const COMPONENTS = {
     internal: [['GND1', 'GND2', 'GND3']], fixed: true, mcu: ESP_MCU },
   esp32exp: { name: 'ESP32 auf Expansion Board', category: 'Grundlagen', pins: EXP_PINS, render: renderESP32Exp, bbox: [-70, -74, 250, 174], props: { jump: '3.3' },
     internal: expInternal, fixed: true, mcu: ESP_MCU },
-  esp32c5: { name: 'ESP32-C5', category: 'Grundlagen', pins: C5_PINS, render: renderESP32C5, bbox: [-30, -4, 194, 104], props: {},
+  esp32c5: { name: 'ESP32-C5', category: 'Grundlagen', pins: C5_PINS, render: renderESP32C5, bbox: [-30, -6, 202, 96], props: {},
     internal: [['GND1', 'GND2', 'GND3', 'GND4']], fixed: true, mcu: C5_MCU },
-  nodemcu: { name: 'ESP8266 NodeMCU', category: 'Grundlagen', pins: N_PINS, render: renderNodeMCU, bbox: [-34, -4, 196, 104], props: {},
-    internal: [['GND1', 'GND2', 'GND3', 'GND4', 'GND5'], ['3V3', '3V3b', '3V3c']], fixed: true, mcu: N_MCU },
+  nodemcu: { name: 'ESP8266 NodeMCU', category: 'Grundlagen', pins: N_PINS, render: renderNodeMCU, bbox: [-46, -6, 178, 96], props: {},
+    internal: [['GND1', 'GND2', 'GND4', 'GND5'], ['3V3', '3V3b', '3V3c']], fixed: true, mcu: N_MCU },
   breadboard: { name: 'Steckplatine', category: 'Grundlagen', pins: bbPins, render: renderBreadboard, bbox: [0, 0, 330, 200], props: {}, isBreadboard: true, fixed: true },
   resistor: { name: 'Widerstand', category: 'Grundlagen', render: renderResistor, bbox: [0, -6, 40, 6],
     pins: [L('1', 0, 'Anschluss 1'), L('2', 40, 'Anschluss 2')], props: { ohm: 1000 } },

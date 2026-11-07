@@ -98,7 +98,7 @@ class CircuitEditor {
       w({ c: uno.id, p: 'GND1' }, { c: bb.id, p: 'bm-2' }, 'schwarz', [[uno.x + 60, uno.y - 25], [bx - 30, uno.y - 25], [bx - 30, by + 180]]);
     } else if (c5) {
       // ESP32-C5 direkt unter der Steckplatine: 3,3 V und GND auf die Stromleisten
-      w({ c: uno.id, p: '3V3' }, { c: bb.id, p: 'bp-1' }, 'rot', [[uno.x, uno.y + 125], [bx - 20, uno.y + 125], [bx - 20, by + 190]]);
+      w({ c: uno.id, p: '3V3' }, { c: bb.id, p: 'bp-1' }, 'rot', [[uno.x, uno.y + 112], [bx - 20, uno.y + 112], [bx - 20, by + 190]]);
       w({ c: uno.id, p: 'GND1' }, { c: bb.id, p: 'bm-2' }, 'schwarz', [[uno.x, uno.y - 20], [bx - 30, uno.y - 20], [bx - 30, by + 180]]);
     } else if (esp) {
       // Stromleiste des Expansion Boards: 3,3 V und GND auf die Steckplatine
@@ -114,8 +114,8 @@ class CircuitEditor {
       const lcd = makeComp('lcd', bx + 100, by - 110, 0, {}, this.newId('c'));
       this.project.components.push(lcd);
       w({ c: lcd.id, p: 'GND' }, { c: bb.id, p: 'tm-2' }, 'schwarz', [[bx + 30, by - 110]]);
-      if (n8) w({ c: lcd.id, p: 'VCC' }, { c: uno.id, p: '5V' }, 'rot', [[bx - 45, by - 100], [bx - 45, uno.y + 135], [uno.x + 20, uno.y + 135]]); // LCD braucht 5 V (VU)
-      else if (c5) w({ c: lcd.id, p: 'VCC' }, { c: uno.id, p: '5V' }, 'rot', [[bx - 45, by - 100], [bx - 45, uno.y + 135], [uno.x + 130, uno.y + 135]]); // LCD braucht 5 V
+      if (n8) w({ c: lcd.id, p: 'VCC' }, { c: uno.id, p: '5V' }, 'rot', [[bx - 60, by - 100], [bx - 60, uno.y + 115], [uno.x + 140, uno.y + 115]]); // LCD braucht 5 V (Vin)
+      else if (c5) w({ c: lcd.id, p: 'VCC' }, { c: uno.id, p: '5V' }, 'rot', [[bx - 45, by - 100], [bx - 45, uno.y + 122], [uno.x + 130, uno.y + 122]]); // LCD braucht 5 V
       else if (esp) w({ c: lcd.id, p: 'VCC' }, { c: uno.id, p: 'P5Va' }, 'rot', [[bx - 45, by - 100], [bx - 45, by + 245], [uno.x + 290, by + 245], [uno.x + 290, uno.y + 40]]); // LCD braucht 5 V
       else w({ c: lcd.id, p: 'VCC' }, { c: bb.id, p: 'tp-3' }, 'rot', [[bx + 40, by - 100]]);
     }

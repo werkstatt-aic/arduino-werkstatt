@@ -659,7 +659,7 @@ const App = {
           h += '<div class="note">Zeige mit der Maus auf einen Anschluss, um seine Bezeichnung zu sehen.</div>';
           break;
         case 'nodemcu':
-          h += '<div class="note">Der ESP8266 hat WLAN, aber <b>kein Bluetooth</b>. Nur ein analoger Eingang (A0, 0 – 3,3 V), Messwerte 0 – 1023.</div>';
+          h += '<div class="note">Der ESP8266 hat WLAN, aber <b>kein Bluetooth</b>. Nur ein analoger Eingang (A0, 0 – 3,3 V), Messwerte 0 – 1023. 5 V (z. B. für das LCD) gibt es an „Vin“.</div>';
           h += '<div class="note">Die eingebaute blaue LED hängt an D4 und leuchtet, wenn D4 NIEDRIG ist – der Block „integrierte LED“ berücksichtigt das.</div>';
           h += '<div class="note">Zeige mit der Maus auf einen Anschluss, um seine Bezeichnung zu sehen.</div>';
           break;

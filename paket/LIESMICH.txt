@@ -230,7 +230,7 @@ ESP8266 (NodeMCU)
     (0-3,3 V, Werte 0-1023). Die eingebaute blaue LED hängt an D4.
   - WLAN, eigene Webseite und Funk (auch zusammen mit ESP32) funktionieren.
     Bluetooth gibt es nicht - diese Blöcke werden gar nicht angeboten.
-  - LCD mit 5 V: an "VU" anschließen (5 V vom USB).
+  - LCD mit 5 V: an "Vin" anschließen (etwa 5 V vom USB).
 
 ÜBERTRAGEN PER BLUETOOTH (nur ESP32)
   1. Einmal per USB-Kabel hochladen und dabei "Bluetooth-Übertragung in das
