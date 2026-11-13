@@ -1,0 +1,49 @@
+ARDUINO-WERKSTATT – URHEBERRECHT UND LIZENZEN
+==============================================
+
+© Ulrich Aichler. Alle Rechte vorbehalten.
+
+Die Arduino-Werkstatt und der Werkstatt-Schulserver (Programme, Oberfläche,
+Blöcke, Simulation, Aufgaben, Beispiele, Anleitungen) sind urheberrechtlich
+geschützt. Die Nutzung ist nur mit Erlaubnis des Urhebers gestattet. Ohne
+ausdrückliche Erlaubnis nicht gestattet sind insbesondere: das Verändern, das
+Zurückübersetzen oder Auslesen des Programmcodes zur Weiterverwendung, das
+Weitergeben an Dritte außerhalb der eigenen Schule, das Anbieten zum Download
+und jede kommerzielle Nutzung.
+
+Für Unterricht und Prüfungen an der eigenen Schule dürfen die Programme auf
+Schulrechner, Netzlaufwerke und USB-Sticks der Schülerinnen und Schüler kopiert
+werden.
+
+Anfragen: Ulrich Aichler
+
+
+BESTANDTEILE ANDERER URHEBER
+----------------------------
+Die folgenden Teile stammen von anderen Urhebern und stehen unter deren Lizenzen.
+Die genannten Lizenzbedingungen gehen für diese Teile den obigen Bedingungen vor.
+
+Im Programm enthalten:
+- Blockly (Block-Editor), © Google LLC – Apache License 2.0
+  (Lizenztext: app/lib/blockly/LICENSE)
+- 5×5-Schrift „pendolino3“ für micro:bit/Calliope (in app/js/bord.js),
+  aus microbit-dal, © Lancaster University / British Broadcasting Corporation – MIT-Lizenz
+- 5×7-Schrift der OLED-Simulation (in app/js/font5x7.js), nach der Standardschrift
+  der Adafruit-GFX-Bibliothek, © Adafruit Industries – BSD-Lizenz
+- Die Startprogramme sind mit Go übersetzt, © The Go Authors – BSD-3-Clause-Lizenz
+
+Nicht enthalten, sondern beim Einrichten der Werkzeuge aus den Original-Quellen
+geladen (jeweils mit eigener Lizenz):
+- arduino-cli (GPL 3.0), Arduino-AVR-Paket (LGPL 2.1), ESP32- und ESP8266-Paket
+  (LGPL 2.1), Compiler arm-none-eabi-gcc (GPL)
+- Paket für micro:bit und Calliope mini: „Arduino-nRF5“ von Sandeep Mistry
+  (LGPL 2.1), für die Werkstatt angepasst. Die Änderungen sind im Paket in
+  HERKUNFT.txt beschrieben; der vollständige Quelltext liegt dem Paket bei.
+- Bibliotheken: Adafruit GFX, SSD1306, BusIO, ADS1X15, INA219, Unified Sensor,
+  NeoPixel, DHT sensor library, Keypad, LiquidCrystal I2C, ESP32Servo,
+  NimBLE-Arduino – jeweils unter der Lizenz ihrer Autoren.
+
+Markenhinweis: Arduino, ESP32, micro:bit und Calliope mini sind Namen bzw. Marken
+ihrer jeweiligen Inhaber. Sie werden hier nur verwendet, um anzugeben, mit
+welchen Boards die Werkstatt zusammenarbeitet. Die Arduino-Werkstatt ist kein
+Produkt dieser Inhaber.

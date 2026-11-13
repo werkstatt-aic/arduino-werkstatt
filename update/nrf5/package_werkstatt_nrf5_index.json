@@ -1,0 +1,50 @@
+{
+  "packages": [
+    {
+      "name": "werkstatt",
+      "maintainer": "Arduino-Werkstatt",
+      "websiteURL": "https://github.com/werkstatt-aic/arduino-werkstatt",
+      "email": "",
+      "help": {
+        "online": "https://github.com/werkstatt-aic/arduino-werkstatt"
+      },
+      "platforms": [
+        {
+          "name": "micro:bit und Calliope mini (Arduino-Werkstatt)",
+          "architecture": "nRF5",
+          "version": "0.8.3",
+          "category": "Arduino-Werkstatt",
+          "url": "https://raw.githubusercontent.com/werkstatt-aic/arduino-werkstatt/main/update/nrf5/werkstatt-nrf5-0.8.3.zip",
+          "archiveFileName": "werkstatt-nrf5-0.8.3.zip",
+          "checksum": "SHA-256:3e2ebc2fa6d0da3b7f7b90a3dbf964302d1f26518f34ac228c521349b2892183",
+          "size": "1762462",
+          "help": {
+            "online": "https://github.com/sandeepmistry/arduino-nRF5"
+          },
+          "boards": [
+            {
+              "name": "BBC micro:bit"
+            },
+            {
+              "name": "BBC micro:bit V2"
+            },
+            {
+              "name": "Calliope mini"
+            },
+            {
+              "name": "Calliope mini V3"
+            }
+          ],
+          "toolsDependencies": [
+            {
+              "packager": "arduino",
+              "name": "arm-none-eabi-gcc",
+              "version": "7-2017q4"
+            }
+          ]
+        }
+      ],
+      "tools": []
+    }
+  ]
+}
