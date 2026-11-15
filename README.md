@@ -17,4 +17,4 @@ Dieses Verzeichnis enthält nur die **Programmpakete und Update-Informationen**:
 - `update/nrf5/` – Paket für Calliope mini und micro:bit (beruht auf „Arduino-nRF5“ von Sandeep Mistry, LGPL 2.1;
   der vollständige Quelltext und die Änderungen stehen im Paket selbst)
 
-© Ulrich Aichler. Alle Rechte vorbehalten – siehe [Lizenzen.txt](Lizenzen.txt).
+© Ulrich Aichler. Kostenlos nutzbar für Unterricht, Schule und privat – Bedingungen siehe [Lizenzen.txt](Lizenzen.txt).

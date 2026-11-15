@@ -1,21 +1,24 @@
 CODEKÄFER – URHEBERRECHT UND LIZENZEN
 ==============================================
 
-© Ulrich Aichler. Alle Rechte vorbehalten.
+© Ulrich Aichler.
 
 Der Codekäfer und der Codekäfer Schulserver (Programme, Oberfläche,
-Blöcke, Simulation, Aufgaben, Beispiele, Anleitungen) sind urheberrechtlich
-geschützt. Die Nutzung ist nur mit Erlaubnis des Urhebers gestattet. Ohne
-ausdrückliche Erlaubnis nicht gestattet sind insbesondere: das Verändern, das
-Zurückübersetzen oder Auslesen des Programmcodes zur Weiterverwendung, das
-Weitergeben an Dritte außerhalb der eigenen Schule, das Anbieten zum Download
-und jede kommerzielle Nutzung.
+Blöcke, Simulation, Aufgaben, Beispiele, Skript und Anleitungen) sind
+urheberrechtlich geschützt.
 
-Für Unterricht und Prüfungen an der eigenen Schule dürfen die Programme auf
-Schulrechner, Netzlaufwerke und USB-Sticks der Schülerinnen und Schüler kopiert
-werden.
+Codekäfer und Schulserver dürfen kostenlos genutzt werden – im Unterricht,
+in Prüfungen und privat – und dürfen an Schülerinnen und Schüler, Lehrkräfte
+und Schulen weitergegeben werden, z. B. auf Schulrechnern, Netzlaufwerken und
+USB-Sticks.
 
-Anfragen: Ulrich Aichler
+Nicht gestattet sind: das Verändern, das Zurückübersetzen oder Auslesen des
+Programmcodes zur Weiterverwendung, das Anbieten zum Download auf anderen
+Webseiten und jede kommerzielle Nutzung.
+
+Die aktuelle Fassung gibt es kostenlos unter https://codekaefer.de
+
+Anfragen: Ulrich Aichler, kontakt@codekaefer.de
 
 
 BESTANDTEILE ANDERER URHEBER
