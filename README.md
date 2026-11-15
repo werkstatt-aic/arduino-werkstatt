@@ -2,7 +2,7 @@
 
 ![Codekäfer](codekaefer-logo.png)
 
-*Schaltungen bauen, simulieren, programmieren*
+*Schaltungen bauen, programmieren, simulieren*
 
 Blockbasierte Lernumgebung für Mikrocontroller im Technikunterricht – Schaltung aufbauen,
 mit Blöcken programmieren, simulieren und auf das echte Board übertragen
