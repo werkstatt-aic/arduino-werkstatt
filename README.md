@@ -2,7 +2,7 @@
 
 ![Codekäfer](codekaefer-logo.png)
 
-*Schaltungen bauen, simulieren, programmieren* – früher „Arduino-Werkstatt“.
+*Schaltungen bauen, simulieren, programmieren*
 
 Blockbasierte Lernumgebung für Mikrocontroller im Technikunterricht – Schaltung aufbauen,
 mit Blöcken programmieren, simulieren und auf das echte Board übertragen
