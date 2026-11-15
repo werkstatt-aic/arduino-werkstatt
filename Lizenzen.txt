@@ -16,6 +16,10 @@ Nicht gestattet sind: das Verändern, das Zurückübersetzen oder Auslesen des
 Programmcodes zur Weiterverwendung, das Anbieten zum Download auf anderen
 Webseiten und jede kommerzielle Nutzung.
 
+Diese Bedingungen gelten für die jeweils vorliegende Version. Künftige
+Versionen können unter anderen Bedingungen angeboten werden; bereits
+erhaltene Versionen dürfen weiter wie oben beschrieben genutzt werden.
+
 Die aktuelle Fassung gibt es kostenlos unter https://codekaefer.de
 
 Anfragen: Ulrich Aichler, kontakt@codekaefer.de
