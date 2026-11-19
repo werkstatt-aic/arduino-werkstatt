@@ -17,7 +17,7 @@ Anfragen: Ulrich Aichler, kontakt@codekaefer.de
 BESTANDTEILE ANDERER URHEBER
 ----------------------------
 Die folgenden Teile stammen von anderen Urhebern und stehen unter deren Lizenzen.
-Die genannten Lizenzbedingungen gehen für diese Teile den obigen Bedingungen vor.
+Die genannten Lizenzbedingungen gehen für diese Teile den Nutzungsbedingungen vor.
 
 Name und Logo „Codekäfer“ (Käfer-Zeichnung, Programmsymbol) sind eigene
 Gestaltungen von Ulrich Aichler. Der Schriftzug im Logo ist in der Schrift
