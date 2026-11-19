@@ -17,4 +17,4 @@ Dieses Verzeichnis enthält nur die **Programmpakete und Update-Informationen**:
 - `update/nrf5/` – Paket für Calliope mini und micro:bit (beruht auf „Arduino-nRF5“ von Sandeep Mistry, LGPL 2.1;
   der vollständige Quelltext und die Änderungen stehen im Paket selbst)
 
-© Ulrich Aichler. Der Codekäfer ist kostenlos, der Schulserver bis 1. Oktober 2027 – Bedingungen siehe [Lizenzen.txt](Lizenzen.txt).
+© Ulrich Aichler. Der Codekäfer ist kostenlos, der Schulserver bis 1. Oktober 2027 – Bedingungen siehe [Nutzungsbedingungen](https://codekaefer.de/nutzungsbedingungen.html) und [Lizenzen.txt](Lizenzen.txt).

@@ -3,33 +3,13 @@ CODEKÄFER – URHEBERRECHT UND LIZENZEN
 
 © Ulrich Aichler.
 
-Der Codekäfer und der Codekäfer Schulserver (Programme, Oberfläche,
-Blöcke, Simulation, Aufgaben, Beispiele, Skript und Anleitungen) sind
-urheberrechtlich geschützt.
-
-1. Der Codekäfer (das Programm für die Schülerrechner) und die Materialien
-   (Schülerskript, Anleitungen, Broschüren) sind dauerhaft kostenlos. Sie
-   dürfen im Unterricht, in Prüfungen und privat genutzt und an Schülerinnen
-   und Schüler, Lehrkräfte und Schulen weitergegeben werden, z. B. auf
-   Schulrechnern, Netzlaufwerken und USB-Sticks.
-
-2. Der Codekäfer Schulserver darf bis zum 1. Oktober 2027 kostenlos genutzt
-   werden. Danach braucht jede Schule eine Lizenz (pro Schule, Updates
-   inklusive); Näheres unter codekaefer.de. Endet die kostenlose Nutzung oder eine Lizenz, gehen keine
-   Daten verloren: Klassen, Projekte und Abgaben bleiben erhalten und können
-   weiter angesehen und heruntergeladen werden; nach einem Monat Nachfrist
-   lassen sich nur keine Klassenzimmer mehr öffnen.
-
-Nicht gestattet sind: das Verändern, das Zurückübersetzen oder Auslesen des
-Programmcodes zur Weiterverwendung, das Anbieten zum Download auf anderen
-Webseiten und jede kommerzielle Nutzung.
-
-Diese Bedingungen gelten für die jeweils vorliegende Version. Künftige
-Versionen können unter anderen Bedingungen angeboten werden; bereits
-erhaltene Versionen dürfen weiter wie oben beschrieben genutzt werden
-(beim Schulserver im Rahmen von Punkt 2).
-
-Die aktuelle Fassung gibt es unter https://codekaefer.de
+Der Codekäfer, der Codekäfer-Baukasten und der Codekäfer Schulserver
+(Programme, Oberfläche, Blöcke, Simulation, Aufgaben, Beispiele, Skript und
+Anleitungen) sind urheberrechtlich geschützt. Was erlaubt ist und was nicht,
+steht in der Datei Nutzungsbedingungen.txt (aktuelle Fassung:
+https://codekaefer.de/nutzungsbedingungen.html). Kurz: Der Codekäfer und die
+Materialien sind dauerhaft kostenlos; der Schulserver ist bis einschließlich
+30. September 2027 kostenlos, danach braucht jede Schule eine Lizenz.
 
 Anfragen: Ulrich Aichler, kontakt@codekaefer.de
 
